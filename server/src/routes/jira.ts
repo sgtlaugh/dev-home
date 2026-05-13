@@ -173,52 +173,45 @@ router.get("/mentions", async (_req: Request, res: Response) => {
 
   const jira = createJiraClient();
 
-  const jql = `comment ~ currentUser() AND updated >= -90d ORDER BY updated DESC`;
+  const [{ data: searchData }, { data: userData }] = await Promise.all([
+    jira.post("/search/jql", {
+      jql: `comment ~ currentUser() AND updated >= -30d ORDER BY updated DESC`,
+      fields: ["summary", "comment"],
+      maxResults: 30,
+    }),
+    jira.get("/myself"),
+  ]);
 
-  const { data: searchData } = await jira.post("/search/jql", {
-    jql,
-    fields: ["summary"],
-  });
   const issues = searchData.issues || [];
-
-  const { data: userData } = await jira.get("/myself");
   const userAccountId = userData.accountId;
   const username = userData.displayName?.toLowerCase() || "";
   const email = userData.emailAddress?.toLowerCase() || "";
 
-  const commentPromises = issues.map(async (issue: any) => {
-    try {
-      const { data: commentData } = await jira.get(`/issue/${issue.key}/comment`);
-      const comments = commentData.comments || [];
-
-      return comments
-        .filter((comment: any) => {
-          if (comment.author?.accountId === userAccountId) return false;
-
-          const bodyText = adfToMarkdown(comment.body).toLowerCase();
-          return bodyText.includes(username) || bodyText.includes(email);
-        })
-        .map((comment: any) => ({
-          id: comment.id,
-          author: {
-            displayName: comment.author?.displayName,
-            avatarUrls: comment.author?.avatarUrls,
-          },
-          body: {
-            text: adfToMarkdown(comment.body),
-          },
-          created: comment.created,
-          updated: comment.updated,
-          self: comment.self,
-          issueKey: issue.key,
-          issueSummary: issue.fields?.summary,
-        }));
-    } catch {
-      return [];
-    }
+  const allComments = issues.flatMap((issue: any) => {
+    const comments = issue.fields?.comment?.comments || [];
+    return comments
+      .filter((comment: any) => {
+        if (comment.author?.accountId === userAccountId) return false;
+        const bodyText = adfToMarkdown(comment.body).toLowerCase();
+        return bodyText.includes(username) || bodyText.includes(email);
+      })
+      .map((comment: any) => ({
+        id: comment.id,
+        author: {
+          displayName: comment.author?.displayName,
+          avatarUrls: comment.author?.avatarUrls,
+        },
+        body: {
+          text: adfToMarkdown(comment.body),
+        },
+        created: comment.created,
+        updated: comment.updated,
+        self: comment.self,
+        issueKey: issue.key,
+        issueSummary: issue.fields?.summary,
+      }));
   });
 
-  const allComments = (await Promise.all(commentPromises)).flat();
   allComments.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
 
   const result = { comments: allComments };
