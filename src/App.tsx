@@ -213,24 +213,18 @@ export default function App() {
             {[
               { key: "summary", label: "Summary", icon: IconLayoutDashboard, count: undefined },
               { key: "board", label: "Board", icon: IconColumns3, count: undefined },
-              {
-                key: "notes",
-                label: "Notes",
-                icon: IconNotes,
-                count: unresolvedNotes.length,
-              },
               { key: "jira", label: "JIRA Tasks", icon: IconSubtask, count: jiraIssues.length },
               {
-                key: "mentions",
-                label: "Mentions",
-                icon: IconAt,
-                count: jiraComments.length + githubMentions.length,
-              },
-              {
                 key: "prs",
-                label: "Pull Requests",
+                label: "PRs",
                 icon: IconGitPullRequest,
                 count: openPRs.length,
+              },
+              {
+                key: "pr-history",
+                label: "PR History",
+                icon: IconCalendarStats,
+                count: currentMonthPRsCount,
               },
               {
                 key: "reviews",
@@ -239,10 +233,16 @@ export default function App() {
                 count: reviewRequests.length,
               },
               {
-                key: "pr-history",
-                label: "PR History",
-                icon: IconCalendarStats,
-                count: currentMonthPRsCount,
+                key: "notes",
+                label: "Notes",
+                icon: IconNotes,
+                count: unresolvedNotes.length,
+              },
+              {
+                key: "mentions",
+                label: "Mentions",
+                icon: IconAt,
+                count: jiraComments.length + githubMentions.length,
               },
             ].map((tab) => (
               <button
