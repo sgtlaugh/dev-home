@@ -11,7 +11,6 @@ import {
   IconSettings,
   IconPlus,
   IconLayoutDashboard,
-  IconColumns3,
   IconNotes,
   IconSubtask,
   IconAt,
@@ -35,8 +34,6 @@ import packageJson from "../package.json";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
-import { useKanban } from "./hooks/useKanban";
-import { KanbanBoard } from "./components/KanbanBoard";
 import { FindInPage } from "./components/FindInPage";
 import { PRHistory } from "./components/PRHistory";
 
@@ -98,25 +95,9 @@ export default function App() {
     addNote,
     editNote,
     resolveNote,
-    unresolveNote,
     removeNote,
     refresh: refreshNotes,
   } = useNotes(configured);
-  const {
-    columnTiles,
-    loading: kanbanLoading,
-    doneItemIds,
-    moveItem: kanbanMoveItem,
-    refresh: refreshKanban,
-  } = useKanban({
-    active: configured,
-    openPRs,
-    reviewRequests,
-    notes: unresolvedNotes,
-    jiraBaseUrl,
-    onResolveNote: resolveNote,
-    onUnresolveNote: unresolveNote,
-  });
   const { updateInfo, dismiss: dismissUpdate } = useUpdateCheck();
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
@@ -167,7 +148,6 @@ export default function App() {
               onClick={() => {
                 refresh();
                 refreshNotes();
-                refreshKanban();
               }}
               disabled={loading}
               title="Refresh"
@@ -187,7 +167,6 @@ export default function App() {
           <nav className={`sidebar${sidebarCollapsed ? " collapsed" : ""}`}>
             {[
               { key: "summary", label: "Summary", icon: IconLayoutDashboard, count: undefined },
-              { key: "board", label: "Board", icon: IconColumns3, count: undefined },
               { key: "jira", label: "JIRA Tasks", icon: IconSubtask, count: jiraIssues.length },
               {
                 key: "mentions",
@@ -298,15 +277,6 @@ export default function App() {
                       setOpenNote(note);
                       setShowNoteEditor(true);
                     }}
-                    doneItemIds={doneItemIds}
-                  />
-                )}
-                {effectiveTab === "board" && (
-                  <KanbanBoard
-                    columnTiles={columnTiles}
-                    loading={kanbanLoading}
-                    jiraBaseUrl={jiraBaseUrl}
-                    onMoveItem={kanbanMoveItem}
                   />
                 )}
                 {effectiveTab === "jira" && (

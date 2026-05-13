@@ -37,7 +37,6 @@ interface SummaryViewProps {
   onResolveNote: (id: number) => Promise<void>;
   onAddNote: () => void;
   onOpenNote: (note: Note) => void;
-  doneItemIds?: Set<string>;
 }
 
 interface SectionProps {
@@ -184,7 +183,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   onResolveNote,
   onAddNote,
   onOpenNote,
-  doneItemIds,
 }) => {
   const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
@@ -199,27 +197,16 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
 
   const jiraBase = jiraBaseUrl?.replace(/\/+$/, "") || "";
 
-  // Filter out items marked "done" on the kanban board
-  const visibleReviews = doneItemIds
-    ? reviewRequests.filter((r) => !doneItemIds.has(`review:${r.repo_full_name}#${r.number}`))
-    : reviewRequests;
-  const visiblePRs = doneItemIds
-    ? openPRs.filter((pr) => !doneItemIds.has(`pr:${pr.repo_full_name}#${pr.number}`))
-    : openPRs;
-  const visibleNotes = doneItemIds
-    ? notes.filter((n) => !doneItemIds.has(`note:${String(n.id)}`))
-    : notes;
-
-  const topReviews = [...visibleReviews]
+  const topReviews = [...reviewRequests]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 5);
-  const topPRs = [...visiblePRs]
+  const topPRs = [...openPRs]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 5);
   const topIssues = [...jiraIssues]
     .sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime())
     .slice(0, 5);
-  const topNotes = [...visibleNotes]
+  const topNotes = [...notes]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 10);
 
@@ -245,8 +232,8 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 icon={<IconEye size={13} stroke={1.8} />}
                 title="Review Requests"
                 badgeClass="badge-status-yellow"
-                count={visibleReviews.length}
-                onSeeMore={visibleReviews.length > 5 ? () => onNavigate("reviews") : undefined}
+                count={reviewRequests.length}
+                onSeeMore={reviewRequests.length > 5 ? () => onNavigate("reviews") : undefined}
                 loading={reviewRequestsLoading}
               >
                 {topReviews.length > 0 ? (
@@ -272,8 +259,8 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 icon={<IconGitPullRequest size={13} stroke={1.8} />}
                 title="Open Pull Requests"
                 badgeClass="badge-status-green"
-                count={visiblePRs.length}
-                onSeeMore={visiblePRs.length > 5 ? () => onNavigate("prs") : undefined}
+                count={openPRs.length}
+                onSeeMore={openPRs.length > 5 ? () => onNavigate("prs") : undefined}
                 loading={openPRsLoading}
               >
                 {topPRs.length > 0 ? (
@@ -355,8 +342,8 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             icon={<IconNote size={13} stroke={1.8} />}
             title="Notes"
             badgeClass="badge-status-purple"
-            count={visibleNotes.length}
-            onSeeMore={visibleNotes.length > 10 ? () => onNavigate("notes") : undefined}
+            count={notes.length}
+            onSeeMore={notes.length > 10 ? () => onNavigate("notes") : undefined}
             loading={notesLoading}
             headerAction={
               <Button

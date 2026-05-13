@@ -109,20 +109,6 @@ export interface GitHubComment {
 
 export type GitHubReviewRequest = GitHubPR;
 
-// Dashboard Data
-export interface DashboardData {
-  jiraIssues: JiraIssue[];
-  jiraComments: JiraComment[];
-  githubMentions: GitHubComment[];
-  openPRs: GitHubPR[];
-  reviewRequests: GitHubReviewRequest[];
-  loading: boolean;
-  error: string | null;
-}
-
-// View Type
-export type ViewType = "dashboard" | "settings";
-
 // Note Types
 export type NoteType = "free_text" | "jira_ticket" | "github_pr" | "link";
 
@@ -135,33 +121,4 @@ export interface Note {
   resolved: number;
   created_at: string;
   updated_at: string;
-}
-
-// Kanban Types
-export type KanbanColumnId = "todo" | "in_progress" | "on_hold" | "in_review" | "done";
-
-export type KanbanItemType = "note" | "pr" | "review";
-
-export interface KanbanItem {
-  id: number;
-  item_type: KanbanItemType;
-  item_id: string;
-  column_name: KanbanColumnId;
-  position: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface KanbanTile {
-  kanbanItem: KanbanItem;
-  note?: Note;
-  pr?: GitHubPR;
-  review?: GitHubReviewRequest;
-  title: string;
-  subtitle: string;
-  url: string;
-  sourceBadge: string;
-  sourceBadgeClass: string;
-  checksStatus?: string | null;
-  timestamp: string;
 }
