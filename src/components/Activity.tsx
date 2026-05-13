@@ -35,10 +35,12 @@ function getActivityIcon(item: ActivityItem) {
 
 function getActivityBadgeClass(item: ActivityItem): string {
   if (item.type === "github") {
-    if (item.action.includes("Approved")) return "badge-status-green";
-    if (item.action.includes("Created PR")) return "badge-status-blue";
-    if (item.action.includes("commit")) return "badge-status-neutral";
-    return "badge-status-purple";
+    if (item.action.includes("Committed") || item.action.includes("Created PR"))
+      return "badge-status-green";
+    if (item.action.includes("Approved") || item.action.includes("Merged"))
+      return "badge-status-purple";
+    if (item.action.includes("Comment")) return "badge-status-blue";
+    return "badge-status-neutral";
   }
 
   if (item.action.includes("Created")) return "badge-status-green";
