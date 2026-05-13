@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { JiraIssue, JiraComment, GitHubPR, GitHubComment, GitHubReviewRequest } from "../types";
+import { JiraIssue, JiraComment, GitHubPR, GitHubReviewRequest } from "../types";
 import { fetchAssignedIssues, fetchRecentMentions } from "../services/jira";
-import { fetchDashboard, fetchMentions } from "../services/github";
+import { fetchDashboard } from "../services/github";
 import { apiCache } from "../utils/cache";
 import { rateLimiter } from "../utils/rateLimiter";
 
@@ -12,7 +12,6 @@ const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 interface DashboardCacheData {
   jiraIssues: JiraIssue[];
   jiraComments: JiraComment[];
-  githubMentions: GitHubComment[];
   openPRs: GitHubPR[];
   reviewRequests: GitHubReviewRequest[];
   timestamp: number;
@@ -27,7 +26,6 @@ function loadCache(): DashboardCacheData | null {
     if (
       !Array.isArray(parsed.jiraIssues) ||
       !Array.isArray(parsed.jiraComments) ||
-      !Array.isArray(parsed.githubMentions) ||
       !Array.isArray(parsed.openPRs) ||
       !Array.isArray(parsed.reviewRequests)
     ) {
@@ -58,13 +56,11 @@ function saveCache(data: Omit<DashboardCacheData, "timestamp">): void {
 interface UseDashboardReturn {
   jiraIssues: JiraIssue[];
   jiraComments: JiraComment[];
-  githubMentions: GitHubComment[];
   openPRs: GitHubPR[];
   reviewRequests: GitHubReviewRequest[];
   loading: boolean;
   jiraIssuesLoading: boolean;
   jiraCommentsLoading: boolean;
-  githubMentionsLoading: boolean;
   openPRsLoading: boolean;
   reviewRequestsLoading: boolean;
   error: string | null;
@@ -79,9 +75,6 @@ export function useDashboard(active: boolean): UseDashboardReturn {
   const [jiraComments, setJiraComments] = useState<JiraComment[]>(
     cachedRef.current?.jiraComments ?? [],
   );
-  const [githubMentions, setGithubMentions] = useState<GitHubComment[]>(
-    cachedRef.current?.githubMentions ?? [],
-  );
   const [openPRs, setOpenPRs] = useState<GitHubPR[]>(cachedRef.current?.openPRs ?? []);
   const [reviewRequests, setReviewRequests] = useState<GitHubReviewRequest[]>(
     cachedRef.current?.reviewRequests ?? [],
@@ -89,7 +82,6 @@ export function useDashboard(active: boolean): UseDashboardReturn {
   const [loading, setLoading] = useState<boolean>(false);
   const [jiraIssuesLoading, setJiraIssuesLoading] = useState<boolean>(false);
   const [jiraCommentsLoading, setJiraCommentsLoading] = useState<boolean>(false);
-  const [githubMentionsLoading, setGithubMentionsLoading] = useState<boolean>(false);
   const [openPRsLoading, setOpenPRsLoading] = useState<boolean>(false);
   const [reviewRequestsLoading, setReviewRequestsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,44 +119,14 @@ export function useDashboard(active: boolean): UseDashboardReturn {
     setLoading(true);
     setJiraIssuesLoading(true);
     setJiraCommentsLoading(true);
-    setGithubMentionsLoading(true);
     setOpenPRsLoading(true);
     setReviewRequestsLoading(true);
     setError(null);
 
     // Accumulate results to avoid repeated localStorage reads/writes
     const pendingData: Partial<Omit<DashboardCacheData, "timestamp">> = {};
-    let pendingCount = 3;
+    let pendingCount = 2;
     const errors: string[] = [];
-
-    // PR comments and notification mentions arrive independently; accumulated here
-    // and merged at settle time to avoid race-condition overwrites.
-    let pendingPRComments: GitHubComment[] = [];
-    let pendingNotificationMentions: GitHubComment[] | null = null;
-
-    // Merge PR comments + notification mentions, remove review_requested dupes,
-    // and deduplicate by comment ID.
-    const deduplicateMentions = () => {
-      const reviews = pendingData.reviewRequests;
-      if (!reviews || pendingNotificationMentions === null) return;
-
-      const merged = [...pendingNotificationMentions, ...pendingPRComments];
-      const reviewPRKeys = new Set(reviews.map((r) => `${r.repo_full_name}#${r.number}`));
-      const seen = new Set<number | string>();
-      const filtered = merged.filter((m) => {
-        if (
-          m.reason === "review_requested" &&
-          reviewPRKeys.has(`${m.repo_full_name}#${m.pr_number}`)
-        ) {
-          return false;
-        }
-        if (seen.has(m.id)) return false;
-        seen.add(m.id);
-        return true;
-      });
-      pendingData.githubMentions = filtered;
-      setGithubMentions(filtered);
-    };
 
     const settle = (errorMsg?: string) => {
       if (controller.signal.aborted) return;
@@ -175,13 +137,10 @@ export function useDashboard(active: boolean): UseDashboardReturn {
         if (errors.length > 0) {
           setError(errors.join("; "));
         }
-        // Deduplicate mentions against review requests before caching
-        deduplicateMentions();
         // Save cache once with all accumulated data
         saveCache({
           jiraIssues: pendingData.jiraIssues ?? [],
           jiraComments: pendingData.jiraComments ?? [],
-          githubMentions: pendingData.githubMentions ?? [],
           openPRs: pendingData.openPRs ?? [],
           reviewRequests: pendingData.reviewRequests ?? [],
         });
@@ -215,13 +174,12 @@ export function useDashboard(active: boolean): UseDashboardReturn {
       });
 
     fetchDashboard()
-      .then(({ prs, prComments, reviews }) => {
+      .then(({ prs, reviews }) => {
         if (controller.signal.aborted) return;
         setOpenPRs(prs);
         pendingData.openPRs = prs;
         setReviewRequests(reviews);
         pendingData.reviewRequests = reviews;
-        pendingPRComments = prComments;
         setOpenPRsLoading(false);
         setReviewRequestsLoading(false);
         settle();
@@ -229,19 +187,6 @@ export function useDashboard(active: boolean): UseDashboardReturn {
       .catch((err) => {
         setOpenPRsLoading(false);
         setReviewRequestsLoading(false);
-        settle(err?.message || String(err));
-      });
-
-    fetchMentions()
-      .then((data) => {
-        if (controller.signal.aborted) return;
-        // Store notification mentions; they'll be merged with PR comments at settle time
-        pendingNotificationMentions = data;
-        setGithubMentionsLoading(false);
-        settle();
-      })
-      .catch((err) => {
-        setGithubMentionsLoading(false);
         settle(err?.message || String(err));
       });
   }, [active]);
@@ -290,13 +235,11 @@ export function useDashboard(active: boolean): UseDashboardReturn {
   return {
     jiraIssues,
     jiraComments,
-    githubMentions,
     openPRs,
     reviewRequests,
     loading,
     jiraIssuesLoading,
     jiraCommentsLoading,
-    githubMentionsLoading,
     openPRsLoading,
     reviewRequestsLoading,
     error,

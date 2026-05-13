@@ -46,16 +46,6 @@ export async function fetchReviewRequests(): Promise<GitHubReviewRequest[]> {
   return data.reviews;
 }
 
-export async function fetchMentions(): Promise<GitHubComment[]> {
-  const cacheKey = "github:mentions";
-  const cached = apiCache.get<GitHubComment[]>(cacheKey);
-  if (cached) return cached;
-
-  const { data } = await apiClient.get("/github/mentions");
-  apiCache.set(cacheKey, data.mentions);
-  return data.mentions;
-}
-
 export async function fetchPRsByDateRange(startDate: string, endDate: string): Promise<GitHubPR[]> {
   const cacheKey = `github:prs-by-date:${startDate}:${endDate}`;
   const cached = apiCache.get<GitHubPR[]>(cacheKey);

@@ -14,9 +14,8 @@ import {
   IconCheck,
   IconPlus,
 } from "@tabler/icons-react";
-import { JiraIssue, JiraComment, GitHubPR, GitHubComment, Note } from "../types";
+import { JiraIssue, JiraComment, GitHubPR, Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
-import { REASON_SUMMARY } from "../utils/github";
 import { formatRelativeTime } from "../utils/time";
 import { DescriptionModal } from "./DescriptionModal";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
@@ -24,13 +23,11 @@ import { ChecksStatusIcon } from "./ChecksStatusIcon";
 interface SummaryViewProps {
   jiraIssues: JiraIssue[];
   jiraComments: JiraComment[];
-  githubMentions: GitHubComment[];
   openPRs: GitHubPR[];
   reviewRequests: GitHubPR[];
   loading: boolean;
   jiraIssuesLoading?: boolean;
   jiraCommentsLoading?: boolean;
-  githubMentionsLoading?: boolean;
   openPRsLoading?: boolean;
   reviewRequestsLoading?: boolean;
   notesLoading?: boolean;
@@ -173,13 +170,11 @@ function statusBadgeClass(colorName: string): string {
 export const SummaryView: React.FC<SummaryViewProps> = ({
   jiraIssues,
   jiraComments,
-  githubMentions,
   openPRs,
   reviewRequests,
   loading,
   jiraIssuesLoading,
   jiraCommentsLoading,
-  githubMentionsLoading,
   openPRsLoading,
   reviewRequestsLoading,
   notesLoading,
@@ -228,23 +223,15 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 10);
 
-  // Combine jira comments + github mentions, sort by date, take 5
-  const allMentions = [
-    ...jiraComments.map((c) => ({
+  // JIRA mentions, sort by date, take 5
+  const allMentions = jiraComments
+    .map((c) => ({
       id: `jc-${c.id}`,
       title: `${c.author.displayName} on ${c.issueKey}`,
       subtitle: c.issueSummary,
       url: jiraBase ? `${jiraBase}/browse/${c.issueKey}` : `#${c.issueKey}`,
       time: c.created,
-    })),
-    ...githubMentions.map((m) => ({
-      id: `gm-${m.id}`,
-      title: `${m.user.login} ${REASON_SUMMARY[m.reason] || "mentioned you"}`,
-      subtitle: m.context_title || m.repo_full_name,
-      url: m.html_url,
-      time: m.created_at,
-    })),
-  ]
+    }))
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
     .slice(0, 5);
 
@@ -313,15 +300,11 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             <Col md={6}>
               <Section
                 icon={<IconAt size={13} stroke={1.8} />}
-                title="Mentions"
+                title="JIRA Mentions"
                 badgeClass="badge-status-purple"
-                count={jiraComments.length + githubMentions.length}
-                onSeeMore={
-                  jiraComments.length + githubMentions.length > 5
-                    ? () => onNavigate("mentions")
-                    : undefined
-                }
-                loading={jiraCommentsLoading || githubMentionsLoading}
+                count={jiraComments.length}
+                onSeeMore={jiraComments.length > 5 ? () => onNavigate("mentions") : undefined}
+                loading={jiraCommentsLoading}
               >
                 {allMentions.length > 0 ? (
                   allMentions.map((m) => (

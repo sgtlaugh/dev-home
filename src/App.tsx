@@ -80,13 +80,11 @@ export default function App() {
   const {
     jiraIssues,
     jiraComments,
-    githubMentions,
     openPRs,
     reviewRequests,
     loading,
     jiraIssuesLoading,
     jiraCommentsLoading,
-    githubMentionsLoading,
     openPRsLoading,
     reviewRequestsLoading,
     error,
@@ -284,13 +282,11 @@ export default function App() {
                   <SummaryView
                     jiraIssues={jiraIssues}
                     jiraComments={jiraComments}
-                    githubMentions={githubMentions}
                     openPRs={openPRs}
                     reviewRequests={reviewRequests}
                     loading={loading}
                     jiraIssuesLoading={jiraIssuesLoading}
                     jiraCommentsLoading={jiraCommentsLoading}
-                    githubMentionsLoading={githubMentionsLoading}
                     openPRsLoading={openPRsLoading}
                     reviewRequestsLoading={reviewRequestsLoading}
                     notesLoading={notesLoading}
