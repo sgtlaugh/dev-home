@@ -38,7 +38,7 @@ import { useUpdateCheck } from "./hooks/useUpdateCheck";
 import { useKanban } from "./hooks/useKanban";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { FindInPage } from "./components/FindInPage";
-import { PRsByMonth } from "./components/PRsByMonth";
+import { PRHistory } from "./components/PRHistory";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("summary");
@@ -128,8 +128,13 @@ export default function App() {
     const now = new Date();
     const fetchCount = async () => {
       try {
-        const { fetchPRsByMonth } = await import("./services/github");
-        const prs = await fetchPRsByMonth(now.getFullYear(), now.getMonth() + 1);
+        const { fetchPRsByDateRange } = await import("./services/github");
+        const month = (now.getMonth() + 1).toString().padStart(2, "0");
+        const year = now.getFullYear();
+        const startDate = `${year}-${month}-01`;
+        const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+        const endDate = `${year}-${month}-${lastDay.toString().padStart(2, "0")}`;
+        const prs = await fetchPRsByDateRange(startDate, endDate);
         setCurrentMonthPRsCount(prs.length);
       } catch {
         setCurrentMonthPRsCount(0);
@@ -178,8 +183,13 @@ export default function App() {
                 refreshKanban();
                 const now = new Date();
                 try {
-                  const { fetchPRsByMonth } = await import("./services/github");
-                  const prs = await fetchPRsByMonth(now.getFullYear(), now.getMonth() + 1);
+                  const { fetchPRsByDateRange } = await import("./services/github");
+                  const month = (now.getMonth() + 1).toString().padStart(2, "0");
+                  const year = now.getFullYear();
+                  const startDate = `${year}-${month}-01`;
+                  const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+                  const endDate = `${year}-${month}-${lastDay.toString().padStart(2, "0")}`;
+                  const prs = await fetchPRsByDateRange(startDate, endDate);
                   setCurrentMonthPRsCount(prs.length);
                 } catch {
                   setCurrentMonthPRsCount(0);
@@ -229,8 +239,8 @@ export default function App() {
                 count: reviewRequests.length,
               },
               {
-                key: "prs-by-month",
-                label: "PRs by Month",
+                key: "pr-history",
+                label: "PR History",
                 icon: IconCalendarStats,
                 count: currentMonthPRsCount,
               },
@@ -357,8 +367,8 @@ export default function App() {
                     jiraBaseUrl={jiraBaseUrl}
                   />
                 )}
-                {effectiveTab === "prs-by-month" && (
-                  <PRsByMonth onCountChange={setCurrentMonthPRsCount} />
+                {effectiveTab === "pr-history" && (
+                  <PRHistory onCountChange={setCurrentMonthPRsCount} />
                 )}
               </div>
             )}

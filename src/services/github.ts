@@ -16,9 +16,9 @@ export async function fetchMentions(): Promise<GitHubComment[]> {
   return data.mentions;
 }
 
-export async function fetchPRsByMonth(year: number, month: number): Promise<GitHubPR[]> {
-  const { data } = await apiClient.get("/github/prs-by-month", {
-    params: { year, month },
+export async function fetchPRsByDateRange(startDate: string, endDate: string): Promise<GitHubPR[]> {
+  const { data } = await apiClient.get("/github/prs-by-date-range", {
+    params: { startDate, endDate },
   });
   return data.prs;
 }

@@ -550,28 +550,25 @@ router.get("/mentions", async (_req: Request, res: Response) => {
 });
 
 /**
- * GET /api/github/prs-by-month
- * Fetch all PRs authored by user created in a specific month.
- * Query params: year (YYYY), month (1-12)
+ * GET /api/github/prs-by-date-range
+ * Fetch all PRs authored by user created within a date range.
+ * Query params: startDate (YYYY-MM-DD), endDate (YYYY-MM-DD)
  */
-router.get("/prs-by-month", async (req: Request, res: Response) => {
+router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   const config = getConfig();
-  const year = parseInt(req.query.year as string, 10);
-  const month = parseInt(req.query.month as string, 10);
+  const startDate = req.query.startDate as string;
+  const endDate = req.query.endDate as string;
 
-  if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
-    return res.status(400).json({ error: "Invalid year or month" });
+  if (!startDate || !endDate) {
+    return res.status(400).json({ error: "startDate and endDate are required" });
   }
 
-  // Build date range strings directly to avoid timezone issues
-  const monthStr = month.toString().padStart(2, "0");
-  const startISO = `${year}-${monthStr}-01`;
+  // Validate date format (basic check)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+    return res.status(400).json({ error: "Dates must be in YYYY-MM-DD format" });
+  }
 
-  // Calculate last day of month
-  const lastDay = new Date(year, month, 0).getDate();
-  const endISO = `${year}-${monthStr}-${lastDay.toString().padStart(2, "0")}`;
-
-  const q = `author:${config.githubUsername} type:pr created:${startISO}..${endISO}`;
+  const q = `author:${config.githubUsername} type:pr created:${startDate}..${endDate}`;
 
   const result = await graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
     query: q,
