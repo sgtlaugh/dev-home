@@ -213,9 +213,6 @@ export const PRsByMonth: React.FC<PRsByMonthProps> = ({ jiraIssues = [] }) => {
               </td>
             </tr>
           )}
-          emptyIcon={<IconGitPullRequest size={40} stroke={1.5} />}
-          emptyTitle={`No pull requests in ${monthName}`}
-          emptyDescription="No pull requests were opened in this month."
         />
       )}
     </div>
