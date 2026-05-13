@@ -129,13 +129,15 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       switch (event.type) {
         case "PushEvent": {
           const commits = event.payload?.commits || [];
+          const ref = event.payload?.ref || "";
+          const branch = ref.replace("refs/heads/", "");
           if (commits.length > 0) {
             activities.push({
               id: `github-push-${event.id}`,
               type: "github",
               action: "Pushed commits",
-              title: `${repo}: ${commits.length} commit${commits.length > 1 ? "s" : ""}`,
-              url: `https://github.com/${repo}/commits`,
+              title: `${repo}/${branch}: ${commits.length} commit${commits.length > 1 ? "s" : ""}`,
+              url: `https://github.com/${repo}/commits/${branch}`,
               timestamp: event.created_at,
               metadata: { commitCount: commits.length },
             });
@@ -144,22 +146,38 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
         }
         case "PullRequestEvent": {
           const pr = event.payload?.pull_request;
-          const prAction = event.payload?.action; // opened, closed, merged, etc.
+          const prAction = event.payload?.action;
           if (!pr) break;
 
-          let action = "PR activity";
-          if (prAction === "opened") action = "Created PR";
-          else if (prAction === "closed" && pr.merged) action = "Merged PR";
-          else if (prAction === "closed") action = "Closed PR";
-
-          activities.push({
-            id: `github-pr-${event.id}`,
-            type: "github",
-            action,
-            title: `${repo}#${pr.number}: ${pr.title}`,
-            url: pr.html_url,
-            timestamp: event.created_at,
-          });
+          // Only show meaningful PR actions, skip synchronize/edited/reopened noise
+          if (prAction === "opened") {
+            activities.push({
+              id: `github-pr-${event.id}`,
+              type: "github",
+              action: "Created PR",
+              title: `${repo}#${pr.number}: ${pr.title}`,
+              url: pr.html_url,
+              timestamp: event.created_at,
+            });
+          } else if (prAction === "closed" && pr.merged) {
+            activities.push({
+              id: `github-pr-${event.id}`,
+              type: "github",
+              action: "Merged PR",
+              title: `${repo}#${pr.number}: ${pr.title}`,
+              url: pr.html_url,
+              timestamp: event.created_at,
+            });
+          } else if (prAction === "closed") {
+            activities.push({
+              id: `github-pr-${event.id}`,
+              type: "github",
+              action: "Closed PR",
+              title: `${repo}#${pr.number}: ${pr.title}`,
+              url: pr.html_url,
+              timestamp: event.created_at,
+            });
+          }
           break;
         }
         case "PullRequestReviewEvent": {
@@ -182,37 +200,35 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           });
           break;
         }
-        case "IssueCommentEvent":
-        case "PullRequestReviewCommentEvent": {
+        case "IssueCommentEvent": {
           const comment = event.payload?.comment;
           const issue = event.payload?.issue;
-          const pr = event.payload?.pull_request;
-          const target = pr || issue;
-          if (!target) break;
+          if (!issue) break;
 
-          const isPR = !!pr || !!target.pull_request;
+          const isPR = !!issue.pull_request;
           activities.push({
             id: `github-comment-${event.id}`,
             type: "github",
             action: `Commented on ${isPR ? "PR" : "issue"}`,
-            title: `${repo}#${target.number}: ${target.title}`,
-            url: comment?.html_url || target.html_url,
+            title: `${repo}#${issue.number}: ${issue.title}`,
+            url: comment?.html_url || issue.html_url,
             timestamp: event.created_at,
           });
           break;
         }
-        case "CreateEvent": {
-          const refType = event.payload?.ref_type;
-          if (refType === "branch") {
-            activities.push({
-              id: `github-branch-${event.id}`,
-              type: "github",
-              action: "Created branch",
-              title: `${repo}: ${event.payload?.ref}`,
-              url: `https://github.com/${repo}/tree/${event.payload?.ref}`,
-              timestamp: event.created_at,
-            });
-          }
+        case "PullRequestReviewCommentEvent": {
+          const comment = event.payload?.comment;
+          const pr = event.payload?.pull_request;
+          if (!pr) break;
+
+          activities.push({
+            id: `github-comment-${event.id}`,
+            type: "github",
+            action: "Commented on PR",
+            title: `${repo}#${pr.number}: ${pr.title}`,
+            url: comment?.html_url || pr.html_url,
+            timestamp: event.created_at,
+          });
           break;
         }
         case "IssuesEvent": {
