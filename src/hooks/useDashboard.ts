@@ -107,6 +107,15 @@ export function useDashboard(active: boolean): UseDashboardReturn {
 
     const limitState = rateLimiter.getState();
     if (limitState.isLimited) {
+      const cachedData = loadCache();
+      if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL_MS) {
+        setJiraIssues(cachedData.jiraIssues);
+        setJiraComments(cachedData.jiraComments);
+        setOpenPRs(cachedData.openPRs);
+        setReviewRequests(cachedData.reviewRequests);
+        setError(limitState.lastError || "API rate limited (using cached data)");
+        return;
+      }
       setError(limitState.lastError || "API rate limited");
       return;
     }

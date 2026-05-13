@@ -11,25 +11,53 @@ class RateLimiter {
     lastError: null,
   };
   private listeners: Array<(state: RateLimitState) => void> = [];
+  private resetTimer: NodeJS.Timeout | null = null;
 
   handleRateLimitError(error: any): void {
     const status = error?.response?.status;
-    if (status === 429 || status === 410) {
-      const resetAfterMs = 60 * 60 * 1000; // 1 hour default
-      const resetAt = Date.now() + resetAfterMs;
+    const headers = error?.response?.headers || {};
+
+    if (status === 429) {
+      const retryAfter = headers["retry-after"];
+      const rateLimitReset = headers["x-ratelimit-reset"];
+
+      let resetAt: number;
+      if (rateLimitReset) {
+        resetAt = parseInt(rateLimitReset, 10) * 1000;
+      } else if (retryAfter) {
+        resetAt = Date.now() + parseInt(retryAfter, 10) * 1000;
+      } else {
+        resetAt = Date.now() + 60 * 60 * 1000;
+      }
 
       this.state = {
         isLimited: true,
         resetAt,
-        lastError: status === 429 ? "API rate limit exceeded" : "Resource temporarily unavailable",
+        lastError: "API rate limit exceeded",
       };
 
       this.notifyListeners();
 
-      // Auto-reset after timeout
-      setTimeout(() => {
+      if (this.resetTimer) clearTimeout(this.resetTimer);
+      this.resetTimer = setTimeout(() => {
         this.reset();
-      }, resetAfterMs);
+      }, resetAt - Date.now());
+    } else if (status === 410) {
+      this.state = {
+        isLimited: true,
+        resetAt: Date.now() + 5 * 60 * 1000,
+        lastError: "API endpoint deprecated. Retrying in 5 minutes.",
+      };
+
+      this.notifyListeners();
+
+      if (this.resetTimer) clearTimeout(this.resetTimer);
+      this.resetTimer = setTimeout(
+        () => {
+          this.reset();
+        },
+        5 * 60 * 1000,
+      );
     }
   }
 
