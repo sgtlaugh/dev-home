@@ -23,7 +23,8 @@
     "dist:win": "yarn build && electron-builder --win",
     "ghtag": "sh ./scripts/release-tag.sh",
     "tag:push": "sh ./scripts/push-tag.sh",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "electron-rebuild"
   },
   "build": {
     "appId": "com.devhome.app",
@@ -121,6 +122,7 @@
     "concurrently": "^9.2.1",
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0",
+    "electron-rebuild": "^3.2.9",
     "eslint": "^9.7.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
