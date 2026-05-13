@@ -170,9 +170,9 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   // Extract username from email (part before @)
   const username = config.jiraEmail.split("@")[0];
 
-  const jql = `text ~ "${config.jiraEmail}" AND resolution = Unresolved AND statusCategory != Done AND updated >= -90d ORDER BY updated DESC`;
+  const jql = `text ~ "${config.jiraEmail}" AND updated >= -180d ORDER BY updated DESC`;
   const fields = ["summary"];
-  const maxResults = 20;
+  const maxResults = 50;
 
   const { data: searchData } = await jira.post("/search/jql", { jql, fields, maxResults });
   const issues = searchData.issues || [];

@@ -353,41 +353,6 @@ async function fetchAllNotifications(
 }
 
 /**
- * Filter out notifications whose subject (PR/issue) is no longer open.
- * Fetches the subject URL in batches to check state.
- */
-async function filterOpenNotifications(
-  notifications: any[],
-  github: ReturnType<typeof createGitHubClient>,
-  batchSize: number = 10,
-): Promise<any[]> {
-  const results: any[] = [];
-
-  for (let i = 0; i < notifications.length; i += batchSize) {
-    const batch = notifications.slice(i, i + batchSize);
-    const checked = await Promise.all(
-      batch.map(async (notification: any) => {
-        const subjectUrl = notification.subject?.url;
-        if (!subjectUrl) return notification;
-        try {
-          const { data: subject } = await github.get(subjectUrl);
-          // PRs have "state" (open/closed) and "merged" boolean
-          // Issues have "state" (open/closed)
-          if (subject.state && subject.state !== "open") return null;
-          return notification;
-        } catch {
-          // If we can't fetch the subject, include it (fail open)
-          return notification;
-        }
-      }),
-    );
-    results.push(...checked.filter(Boolean));
-  }
-
-  return results;
-}
-
-/**
  * Fetch notification comments with controlled concurrency.
  * Processes in batches to avoid overwhelming the API.
  */
@@ -529,11 +494,10 @@ function extractOwnPRComments(prNodes: any[], username: string): any[] {
  */
 router.get("/mentions", async (_req: Request, res: Response) => {
   const github = createGitHubClient();
-  const since = `${monthsAgo(2)}T00:00:00Z`;
+  const since = `${monthsAgo(6)}T00:00:00Z`;
 
   const allNotifications = await fetchAllNotifications(github, since);
-  const notifications = await filterOpenNotifications(allNotifications, github);
-  const mentions = await fetchCommentsInBatches(notifications, github);
+  const mentions = await fetchCommentsInBatches(allNotifications, github);
 
   // Filter out bot mentions and deduplicate by id
   const seen = new Set<number | string>();
