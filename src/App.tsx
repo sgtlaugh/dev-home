@@ -233,16 +233,16 @@ export default function App() {
                 count: reviewRequests.length,
               },
               {
-                key: "notes",
-                label: "Notes",
-                icon: IconNotes,
-                count: unresolvedNotes.length,
-              },
-              {
                 key: "mentions",
                 label: "Mentions",
                 icon: IconAt,
                 count: jiraComments.length + githubMentions.length,
+              },
+              {
+                key: "notes",
+                label: "Notes",
+                icon: IconNotes,
+                count: unresolvedNotes.length,
               },
             ].map((tab) => (
               <button
