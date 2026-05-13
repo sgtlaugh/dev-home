@@ -56,6 +56,8 @@ export default function App() {
     return (localStorage.getItem("dev-home-theme") as "dark" | "light") || "light";
   });
 
+  const [currentMonthPRsCount, setCurrentMonthPRsCount] = useState(0);
+
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
@@ -120,6 +122,22 @@ export default function App() {
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
 
+  // Fetch current month PRs count
+  useEffect(() => {
+    if (!configured) return;
+    const now = new Date();
+    const fetchCount = async () => {
+      try {
+        const { fetchPRsByMonth } = await import("./services/github");
+        const prs = await fetchPRsByMonth(now.getFullYear(), now.getMonth() + 1);
+        setCurrentMonthPRsCount(prs.length);
+      } catch {
+        setCurrentMonthPRsCount(0);
+      }
+    };
+    fetchCount();
+  }, [configured]);
+
   // If config is not yet loaded, show settings first
   const effectiveTab = !configured && !configLoading ? "settings" : activeTab;
 
@@ -154,10 +172,18 @@ export default function App() {
             <Button
               variant="outline-secondary"
               size="sm"
-              onClick={() => {
+              onClick={async () => {
                 refresh();
                 refreshNotes();
                 refreshKanban();
+                const now = new Date();
+                try {
+                  const { fetchPRsByMonth } = await import("./services/github");
+                  const prs = await fetchPRsByMonth(now.getFullYear(), now.getMonth() + 1);
+                  setCurrentMonthPRsCount(prs.length);
+                } catch {
+                  setCurrentMonthPRsCount(0);
+                }
               }}
               disabled={loading}
             >
@@ -206,7 +232,7 @@ export default function App() {
                 key: "prs-by-month",
                 label: "PRs by Month",
                 icon: IconCalendarStats,
-                count: undefined,
+                count: currentMonthPRsCount,
               },
             ].map((tab) => (
               <button
