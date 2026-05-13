@@ -122,27 +122,6 @@ export default function App() {
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
 
-  // Fetch current month PRs count
-  useEffect(() => {
-    if (!configured) return;
-    const now = new Date();
-    const fetchCount = async () => {
-      try {
-        const { fetchPRsByDateRange } = await import("./services/github");
-        const month = (now.getMonth() + 1).toString().padStart(2, "0");
-        const year = now.getFullYear();
-        const startDate = `${year}-${month}-01`;
-        const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
-        const endDate = `${year}-${month}-${lastDay.toString().padStart(2, "0")}`;
-        const prs = await fetchPRsByDateRange(startDate, endDate);
-        setCurrentMonthPRsCount(prs.length);
-      } catch {
-        setCurrentMonthPRsCount(0);
-      }
-    };
-    fetchCount();
-  }, [configured]);
-
   // If config is not yet loaded, show settings first
   const effectiveTab = !configured && !configLoading ? "settings" : activeTab;
 
@@ -177,23 +156,10 @@ export default function App() {
             <Button
               variant="outline-secondary"
               size="sm"
-              onClick={async () => {
+              onClick={() => {
                 refresh();
                 refreshNotes();
                 refreshKanban();
-                const now = new Date();
-                try {
-                  const { fetchPRsByDateRange } = await import("./services/github");
-                  const month = (now.getMonth() + 1).toString().padStart(2, "0");
-                  const year = now.getFullYear();
-                  const startDate = `${year}-${month}-01`;
-                  const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
-                  const endDate = `${year}-${month}-${lastDay.toString().padStart(2, "0")}`;
-                  const prs = await fetchPRsByDateRange(startDate, endDate);
-                  setCurrentMonthPRsCount(prs.length);
-                } catch {
-                  setCurrentMonthPRsCount(0);
-                }
               }}
               disabled={loading}
             >
