@@ -169,17 +169,15 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       switch (event.type) {
         case "PushEvent": {
           const commits = event.payload?.commits || [];
-          const ref = event.payload?.ref || "";
-          const branch = ref.replace("refs/heads/", "");
-          if (commits.length > 0) {
+          for (const commit of commits) {
+            const firstLine = (commit.message || "").split("\n")[0].slice(0, 120);
             activities.push({
-              id: `github-push-${event.id}`,
+              id: `github-commit-${commit.sha}`,
               type: "github",
-              action: "Pushed commits",
-              title: `${repo}/${branch}: ${commits.length} commit${commits.length > 1 ? "s" : ""}`,
-              url: `https://github.com/${repo}/commits/${branch}`,
+              action: "Committed",
+              title: `${repo}: ${firstLine}`,
+              url: `https://github.com/${repo}/commit/${commit.sha}`,
               timestamp: event.created_at,
-              metadata: { commitCount: commits.length },
             });
           }
           break;
