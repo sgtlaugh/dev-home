@@ -7,5 +7,6 @@ dist-electron
 release
 build
 server/data/
+server/cache.db*
 
 notes.db*
