@@ -133,7 +133,7 @@ router.get("/issues", async (_req: Request, res: Response) => {
   const jql = `assignee = "${config.jiraEmail}" AND resolution = Unresolved AND statusCategory != Done AND updated >= -90d ORDER BY updated DESC`;
   const fields = ["summary", "status", "priority", "assignee", "project", "updated", "description"];
 
-  const { data } = await jira.post("/search", { jql, fields });
+  const { data } = await jira.post("/search/jql", { jql, fields });
 
   const issues = (data.issues || data || []).map((issue: any) => ({
     key: issue.key,
@@ -175,7 +175,7 @@ router.get("/mentions", async (_req: Request, res: Response) => {
 
   const jql = `comment ~ currentUser() AND updated >= -90d ORDER BY updated DESC`;
 
-  const { data: searchData } = await jira.post("/search", {
+  const { data: searchData } = await jira.post("/search/jql", {
     jql,
     fields: ["summary"],
   });
