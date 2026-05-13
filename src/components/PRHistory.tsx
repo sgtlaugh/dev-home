@@ -40,8 +40,12 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   useEffect(() => {
     const loadPRs = async () => {
       const range = getDateRange();
-      if (!range.start || !range.end) return;
+      if (!range.start || !range.end) {
+        setPrs([]);
+        return;
+      }
 
+      setPrs([]);
       setLoading(true);
       setError(null);
       try {
