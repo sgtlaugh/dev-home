@@ -1,5 +1,4 @@
 import axios from "axios";
-import { rateLimiter } from "../utils/rateLimiter";
 
 export interface AppSettings {
   jiraBaseUrl: string;
@@ -31,14 +30,6 @@ const DEFAULT_PORT = import.meta.env.VITE_API_PORT || "3571";
 export const apiClient = axios.create({
   baseURL: `http://localhost:${DEFAULT_PORT}/api`,
 });
-
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    rateLimiter.handleRateLimitError(error);
-    return Promise.reject(error);
-  },
-);
 
 export let API_BASE = `http://localhost:${DEFAULT_PORT}/api`;
 

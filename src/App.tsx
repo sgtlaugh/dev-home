@@ -89,8 +89,6 @@ export default function App() {
     reviewRequestsLoading,
     error,
     refresh,
-    rateLimited,
-    rateLimitResetAt,
     lastRefreshTime,
   } = useDashboard(configured);
   const {
@@ -171,12 +169,8 @@ export default function App() {
                 refreshNotes();
                 refreshKanban();
               }}
-              disabled={loading || rateLimited}
-              title={
-                rateLimited
-                  ? `Rate limited. Try again ${rateLimitResetAt ? new Date(rateLimitResetAt).toLocaleTimeString() : "later"}`
-                  : "Refresh"
-              }
+              disabled={loading}
+              title="Refresh"
             >
               <IconRefresh size={14} />
             </Button>
@@ -264,13 +258,8 @@ export default function App() {
 
             {/* Error alert */}
             {error && (
-              <Alert variant={rateLimited ? "warning" : "danger"} className="small" dismissible>
+              <Alert variant="danger" className="small" dismissible>
                 {error}
-                {rateLimited && rateLimitResetAt && (
-                  <div className="mt-1">
-                    Will retry after {new Date(rateLimitResetAt).toLocaleTimeString()}
-                  </div>
-                )}
               </Alert>
             )}
 
