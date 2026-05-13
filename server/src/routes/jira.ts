@@ -163,10 +163,10 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   const jira = createJiraClient();
 
   const jql = `comment ~ currentUser() AND updated >= -180d ORDER BY updated DESC`;
+
   const { data: searchData } = await jira.post("/search/jql", {
     jql,
     fields: ["summary"],
-    maxResults: 100,
   });
   const issues = searchData.issues || [];
 
