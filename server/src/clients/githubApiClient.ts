@@ -11,11 +11,31 @@ const GITHUB_API = "https://api.github.com";
  */
 export function createGitHubClient(baseUrl: string = GITHUB_API) {
   const config = getConfig();
-  return axios.create({
+  const client = axios.create({
     baseURL: baseUrl,
     headers: {
       Authorization: `Bearer ${config.githubToken}`,
       Accept: "application/vnd.github+json",
     },
   });
+
+  client.interceptors.request.use((config) => {
+    console.log(`[GitHub] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    return config;
+  });
+
+  client.interceptors.response.use(
+    (response) => {
+      console.log(`[GitHub] ${response.status} ${response.config.url}`);
+      return response;
+    },
+    (error) => {
+      const status = error?.response?.status;
+      const url = error?.config?.url;
+      console.error(`[GitHub] ${status || "ERROR"} ${url}`);
+      return Promise.reject(error);
+    },
+  );
+
+  return client;
 }

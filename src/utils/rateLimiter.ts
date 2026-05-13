@@ -16,6 +16,8 @@ class RateLimiter {
   handleRateLimitError(error: any): void {
     const status = error?.response?.status;
     const headers = error?.response?.headers || {};
+    const url = error?.config?.url || "unknown";
+    const method = error?.config?.method?.toUpperCase() || "?";
 
     if (status === 429) {
       const retryAfter = headers["retry-after"];
@@ -30,7 +32,9 @@ class RateLimiter {
         resetAt = Date.now() + 60 * 60 * 1000;
       }
 
-      console.warn(`[RateLimit] 429 detected, reset at ${new Date(resetAt).toLocaleTimeString()}`);
+      console.warn(
+        `[RateLimit] 429 from ${method} ${url}, reset at ${new Date(resetAt).toLocaleTimeString()}`,
+      );
 
       this.state = {
         isLimited: true,
@@ -46,7 +50,9 @@ class RateLimiter {
       }, resetAt - Date.now());
     } else if (status === 410) {
       const resetAt = Date.now() + 5 * 60 * 1000;
-      console.warn(`[RateLimit] 410 detected, retry at ${new Date(resetAt).toLocaleTimeString()}`);
+      console.warn(
+        `[RateLimit] 410 from ${method} ${url}, retry at ${new Date(resetAt).toLocaleTimeString()}`,
+      );
 
       this.state = {
         isLimited: true,

@@ -18,6 +18,8 @@ export async function graphql<T = any>(
 ): Promise<T> {
   const config = getConfig();
 
+  console.log(`[GitHub GraphQL] POST /graphql`);
+
   const response: AxiosResponse<GraphQLResponse<T>> = await axios.post(
     GITHUB_GRAPHQL_URL,
     { query, variables },
@@ -31,10 +33,12 @@ export async function graphql<T = any>(
 
   if (response.data.errors && response.data.errors.length > 0) {
     const messages = response.data.errors.map((e) => e.message).join("; ");
+    console.error(`[GitHub GraphQL] ERROR: ${messages}`);
     const error: any = new Error(`GitHub GraphQL error: ${messages}`);
     error.graphqlErrors = response.data.errors;
     throw error;
   }
 
+  console.log(`[GitHub GraphQL] ${response.status} Success`);
   return response.data.data;
 }

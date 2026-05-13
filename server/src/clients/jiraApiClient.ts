@@ -12,7 +12,7 @@ export function createJiraClient() {
   const config = getConfig();
   const credentials = Buffer.from(`${config.jiraEmail}:${config.jiraApiToken}`).toString("base64");
 
-  return axios.create({
+  const client = axios.create({
     baseURL: `${config.jiraBaseUrl}/rest/api/3`,
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -20,4 +20,24 @@ export function createJiraClient() {
       "Content-Type": "application/json",
     },
   });
+
+  client.interceptors.request.use((config) => {
+    console.log(`[JIRA] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    return config;
+  });
+
+  client.interceptors.response.use(
+    (response) => {
+      console.log(`[JIRA] ${response.status} ${response.config.url}`);
+      return response;
+    },
+    (error) => {
+      const status = error?.response?.status;
+      const url = error?.config?.url;
+      console.error(`[JIRA] ${status || "ERROR"} ${url}`);
+      return Promise.reject(error);
+    },
+  );
+
+  return client;
 }
