@@ -209,7 +209,7 @@ export default function App() {
               },
               {
                 key: "reviews",
-                label: "Reviews",
+                label: "PR Reviews",
                 icon: IconEye,
                 count: reviewRequests.length,
               },
