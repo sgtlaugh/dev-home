@@ -3,6 +3,7 @@ import { JiraIssue, JiraComment, GitHubPR, GitHubComment, GitHubReviewRequest } 
 import { fetchAssignedIssues, fetchRecentMentions } from "../services/jira";
 import { fetchDashboard, fetchMentions } from "../services/github";
 import { apiCache } from "../utils/cache";
+import { rateLimiter } from "../utils/rateLimiter";
 
 const POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const CACHE_KEY = "dev-home-dashboard-cache";
@@ -68,6 +69,8 @@ interface UseDashboardReturn {
   reviewRequestsLoading: boolean;
   error: string | null;
   refresh: () => void;
+  rateLimited: boolean;
+  rateLimitResetAt: number | null;
 }
 
 export function useDashboard(active: boolean): UseDashboardReturn {
@@ -90,12 +93,31 @@ export function useDashboard(active: boolean): UseDashboardReturn {
   const [openPRsLoading, setOpenPRsLoading] = useState<boolean>(false);
   const [reviewRequestsLoading, setReviewRequestsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [rateLimited, setRateLimited] = useState<boolean>(false);
+  const [rateLimitResetAt, setRateLimitResetAt] = useState<number | null>(null);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  useEffect(() => {
+    const unsubscribe = rateLimiter.subscribe((state) => {
+      setRateLimited(state.isLimited);
+      setRateLimitResetAt(state.resetAt);
+      if (state.isLimited && state.lastError) {
+        setError(state.lastError);
+      }
+    });
+    return unsubscribe;
+  }, []);
+
   const fetchAll = useCallback(() => {
     if (!active) return;
+
+    const limitState = rateLimiter.getState();
+    if (limitState.isLimited) {
+      setError(limitState.lastError || "API rate limited");
+      return;
+    }
 
     // Cancel any in-flight requests
     abortRef.current?.abort();
@@ -279,5 +301,7 @@ export function useDashboard(active: boolean): UseDashboardReturn {
     reviewRequestsLoading,
     error,
     refresh,
+    rateLimited,
+    rateLimitResetAt,
   };
 }
