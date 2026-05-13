@@ -30,6 +30,8 @@ class RateLimiter {
         resetAt = Date.now() + 60 * 60 * 1000;
       }
 
+      console.warn(`[RateLimit] 429 detected, reset at ${new Date(resetAt).toLocaleTimeString()}`);
+
       this.state = {
         isLimited: true,
         resetAt,
@@ -43,9 +45,12 @@ class RateLimiter {
         this.reset();
       }, resetAt - Date.now());
     } else if (status === 410) {
+      const resetAt = Date.now() + 5 * 60 * 1000;
+      console.warn(`[RateLimit] 410 detected, retry at ${new Date(resetAt).toLocaleTimeString()}`);
+
       this.state = {
         isLimited: true,
-        resetAt: Date.now() + 5 * 60 * 1000,
+        resetAt,
         lastError: "API endpoint deprecated. Retrying in 5 minutes.",
       };
 
@@ -62,6 +67,7 @@ class RateLimiter {
   }
 
   reset(): void {
+    console.log("[RateLimit] Reset - API calls enabled");
     this.state = {
       isLimited: false,
       resetAt: null,

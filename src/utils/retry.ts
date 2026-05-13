@@ -15,9 +15,13 @@ export async function withRetry<T>(
       if (status === 429 || status === 410 || status === 503) {
         if (attempt < maxRetries) {
           const delay = Math.min(initialDelay * Math.pow(2, attempt), 30000);
+          console.log(
+            `[Retry] Attempt ${attempt + 1}/${maxRetries} failed (${status}), retrying in ${delay}ms`,
+          );
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
+        console.error(`[Retry] Max retries (${maxRetries}) exceeded for status ${status}`);
       }
 
       throw error;

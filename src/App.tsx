@@ -91,6 +91,7 @@ export default function App() {
     refresh,
     rateLimited,
     rateLimitResetAt,
+    lastRefreshTime,
   } = useDashboard(configured);
   const {
     notes,
@@ -145,6 +146,15 @@ export default function App() {
           </Navbar.Brand>
           <div className="d-flex align-items-center gap-2 justify-content-end">
             {loading && <Spinner animation="border" size="sm" variant="secondary" />}
+            {!loading && lastRefreshTime && (
+              <span
+                className="text-secondary"
+                style={{ fontSize: "0.75rem" }}
+                title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
+              >
+                {Math.round((Date.now() - lastRefreshTime) / 60000)}m ago
+              </span>
+            )}
             <Button
               variant="outline-secondary"
               size="sm"

@@ -67,6 +67,7 @@ interface UseDashboardReturn {
   refresh: () => void;
   rateLimited: boolean;
   rateLimitResetAt: number | null;
+  lastRefreshTime: number | null;
 }
 
 export function useDashboard(active: boolean): UseDashboardReturn {
@@ -87,6 +88,9 @@ export function useDashboard(active: boolean): UseDashboardReturn {
   const [error, setError] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState<boolean>(false);
   const [rateLimitResetAt, setRateLimitResetAt] = useState<number | null>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(
+    cachedRef.current?.timestamp ?? null,
+  );
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -109,13 +113,16 @@ export function useDashboard(active: boolean): UseDashboardReturn {
     if (limitState.isLimited) {
       const cachedData = loadCache();
       if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL_MS) {
+        const ageMinutes = Math.round((Date.now() - cachedData.timestamp) / 60000);
+        console.info(`[Cache] Serving stale dashboard data (${ageMinutes}m old) due to rate limit`);
         setJiraIssues(cachedData.jiraIssues);
         setJiraComments(cachedData.jiraComments);
         setOpenPRs(cachedData.openPRs);
         setReviewRequests(cachedData.reviewRequests);
-        setError(limitState.lastError || "API rate limited (using cached data)");
+        setError(`${limitState.lastError || "API rate limited"} (showing ${ageMinutes}m old data)`);
         return;
       }
+      console.warn("[Cache] No valid cached data available during rate limit");
       setError(limitState.lastError || "API rate limited");
       return;
     }
@@ -145,6 +152,8 @@ export function useDashboard(active: boolean): UseDashboardReturn {
         setLoading(false);
         if (errors.length > 0) {
           setError(errors.join("; "));
+        } else {
+          setLastRefreshTime(Date.now());
         }
         // Save cache once with all accumulated data
         saveCache({
@@ -255,5 +264,6 @@ export function useDashboard(active: boolean): UseDashboardReturn {
     refresh,
     rateLimited,
     rateLimitResetAt,
+    lastRefreshTime,
   };
 }

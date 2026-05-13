@@ -9,17 +9,24 @@ class ApiCache {
 
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
-    if (!entry) return null;
+    if (!entry) {
+      console.log(`[Cache] MISS ${key}`);
+      return null;
+    }
 
-    if (Date.now() - entry.timestamp > this.ttl) {
+    const age = Date.now() - entry.timestamp;
+    if (age > this.ttl) {
+      console.log(`[Cache] EXPIRED ${key} (${Math.round(age / 1000)}s old)`);
       this.cache.delete(key);
       return null;
     }
 
+    console.log(`[Cache] HIT ${key} (${Math.round(age / 1000)}s old)`);
     return entry.data;
   }
 
   set<T>(key: string, data: T): void {
+    console.log(`[Cache] SET ${key}`);
     this.cache.set(key, { data, timestamp: Date.now() });
   }
 
