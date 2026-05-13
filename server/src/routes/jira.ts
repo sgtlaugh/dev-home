@@ -159,38 +159,33 @@ router.get("/issues", async (_req: Request, res: Response) => {
   res.json({ issues });
 });
 
-/**
- * GET /api/jira/mentions
- * Fetch recent comments that mention the current user.
- */
 router.get("/mentions", async (_req: Request, res: Response) => {
-  const config = getConfig();
   const jira = createJiraClient();
 
-  // Extract username from email (part before @)
-  const username = config.jiraEmail.split("@")[0];
-
-  const jql = `text ~ "${config.jiraEmail}" AND updated >= -180d ORDER BY updated DESC`;
-  const fields = ["summary"];
-  const maxResults = 50;
-
-  const { data: searchData } = await jira.post("/search/jql", { jql, fields, maxResults });
+  const jql = `comment ~ currentUser() AND updated >= -180d ORDER BY updated DESC`;
+  const { data: searchData } = await jira.post("/search/jql", {
+    jql,
+    fields: ["summary"],
+    maxResults: 100,
+  });
   const issues = searchData.issues || [];
 
-  // Fetch comments for each issue in parallel
+  const { data: userData } = await jira.get("/myself");
+  const userAccountId = userData.accountId;
+  const username = userData.displayName?.toLowerCase() || "";
+  const email = userData.emailAddress?.toLowerCase() || "";
+
   const commentPromises = issues.map(async (issue: any) => {
     try {
       const { data: commentData } = await jira.get(`/issue/${issue.key}/comment`);
       const comments = commentData.comments || [];
 
-      // Filter comments that mention the user's email or username
       return comments
         .filter((comment: any) => {
+          if (comment.author?.accountId === userAccountId) return false;
+
           const bodyText = adfToMarkdown(comment.body).toLowerCase();
-          return (
-            bodyText.includes(config.jiraEmail.toLowerCase()) ||
-            bodyText.includes(username.toLowerCase())
-          );
+          return bodyText.includes(username) || bodyText.includes(email);
         })
         .map((comment: any) => ({
           id: comment.id,
@@ -207,21 +202,13 @@ router.get("/mentions", async (_req: Request, res: Response) => {
           issueKey: issue.key,
           issueSummary: issue.fields?.summary,
         }));
-    } catch (err: any) {
-      console.error(`[JIRA /mentions] Exception fetching comments for ${issue.key}:`, err.message);
+    } catch {
       return [];
     }
   });
 
-  const commentResults = await Promise.allSettled(commentPromises);
-  const allComments = commentResults
-    .filter((r): r is PromiseFulfilledResult<any[]> => r.status === "fulfilled")
-    .flatMap((r) => r.value);
-
-  // Sort by updated DESC
-  allComments.sort((a: any, b: any) => {
-    return new Date(b.updated).getTime() - new Date(a.updated).getTime();
-  });
+  const allComments = (await Promise.all(commentPromises)).flat();
+  allComments.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
 
   res.json({ comments: allComments });
 });

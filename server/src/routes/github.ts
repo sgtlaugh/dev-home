@@ -499,7 +499,6 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   const allNotifications = await fetchAllNotifications(github, since);
   const mentions = await fetchCommentsInBatches(allNotifications, github);
 
-  // Filter out bot mentions and deduplicate by id
   const seen = new Set<number | string>();
   const deduplicated = mentions.filter((m) => {
     if (!m.user?.login) return false;
@@ -509,10 +508,7 @@ router.get("/mentions", async (_req: Request, res: Response) => {
     return true;
   });
 
-  // Sort by updated_at DESC
-  deduplicated.sort((a, b) => {
-    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-  });
+  deduplicated.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
   res.json({ mentions: deduplicated });
 });
