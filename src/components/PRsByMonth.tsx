@@ -5,7 +5,11 @@ import { fetchPRsByMonth } from "../services/github";
 import { GroupedPRTable } from "./GroupedPRTable";
 import { EmptyState } from "./EmptyState";
 
-export const PRsByMonth: React.FC = () => {
+interface PRsByMonthProps {
+  onCountChange?: (count: number) => void;
+}
+
+export const PRsByMonth: React.FC<PRsByMonthProps> = ({ onCountChange }) => {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [stateFilter, setStateFilter] = useState<"all" | "open" | "merged" | "closed">("all");
@@ -20,15 +24,17 @@ export const PRsByMonth: React.FC = () => {
       try {
         const data = await fetchPRsByMonth(year, month);
         setPrs(data);
+        onCountChange?.(data.length);
       } catch (err) {
         setError(`Failed to load PRs: ${err instanceof Error ? err.message : "Unknown error"}`);
+        onCountChange?.(0);
       } finally {
         setLoading(false);
       }
     };
 
     loadPRs();
-  }, [year, month]);
+  }, [year, month, onCountChange]);
 
   const monthName = new Date(year, month - 1).toLocaleString("default", {
     month: "long",

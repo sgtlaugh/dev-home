@@ -357,7 +357,9 @@ export default function App() {
                     jiraBaseUrl={jiraBaseUrl}
                   />
                 )}
-                {effectiveTab === "prs-by-month" && <PRsByMonth />}
+                {effectiveTab === "prs-by-month" && (
+                  <PRsByMonth onCountChange={setCurrentMonthPRsCount} />
+                )}
               </div>
             )}
           </main>
