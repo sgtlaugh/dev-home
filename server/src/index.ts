@@ -3,6 +3,7 @@ import express, { Request, Response } from "express";
 import "express-async-errors";
 import { validateEnv } from "./config";
 import { closeDb } from "./db";
+import activityRoutes from "./routes/activity";
 import configRoutes from "./routes/config";
 import githubRoutes from "./routes/github";
 import jiraRoutes from "./routes/jira";
@@ -38,6 +39,7 @@ export function createServer() {
   app.use(express.json());
 
   // Routes
+  app.use("/api/activity", activityRoutes);
   app.use("/api/jira", jiraRoutes);
   app.use("/api/github", githubRoutes);
   app.use("/api/config", configRoutes);

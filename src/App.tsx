@@ -19,6 +19,7 @@ import {
   IconChevronsLeft,
   IconChevronsRight,
   IconCalendarStats,
+  IconHistory,
 } from "@tabler/icons-react";
 import { useConfig } from "./hooks/useConfig";
 import { useDashboard } from "./hooks/useDashboard";
@@ -36,6 +37,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
 import { FindInPage } from "./components/FindInPage";
 import { PRHistory } from "./components/PRHistory";
+import { Activity } from "./components/Activity";
+import { useActivity } from "./hooks/useActivity";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("summary");
@@ -99,6 +102,11 @@ export default function App() {
     refresh: refreshNotes,
   } = useNotes(configured);
   const { updateInfo, dismiss: dismissUpdate } = useUpdateCheck();
+  const {
+    activities,
+    loading: activityLoading,
+    refresh: refreshActivity,
+  } = useActivity(configured);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
 
@@ -148,6 +156,7 @@ export default function App() {
               onClick={() => {
                 refresh();
                 refreshNotes();
+                refreshActivity();
               }}
               disabled={loading}
               title="Refresh"
@@ -191,6 +200,12 @@ export default function App() {
                 label: "PR Reviews",
                 icon: IconEye,
                 count: reviewRequests.length,
+              },
+              {
+                key: "activity",
+                label: "Activity",
+                icon: IconHistory,
+                count: undefined,
               },
               {
                 key: "notes",
@@ -311,6 +326,9 @@ export default function App() {
                 )}
                 {effectiveTab === "pr-history" && (
                   <PRHistory onCountChange={setCurrentMonthPRsCount} />
+                )}
+                {effectiveTab === "activity" && (
+                  <Activity activities={activities} loading={activityLoading} />
                 )}
               </div>
             )}
