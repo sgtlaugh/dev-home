@@ -25,6 +25,9 @@ const SEARCH_PRS_QUERY = `
           url
           state
           isDraft
+          merged
+          mergedAt
+          closedAt
           createdAt
           updatedAt
           author { login avatarUrl }
@@ -77,6 +80,9 @@ const SEARCH_MY_PRS_QUERY = `
           url
           state
           isDraft
+          merged
+          mergedAt
+          closedAt
           createdAt
           updatedAt
           author { login avatarUrl }
@@ -202,6 +208,9 @@ function mapGraphQLPr(node: any) {
     html_url: node.url,
     state: node.state?.toLowerCase() || "open",
     draft: node.isDraft || false,
+    merged: node.merged || false,
+    merged_at: node.mergedAt || null,
+    closed_at: node.closedAt || null,
     created_at: node.createdAt,
     updated_at: node.updatedAt,
     user: {
@@ -538,6 +547,41 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   });
 
   res.json({ mentions: deduplicated });
+});
+
+/**
+ * GET /api/github/prs-by-month
+ * Fetch all PRs authored by user created in a specific month.
+ * Query params: year (YYYY), month (1-12)
+ */
+router.get("/prs-by-month", async (req: Request, res: Response) => {
+  const config = getConfig();
+  const year = parseInt(req.query.year as string, 10);
+  const month = parseInt(req.query.month as string, 10);
+
+  if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
+    return res.status(400).json({ error: "Invalid year or month" });
+  }
+
+  // Build date range strings directly to avoid timezone issues
+  const monthStr = month.toString().padStart(2, "0");
+  const startISO = `${year}-${monthStr}-01`;
+
+  // Calculate last day of month
+  const lastDay = new Date(year, month, 0).getDate();
+  const endISO = `${year}-${monthStr}-${lastDay.toString().padStart(2, "0")}`;
+
+  const q = `author:${config.githubUsername} type:pr created:${startISO}..${endISO}`;
+
+  const result = await graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
+    query: q,
+    first: 100,
+  });
+
+  const nodes = result.search.nodes || [];
+  const prs = nodes.map(mapGraphQLPr);
+
+  res.json({ prs });
 });
 
 export default router;

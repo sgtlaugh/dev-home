@@ -67,6 +67,9 @@ export interface GitHubPR {
   html_url: string;
   state: string;
   draft: boolean;
+  merged: boolean;
+  merged_at: string | null;
+  closed_at: string | null;
   created_at: string;
   updated_at: string;
   user: {

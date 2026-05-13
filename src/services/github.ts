@@ -15,3 +15,10 @@ export async function fetchMentions(): Promise<GitHubComment[]> {
   const { data } = await apiClient.get("/github/mentions");
   return data.mentions;
 }
+
+export async function fetchPRsByMonth(year: number, month: number): Promise<GitHubPR[]> {
+  const { data } = await apiClient.get("/github/prs-by-month", {
+    params: { year, month },
+  });
+  return data.prs;
+}

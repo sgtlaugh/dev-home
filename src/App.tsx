@@ -19,6 +19,7 @@ import {
   IconEye,
   IconChevronsLeft,
   IconChevronsRight,
+  IconCalendarStats,
 } from "@tabler/icons-react";
 import { useConfig } from "./hooks/useConfig";
 import { useDashboard } from "./hooks/useDashboard";
@@ -37,6 +38,7 @@ import { useUpdateCheck } from "./hooks/useUpdateCheck";
 import { useKanban } from "./hooks/useKanban";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { FindInPage } from "./components/FindInPage";
+import { PRsByMonth } from "./components/PRsByMonth";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("summary");
@@ -200,6 +202,12 @@ export default function App() {
                 icon: IconEye,
                 count: reviewRequests.length,
               },
+              {
+                key: "prs-by-month",
+                label: "PRs by Month",
+                icon: IconCalendarStats,
+                count: undefined,
+              },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -333,6 +341,7 @@ export default function App() {
                     jiraBaseUrl={jiraBaseUrl}
                   />
                 )}
+                {effectiveTab === "prs-by-month" && <PRsByMonth jiraIssues={jiraIssues} />}
               </div>
             )}
           </main>
