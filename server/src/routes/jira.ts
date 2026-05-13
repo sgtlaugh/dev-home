@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { getConfig } from "../config";
 import { createJiraClient } from "../clients/jiraApiClient";
+import { apiCache } from "../utils/cache";
 
 const router = Router();
 
@@ -122,6 +123,10 @@ function adfToMarkdown(node: any): string {
  * Fetch unresolved issues assigned to the current user.
  */
 router.get("/issues", async (_req: Request, res: Response) => {
+  const cacheKey = "jira:issues";
+  const cached = apiCache.get(cacheKey);
+  if (cached) return res.json(cached);
+
   const config = getConfig();
   const jira = createJiraClient();
 
@@ -156,10 +161,16 @@ router.get("/issues", async (_req: Request, res: Response) => {
     description: adfToMarkdown(issue.fields?.description),
   }));
 
-  res.json({ issues });
+  const result = { issues };
+  apiCache.set(cacheKey, result);
+  res.json(result);
 });
 
 router.get("/mentions", async (_req: Request, res: Response) => {
+  const cacheKey = "jira:mentions";
+  const cached = apiCache.get(cacheKey);
+  if (cached) return res.json(cached);
+
   const jira = createJiraClient();
 
   const jql = `comment ~ currentUser() AND updated >= -90d ORDER BY updated DESC`;
@@ -210,7 +221,9 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   const allComments = (await Promise.all(commentPromises)).flat();
   allComments.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
 
-  res.json({ comments: allComments });
+  const result = { comments: allComments };
+  apiCache.set(cacheKey, result);
+  res.json(result);
 });
 
 export default router;

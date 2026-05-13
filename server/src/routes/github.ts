@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { getConfig } from "../config";
 import { createGitHubClient } from "../clients/githubApiClient";
 import { graphql } from "../clients/githubGraphqlClient";
+import { apiCache } from "../utils/cache";
 
 const router = Router();
 
@@ -369,6 +370,10 @@ const COMBINED_DASHBOARD_QUERY = `
  * Fetch both PRs and review requests in a single GraphQL query.
  */
 router.get("/dashboard", async (_req: Request, res: Response) => {
+  const cacheKey = "github:dashboard";
+  const cached = apiCache.get(cacheKey);
+  if (cached) return res.json(cached);
+
   const config = getConfig();
   const myPRsQuery = `author:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
   const reviewsQuery = `review-requested:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
@@ -389,7 +394,9 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
   const reviewsNodes = result.reviews.nodes || [];
   const reviews = reviewsNodes.map(mapGraphQLPr).filter((pr: any) => pr.state === "open");
 
-  res.json({ prs, pr_comments: prComments, reviews });
+  const responseData = { prs, pr_comments: prComments, reviews };
+  apiCache.set(cacheKey, responseData);
+  res.json(responseData);
 });
 
 /**
@@ -400,6 +407,10 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
  * so the frontend can merge them into mentions without a second GraphQL call.
  */
 router.get("/prs", async (_req: Request, res: Response) => {
+  const cacheKey = "github:prs";
+  const cached = apiCache.get(cacheKey);
+  if (cached) return res.json(cached);
+
   const config = getConfig();
   const q = `author:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
 
@@ -412,7 +423,9 @@ router.get("/prs", async (_req: Request, res: Response) => {
   const prs = nodes.map(mapGraphQLPr).filter((pr: any) => pr.state === "open");
   const prComments = extractOwnPRComments(nodes, config.githubUsername);
 
-  res.json({ prs, pr_comments: prComments });
+  const responseData = { prs, pr_comments: prComments };
+  apiCache.set(cacheKey, responseData);
+  res.json(responseData);
 });
 
 /**
@@ -420,6 +433,10 @@ router.get("/prs", async (_req: Request, res: Response) => {
  * Fetch open PRs where the configured user's review is requested.
  */
 router.get("/reviews", async (_req: Request, res: Response) => {
+  const cacheKey = "github:reviews";
+  const cached = apiCache.get(cacheKey);
+  if (cached) return res.json(cached);
+
   const config = getConfig();
   const q = `review-requested:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
 
@@ -432,7 +449,9 @@ router.get("/reviews", async (_req: Request, res: Response) => {
     .map(mapGraphQLPr)
     .filter((pr: any) => pr.state === "open");
 
-  res.json({ reviews });
+  const responseData = { reviews };
+  apiCache.set(cacheKey, responseData);
+  res.json(responseData);
 });
 
 /**
@@ -683,10 +702,13 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "startDate and endDate are required" });
   }
 
-  // Validate date format (basic check)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
     return res.status(400).json({ error: "Dates must be in YYYY-MM-DD format" });
   }
+
+  const cacheKey = `github:prs-by-date:${startDate}:${endDate}`;
+  const cached = apiCache.get(cacheKey);
+  if (cached) return res.json(cached);
 
   const q = `author:${config.githubUsername} type:pr created:${startDate}..${endDate}`;
 
@@ -711,7 +733,9 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
 
   const prs = allNodes.map(mapGraphQLPr);
 
-  res.json({ prs });
+  const responseData = { prs };
+  apiCache.set(cacheKey, responseData);
+  res.json(responseData);
 });
 
 export default router;
