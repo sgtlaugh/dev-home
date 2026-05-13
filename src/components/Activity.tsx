@@ -44,7 +44,7 @@ function getActivityBadgeClass(item: ActivityItem): string {
   }
 
   if (item.action.includes("Created")) return "badge-status-green";
-  if (item.action.includes("Comment")) return "badge-status-purple";
+  if (item.action.includes("Comment")) return "badge-status-blue";
   if (item.action.includes("status")) return "badge-status-yellow";
   return "badge-status-neutral";
 }
@@ -73,7 +73,7 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
           <div className="activity-icon">{getActivityIcon(item)}</div>
           <div className="activity-content">
             <div className="activity-header">
-              <Badge className={getActivityBadgeClass(item)} style={{ fontSize: "0.625rem" }}>
+              <Badge bg="" className={getActivityBadgeClass(item)} style={{ fontSize: "0.625rem" }}>
                 {item.action}
               </Badge>
               <span className="activity-time">{formatRelativeTime(item.timestamp)}</span>
