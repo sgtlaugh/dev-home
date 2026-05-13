@@ -135,7 +135,11 @@ function ItemRow({
         </div>
       </div>
       <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
-        {badge && <Badge className={badgeClass || "badge-status-neutral"}>{badge}</Badge>}
+        {badge && (
+          <Badge bg="" className={badgeClass || "badge-status-neutral"}>
+            {badge}
+          </Badge>
+        )}
         <ChecksStatusIcon status={checksStatus ?? null} />
         <span
           className="text-secondary-custom"

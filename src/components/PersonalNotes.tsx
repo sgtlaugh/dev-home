@@ -91,7 +91,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
             <div className="section-header px-3 pt-3 mb-0">
               <IconNote size={13} stroke={1.8} />
               <span>Unresolved</span>
-              <Badge className="badge-status-yellow" style={{ fontSize: "0.625rem" }}>
+              <Badge bg="" className="badge-status-yellow" style={{ fontSize: "0.625rem" }}>
                 {unresolved.length}
               </Badge>
             </div>
@@ -117,7 +117,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
             <div className="section-header px-3 pt-3 mb-0">
               <IconCheck size={13} stroke={1.8} />
               <span>Resolved</span>
-              <Badge className="badge-status-green" style={{ fontSize: "0.625rem" }}>
+              <Badge bg="" className="badge-status-green" style={{ fontSize: "0.625rem" }}>
                 {resolved.length}
               </Badge>
             </div>
@@ -203,7 +203,9 @@ function NoteRow({
         )}
       </div>
       <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
-        <Badge className="badge-status-neutral">{TYPE_LABEL[note.type]}</Badge>
+        <Badge bg="" className="badge-status-neutral">
+          {TYPE_LABEL[note.type]}
+        </Badge>
         {note.resolved === 0 && (
           <Button
             variant="outline-secondary"
