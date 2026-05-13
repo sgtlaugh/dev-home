@@ -205,7 +205,7 @@ export default function App() {
                 key: "activity",
                 label: "Activity",
                 icon: IconHistory,
-                count: undefined,
+                count: activities.length,
               },
               {
                 key: "notes",

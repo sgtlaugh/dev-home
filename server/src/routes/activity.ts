@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { getConfig } from "../config";
 import { createJiraClient } from "../clients/jiraApiClient";
 import { createGitHubClient } from "../clients/githubApiClient";
+import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
 
 const router = Router();
@@ -120,10 +121,49 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
 
     console.log(`[Activity] GitHub events: ${events.length} raw events`);
 
-    for (const event of events) {
-      const eventTime = new Date(event.created_at).getTime();
-      if (eventTime < oneDayAgo) continue;
+    // Filter to last 24h events first
+    const recentEvents = events.filter((e: any) => new Date(e.created_at).getTime() >= oneDayAgo);
 
+    // Collect unique PR references that need title lookup (events API returns abbreviated PR objects without title)
+    const prRefs = new Map<string, { owner: string; repo: string; number: number }>();
+    for (const event of recentEvents) {
+      const repo = event.repo?.name || "";
+      const [owner, repoName] = repo.split("/");
+      const pr = event.payload?.pull_request;
+      if (pr && !pr.title && owner && repoName) {
+        const key = `${repo}#${pr.number}`;
+        if (!prRefs.has(key)) {
+          prRefs.set(key, { owner, repo: repoName, number: pr.number });
+        }
+      }
+    }
+
+    // Batch fetch PR titles via GraphQL
+    const prTitles = new Map<string, string>();
+    if (prRefs.size > 0) {
+      try {
+        const fragments = Array.from(prRefs.entries()).map(([key, ref], i) =>
+          `pr${i}: repository(owner: "${ref.owner}", name: "${ref.repo}") { pullRequest(number: ${ref.number}) { title } }`,
+        );
+        const query = `query { ${fragments.join("\n")} }`;
+        const data = await graphql(query);
+        Array.from(prRefs.keys()).forEach((key, i) => {
+          const title = data[`pr${i}`]?.pullRequest?.title;
+          if (title) prTitles.set(key, title);
+        });
+        console.log(`[Activity] Fetched ${prTitles.size} PR titles via GraphQL`);
+      } catch (err) {
+        console.error("[Activity] Failed to batch-fetch PR titles:", err);
+      }
+    }
+
+    // Helper to resolve PR title
+    const getPRTitle = (repo: string, pr: any): string => {
+      if (pr.title) return pr.title;
+      return prTitles.get(`${repo}#${pr.number}`) || `PR #${pr.number}`;
+    };
+
+    for (const event of recentEvents) {
       const repo = event.repo?.name || "";
 
       switch (event.type) {
@@ -150,34 +190,20 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           if (!pr) break;
 
           // Only show meaningful PR actions, skip synchronize/edited/reopened noise
-          if (prAction === "opened") {
-            activities.push({
-              id: `github-pr-${event.id}`,
-              type: "github",
-              action: "Created PR",
-              title: `${repo}#${pr.number}: ${pr.title}`,
-              url: pr.html_url,
-              timestamp: event.created_at,
-            });
-          } else if (prAction === "closed" && pr.merged) {
-            activities.push({
-              id: `github-pr-${event.id}`,
-              type: "github",
-              action: "Merged PR",
-              title: `${repo}#${pr.number}: ${pr.title}`,
-              url: pr.html_url,
-              timestamp: event.created_at,
-            });
-          } else if (prAction === "closed") {
-            activities.push({
-              id: `github-pr-${event.id}`,
-              type: "github",
-              action: "Closed PR",
-              title: `${repo}#${pr.number}: ${pr.title}`,
-              url: pr.html_url,
-              timestamp: event.created_at,
-            });
-          }
+          let action = "";
+          if (prAction === "opened") action = "Created PR";
+          else if (prAction === "closed" && pr.merged) action = "Merged PR";
+          else if (prAction === "closed") action = "Closed PR";
+          if (!action) break;
+
+          activities.push({
+            id: `github-pr-${event.id}`,
+            type: "github",
+            action,
+            title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
+            url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
+            timestamp: event.created_at,
+          });
           break;
         }
         case "PullRequestReviewEvent": {
@@ -193,8 +219,8 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             id: `github-review-${event.id}`,
             type: "github",
             action,
-            title: `${repo}#${pr.number}: ${pr.title}`,
-            url: pr.html_url,
+            title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
+            url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
             timestamp: event.created_at,
             metadata: { state: review?.state },
           });
@@ -225,8 +251,8 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             id: `github-comment-${event.id}`,
             type: "github",
             action: "Commented on PR",
-            title: `${repo}#${pr.number}: ${pr.title}`,
-            url: comment?.html_url || pr.html_url,
+            title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
+            url: comment?.html_url || `https://github.com/${repo}/pull/${pr.number}`,
             timestamp: event.created_at,
           });
           break;
