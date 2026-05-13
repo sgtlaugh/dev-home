@@ -70,8 +70,12 @@ const SEARCH_PRS_QUERY = `
  * so we can show approval status and surface comments without extra REST calls.
  */
 const SEARCH_MY_PRS_QUERY = `
-  query SearchMyPRs($query: String!, $first: Int!) {
-    search(query: $query, type: ISSUE, first: $first) {
+  query SearchMyPRs($query: String!, $first: Int!, $after: String) {
+    search(query: $query, type: ISSUE, first: $first, after: $after) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       nodes {
         ... on PullRequest {
           databaseId
@@ -570,13 +574,26 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
 
   const q = `author:${config.githubUsername} type:pr created:${startDate}..${endDate}`;
 
-  const result = await graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
-    query: q,
-    first: 100,
-  });
+  // Fetch all pages
+  let allNodes: any[] = [];
+  let hasNextPage = true;
+  let cursor: string | null = null;
 
-  const nodes = result.search.nodes || [];
-  const prs = nodes.map(mapGraphQLPr);
+  while (hasNextPage) {
+    const result = await graphql<{
+      search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
+    }>(SEARCH_MY_PRS_QUERY, {
+      query: q,
+      first: 100,
+      after: cursor,
+    });
+
+    allNodes = allNodes.concat(result.search.nodes || []);
+    hasNextPage = result.search.pageInfo.hasNextPage;
+    cursor = result.search.pageInfo.endCursor;
+  }
+
+  const prs = allNodes.map(mapGraphQLPr);
 
   res.json({ prs });
 });
