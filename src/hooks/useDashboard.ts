@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { JiraIssue, JiraComment, GitHubPR, GitHubComment, GitHubReviewRequest } from "../types";
 import { fetchAssignedIssues, fetchRecentMentions } from "../services/jira";
 import { fetchOpenPRs, fetchReviewRequests, fetchMentions } from "../services/github";
+import { apiCache } from "../utils/cache";
 
 const POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const CACHE_KEY = "dev-home-dashboard-cache";
@@ -270,6 +271,7 @@ export function useDashboard(active: boolean): UseDashboardReturn {
   }, [active, fetchAll]);
 
   const refresh = useCallback(() => {
+    apiCache.invalidate();
     fetchAll();
   }, [fetchAll]);
 
