@@ -650,7 +650,7 @@ function extractOwnPRComments(prNodes: any[], username: string): any[] {
  */
 router.get("/mentions", async (_req: Request, res: Response) => {
   const github = createGitHubClient();
-  const since = `${monthsAgo(6)}T00:00:00Z`;
+  const since = `${monthsAgo(3)}T00:00:00Z`;
 
   const allNotifications = await fetchAllNotifications(github, since);
   const mentions = await fetchCommentsInBatches(allNotifications, github);

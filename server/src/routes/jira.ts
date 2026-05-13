@@ -162,7 +162,7 @@ router.get("/issues", async (_req: Request, res: Response) => {
 router.get("/mentions", async (_req: Request, res: Response) => {
   const jira = createJiraClient();
 
-  const jql = `comment ~ currentUser() AND updated >= -180d ORDER BY updated DESC`;
+  const jql = `comment ~ currentUser() AND updated >= -90d ORDER BY updated DESC`;
 
   const { data: searchData } = await jira.post("/search/jql", {
     jql,
