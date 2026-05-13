@@ -188,6 +188,12 @@ export default function App() {
               { key: "board", label: "Board", icon: IconColumns3, count: undefined },
               { key: "jira", label: "JIRA Tasks", icon: IconSubtask, count: jiraIssues.length },
               {
+                key: "mentions",
+                label: "JIRA Mentions",
+                icon: IconAt,
+                count: jiraComments.length,
+              },
+              {
                 key: "prs",
                 label: "PRs",
                 icon: IconGitPullRequest,
@@ -204,12 +210,6 @@ export default function App() {
                 label: "Reviews",
                 icon: IconEye,
                 count: reviewRequests.length,
-              },
-              {
-                key: "mentions",
-                label: "Mentions",
-                icon: IconAt,
-                count: jiraComments.length + githubMentions.length,
               },
               {
                 key: "notes",
@@ -320,7 +320,6 @@ export default function App() {
                 {effectiveTab === "mentions" && (
                   <MentionsView
                     jiraComments={jiraComments}
-                    githubMentions={githubMentions}
                     loading={loading}
                     jiraBaseUrl={jiraBaseUrl}
                   />
