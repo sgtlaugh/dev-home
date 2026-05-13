@@ -12,7 +12,7 @@ export async function withRetry<T>(
       lastError = error;
       const status = error?.response?.status;
 
-      if (status === 429 || status === 410 || status === 503) {
+      if (status === 429 || status === 503) {
         if (attempt < maxRetries) {
           const delay = Math.min(initialDelay * Math.pow(2, attempt), 30000);
           console.log(
