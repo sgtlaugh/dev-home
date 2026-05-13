@@ -1,6 +1,6 @@
 import React from "react";
 import { IconGitPullRequest, IconEye } from "@tabler/icons-react";
-import { GitHubPR, JiraIssue } from "../types";
+import { GitHubPR } from "../types";
 import { formatRelativeTime } from "../utils/time";
 import { GroupedPRTable } from "./GroupedPRTable";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
@@ -14,17 +14,12 @@ const REVIEW_STATUS_CONFIG: Record<string, { label: string; badgeClass: string }
 interface PRTableProps {
   prs: GitHubPR[];
   loading: boolean;
-  jiraIssues?: JiraIssue[];
   variant: "my-prs" | "review-requests";
 }
 
-const MyPRRow: React.FC<{ pr: GitHubPR; onClick: () => void; isGrouped: boolean }> = ({
-  pr,
-  onClick,
-  isGrouped,
-}) => (
+const MyPRRow: React.FC<{ pr: GitHubPR; onClick: () => void }> = ({ pr, onClick }) => (
   <tr key={pr.id} onClick={onClick} style={{ cursor: "pointer" }}>
-    <td style={isGrouped ? { paddingLeft: 30 } : undefined}>
+    <td>
       <a
         href={pr.html_url}
         target="_blank"
@@ -83,13 +78,9 @@ const MyPRRow: React.FC<{ pr: GitHubPR; onClick: () => void; isGrouped: boolean 
   </tr>
 );
 
-const ReviewRequestRow: React.FC<{ pr: GitHubPR; onClick: () => void; isGrouped: boolean }> = ({
-  pr,
-  onClick,
-  isGrouped,
-}) => (
+const ReviewRequestRow: React.FC<{ pr: GitHubPR; onClick: () => void }> = ({ pr, onClick }) => (
   <tr key={pr.id} onClick={onClick} style={{ cursor: "pointer" }}>
-    <td style={isGrouped ? { paddingLeft: 30 } : undefined}>
+    <td>
       <a
         href={pr.html_url}
         target="_blank"
@@ -121,14 +112,13 @@ const ReviewRequestRow: React.FC<{ pr: GitHubPR; onClick: () => void; isGrouped:
   </tr>
 );
 
-export const PRTable: React.FC<PRTableProps> = ({ prs, loading, jiraIssues = [], variant }) => {
+export const PRTable: React.FC<PRTableProps> = ({ prs, loading, variant }) => {
   const isMyPRs = variant === "my-prs";
 
   return (
     <GroupedPRTable
       prs={prs}
       loading={loading}
-      jiraIssues={jiraIssues}
       columnCount={isMyPRs ? 6 : 5}
       headers={
         isMyPRs ? (
@@ -150,11 +140,11 @@ export const PRTable: React.FC<PRTableProps> = ({ prs, loading, jiraIssues = [],
           </>
         )
       }
-      renderRow={(pr, onClick, isGrouped) =>
+      renderRow={(pr, onClick) =>
         isMyPRs ? (
-          <MyPRRow pr={pr} onClick={onClick} isGrouped={isGrouped} />
+          <MyPRRow pr={pr} onClick={onClick} />
         ) : (
-          <ReviewRequestRow pr={pr} onClick={onClick} isGrouped={isGrouped} />
+          <ReviewRequestRow pr={pr} onClick={onClick} />
         )
       }
       emptyIcon={

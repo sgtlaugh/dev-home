@@ -312,20 +312,10 @@ export default function App() {
                   />
                 )}
                 {effectiveTab === "prs" && (
-                  <PRTable
-                    prs={openPRs}
-                    loading={loading}
-                    jiraIssues={jiraIssues}
-                    variant="my-prs"
-                  />
+                  <PRTable prs={openPRs} loading={loading} variant="my-prs" />
                 )}
                 {effectiveTab === "reviews" && (
-                  <PRTable
-                    prs={reviewRequests}
-                    loading={loading}
-                    jiraIssues={jiraIssues}
-                    variant="review-requests"
-                  />
+                  <PRTable prs={reviewRequests} loading={loading} variant="review-requests" />
                 )}
                 {effectiveTab === "notes" && (
                   <PersonalNotes
@@ -341,7 +331,7 @@ export default function App() {
                     jiraBaseUrl={jiraBaseUrl}
                   />
                 )}
-                {effectiveTab === "prs-by-month" && <PRsByMonth jiraIssues={jiraIssues} />}
+                {effectiveTab === "prs-by-month" && <PRsByMonth />}
               </div>
             )}
           </main>

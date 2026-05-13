@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { IconGitPullRequest } from "@tabler/icons-react";
-import { GitHubPR, JiraIssue } from "../types";
+import { GitHubPR } from "../types";
 import { fetchPRsByMonth } from "../services/github";
 import { GroupedPRTable } from "./GroupedPRTable";
 import { EmptyState } from "./EmptyState";
 
-interface PRsByMonthProps {
-  jiraIssues?: JiraIssue[];
-}
-
-export const PRsByMonth: React.FC<PRsByMonthProps> = ({ jiraIssues = [] }) => {
+export const PRsByMonth: React.FC = () => {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [stateFilter, setStateFilter] = useState<"all" | "open" | "merged" | "closed">("all");
@@ -144,7 +140,6 @@ export const PRsByMonth: React.FC<PRsByMonthProps> = ({ jiraIssues = [] }) => {
         <GroupedPRTable
           prs={filteredPrs}
           loading={loading}
-          jiraIssues={jiraIssues}
           columnCount={6}
           headers={
             <>
@@ -156,9 +151,9 @@ export const PRsByMonth: React.FC<PRsByMonthProps> = ({ jiraIssues = [] }) => {
               <th>Created</th>
             </>
           }
-          renderRow={(pr, onClick, isGrouped) => (
+          renderRow={(pr, onClick) => (
             <tr key={pr.id} onClick={onClick} style={{ cursor: "pointer" }}>
-              <td style={isGrouped ? { paddingLeft: 30 } : undefined}>
+              <td>
                 <a
                   href={pr.html_url}
                   target="_blank"
