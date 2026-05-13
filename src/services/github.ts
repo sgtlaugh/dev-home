@@ -2,6 +2,29 @@ import { GitHubPR, GitHubComment, GitHubReviewRequest } from "../types";
 import { apiClient } from "./config";
 import { apiCache } from "../utils/cache";
 
+export async function fetchDashboard(): Promise<{
+  prs: GitHubPR[];
+  prComments: GitHubComment[];
+  reviews: GitHubReviewRequest[];
+}> {
+  const cacheKey = "github:dashboard";
+  const cached = apiCache.get<{
+    prs: GitHubPR[];
+    prComments: GitHubComment[];
+    reviews: GitHubReviewRequest[];
+  }>(cacheKey);
+  if (cached) return cached;
+
+  const { data } = await apiClient.get("/github/dashboard");
+  const result = {
+    prs: data.prs,
+    prComments: data.pr_comments || [],
+    reviews: data.reviews,
+  };
+  apiCache.set(cacheKey, result);
+  return result;
+}
+
 export async function fetchOpenPRs(): Promise<{ prs: GitHubPR[]; prComments: GitHubComment[] }> {
   const cacheKey = "github:prs";
   const cached = apiCache.get<{ prs: GitHubPR[]; prComments: GitHubComment[] }>(cacheKey);

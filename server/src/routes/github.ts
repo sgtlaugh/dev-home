@@ -236,6 +236,162 @@ function mapGraphQLPr(node: any) {
   };
 }
 
+const COMBINED_DASHBOARD_QUERY = `
+  query CombinedDashboard($myPRsQuery: String!, $reviewsQuery: String!, $first: Int!) {
+    myPRs: search(query: $myPRsQuery, type: ISSUE, first: $first) {
+      nodes {
+        ... on PullRequest {
+          databaseId
+          number
+          title
+          url
+          state
+          isDraft
+          merged
+          mergedAt
+          closedAt
+          createdAt
+          updatedAt
+          author { login avatarUrl }
+          body
+          headRefName
+          baseRefName
+          repository { nameWithOwner url }
+          commits(last: 1) {
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                  contexts(first: 50) {
+                    nodes {
+                      ... on CheckRun {
+                        name
+                        conclusion
+                        status
+                        detailsUrl
+                      }
+                      ... on StatusContext {
+                        context
+                        state
+                        targetUrl
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          reviews(last: 20) {
+            nodes {
+              state
+              author { login avatarUrl }
+              submittedAt
+            }
+          }
+          comments(last: 50) {
+            nodes {
+              databaseId
+              url
+              body
+              createdAt
+              updatedAt
+              author { login avatarUrl }
+            }
+          }
+          reviewThreads(last: 50) {
+            nodes {
+              comments(last: 10) {
+                nodes {
+                  databaseId
+                  url
+                  body
+                  createdAt
+                  updatedAt
+                  author { login avatarUrl }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    reviews: search(query: $reviewsQuery, type: ISSUE, first: $first) {
+      nodes {
+        ... on PullRequest {
+          databaseId
+          number
+          title
+          url
+          state
+          isDraft
+          merged
+          mergedAt
+          closedAt
+          createdAt
+          updatedAt
+          author { login avatarUrl }
+          body
+          headRefName
+          baseRefName
+          repository { nameWithOwner url }
+          commits(last: 1) {
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                  contexts(first: 50) {
+                    nodes {
+                      ... on CheckRun {
+                        name
+                        conclusion
+                        status
+                        detailsUrl
+                      }
+                      ... on StatusContext {
+                        context
+                        state
+                        targetUrl
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * GET /api/github/dashboard
+ * Fetch both PRs and review requests in a single GraphQL query.
+ */
+router.get("/dashboard", async (_req: Request, res: Response) => {
+  const config = getConfig();
+  const myPRsQuery = `author:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
+  const reviewsQuery = `review-requested:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
+
+  const result = await graphql<{
+    myPRs: { nodes: any[] };
+    reviews: { nodes: any[] };
+  }>(COMBINED_DASHBOARD_QUERY, {
+    myPRsQuery,
+    reviewsQuery,
+    first: 50,
+  });
+
+  const myPRsNodes = result.myPRs.nodes || [];
+  const prs = myPRsNodes.map(mapGraphQLPr).filter((pr: any) => pr.state === "open");
+  const prComments = extractOwnPRComments(myPRsNodes, config.githubUsername);
+
+  const reviewsNodes = result.reviews.nodes || [];
+  const reviews = reviewsNodes.map(mapGraphQLPr).filter((pr: any) => pr.state === "open");
+
+  res.json({ prs, pr_comments: prComments, reviews });
+});
+
 /**
  * GET /api/github/prs
  * Fetch open pull requests authored by the configured user.

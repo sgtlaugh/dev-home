@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { JiraIssue, JiraComment, GitHubPR, GitHubComment, GitHubReviewRequest } from "../types";
 import { fetchAssignedIssues, fetchRecentMentions } from "../services/jira";
-import { fetchOpenPRs, fetchReviewRequests, fetchMentions } from "../services/github";
+import { fetchDashboard, fetchMentions } from "../services/github";
 import { apiCache } from "../utils/cache";
 
 const POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -112,7 +112,7 @@ export function useDashboard(active: boolean): UseDashboardReturn {
 
     // Accumulate results to avoid repeated localStorage reads/writes
     const pendingData: Partial<Omit<DashboardCacheData, "timestamp">> = {};
-    let pendingCount = 5;
+    let pendingCount = 3;
     const errors: string[] = [];
 
     // PR comments and notification mentions arrive independently; accumulated here
@@ -192,30 +192,20 @@ export function useDashboard(active: boolean): UseDashboardReturn {
         settle(err?.message || String(err));
       });
 
-    fetchOpenPRs()
-      .then(({ prs, prComments }) => {
+    fetchDashboard()
+      .then(({ prs, prComments, reviews }) => {
         if (controller.signal.aborted) return;
         setOpenPRs(prs);
         pendingData.openPRs = prs;
-        // Store PR comments; they'll be merged with notification mentions at settle time
+        setReviewRequests(reviews);
+        pendingData.reviewRequests = reviews;
         pendingPRComments = prComments;
         setOpenPRsLoading(false);
-        settle();
-      })
-      .catch((err) => {
-        setOpenPRsLoading(false);
-        settle(err?.message || String(err));
-      });
-
-    fetchReviewRequests()
-      .then((data) => {
-        if (controller.signal.aborted) return;
-        setReviewRequests(data);
-        pendingData.reviewRequests = data;
         setReviewRequestsLoading(false);
         settle();
       })
       .catch((err) => {
+        setOpenPRsLoading(false);
         setReviewRequestsLoading(false);
         settle(err?.message || String(err));
       });
