@@ -148,37 +148,37 @@ export default function App() {
               </div>
             </div>
             {[
-              { key: "summary", label: "Summary", icon: IconLayoutDashboard, count: undefined },
-              { key: "jira", label: "JIRA Tasks", icon: IconSubtask, count: jiraIssues.length },
-              {
-                key: "mentions",
-                label: "JIRA Notifications",
-                icon: IconAt,
-                count: jiraComments.length,
-              },
+              { key: "summary", label: "Overview", icon: IconLayoutDashboard, count: undefined },
               {
                 key: "prs",
-                label: "PRs",
+                label: "Pull Requests",
                 icon: IconGitPullRequest,
                 count: openPRs.length,
               },
               {
-                key: "pr-history",
-                label: "PR History",
-                icon: IconCalendarStats,
-                count: currentMonthPRsCount,
-              },
-              {
                 key: "reviews",
-                label: "PR Reviews",
+                label: "Review Requests",
                 icon: IconEye,
                 count: reviewRequests.length,
+              },
+              { key: "jira", label: "Tasks", icon: IconSubtask, count: jiraIssues.length },
+              {
+                key: "mentions",
+                label: "Notifications",
+                icon: IconAt,
+                count: jiraComments.length,
               },
               {
                 key: "activity",
                 label: "Activity",
                 icon: IconHistory,
                 count: activities.length,
+              },
+              {
+                key: "pr-history",
+                label: "Statistics",
+                icon: IconCalendarStats,
+                count: currentMonthPRsCount,
               },
               {
                 key: "notes",
