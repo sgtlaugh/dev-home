@@ -85,8 +85,8 @@ a:hover {
 
 /* --- Sidebar --- */
 .sidebar {
-  width: 180px;
-  min-width: 180px;
+  width: 220px;
+  min-width: 220px;
   background-color: #161b22;
   border-right: 1px solid #21262d;
   display: flex;
