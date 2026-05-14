@@ -43,6 +43,37 @@ router.get("/", async (_req: Request, res: Response) => {
   res.json(result);
 });
 
+// Helper: Extract comments from issues by user
+async function extractUserComments(
+  jira: any,
+  issues: any[],
+  userAccountId: string,
+  oneDayAgo: number,
+): Promise<ActivityItem[]> {
+  const activities: ActivityItem[] = [];
+  const config = getConfig();
+
+  for (const issue of issues) {
+    const comments = issue.fields?.comment?.comments || [];
+    for (const comment of comments) {
+      if (comment.author?.accountId !== userAccountId) continue;
+      const commentTime = new Date(comment.created).getTime();
+      if (commentTime < oneDayAgo) continue;
+
+      activities.push({
+        id: `jira-comment-${comment.id}`,
+        type: "jira",
+        action: "Commented on ticket",
+        title: `${issue.key}: ${issue.fields.summary}`,
+        url: `${config.jiraBaseUrl}/browse/${issue.key}?focusedCommentId=${comment.id}`,
+        timestamp: comment.created,
+      });
+    }
+  }
+
+  return activities;
+}
+
 async function fetchJiraActivity(): Promise<ActivityItem[]> {
   const config = getConfig();
   const jira = createJiraClient();
@@ -71,38 +102,21 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
   }
 
   try {
-    // Fetch recent comments by current user
-    // Note: Using assignee filter as proxy since "commented by currentUser()" may not work
-    const { data: assignedData } = await jira.post("/search/jql", {
-      jql: `assignee = currentUser() AND updated >= -1d ORDER BY updated DESC`,
-      fields: ["summary", "comment"],
-      maxResults: 30,
-    });
-
+    // Fetch all issues updated in last 24h, extract your comments
     const { data: userData } = await jira.get("/myself");
     const userAccountId = userData.accountId;
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
 
-    for (const issue of assignedData.issues || []) {
-      const comments = issue.fields?.comment?.comments || [];
+    const { data: allIssues } = await jira.post("/search/jql", {
+      jql: `updated >= -1d ORDER BY updated DESC`,
+      fields: ["summary", "comment"],
+      maxResults: 250,
+    });
 
-      for (const comment of comments) {
-        if (comment.author?.accountId !== userAccountId) continue;
-        const commentTime = new Date(comment.created).getTime();
-        if (commentTime < oneDayAgo) continue;
-
-        activities.push({
-          id: `jira-comment-${comment.id}`,
-          type: "jira",
-          action: "Commented on ticket",
-          title: `${issue.key}: ${issue.fields.summary}`,
-          url: `${config.jiraBaseUrl}/browse/${issue.key}?focusedCommentId=${comment.id}`,
-          timestamp: comment.created,
-        });
-      }
-    }
+    const userComments = await extractUserComments(jira, allIssues.issues || [], userAccountId, oneDayAgo);
+    activities.push(...userComments);
   } catch (err) {
-    logError("Activity/JIRA comments", err, { query: `assignee = currentUser() AND updated >= -1d` });
+    logError("Activity/JIRA comments", err, { query: `updated >= -1d` });
   }
 
   return activities;
