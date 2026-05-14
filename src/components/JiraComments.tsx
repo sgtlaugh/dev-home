@@ -1,5 +1,6 @@
 import React from "react";
 import Spinner from "react-bootstrap/Spinner";
+import Badge from "react-bootstrap/Badge";
 import { IconMessageCircle } from "@tabler/icons-react";
 import { JiraComment } from "../types";
 import { formatRelativeTime } from "../utils/time";
@@ -56,18 +57,28 @@ export const JiraComments: React.FC<JiraCommentsProps> = ({ comments, loading, b
                       {formatRelativeTime(comment.created)}
                     </span>
                   </div>
-                  <a
-                    href={issueUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontSize: "0.75rem",
-                      fontWeight: 500,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {comment.issueKey}
-                  </a>
+                  <div className="d-flex align-items-center gap-2">
+                    <a
+                      href={issueUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: "0.75rem",
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {comment.issueKey}
+                    </a>
+                    {comment.type && (
+                      <Badge
+                        bg={comment.type === "mentioned" ? "info" : "secondary"}
+                        style={{ fontSize: "0.625rem", padding: "2px 6px" }}
+                      >
+                        {comment.type === "mentioned" ? "@mentioned" : "assigned"}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div
                   className="text-secondary-custom"

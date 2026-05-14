@@ -51,6 +51,7 @@ export interface JiraComment {
   self: string;
   issueKey: string;
   issueSummary: string;
+  type?: "mentioned" | "assigned";
 }
 
 // GitHub Types

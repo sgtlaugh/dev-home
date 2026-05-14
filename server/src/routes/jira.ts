@@ -197,21 +197,28 @@ router.get("/mentions", async (_req: Request, res: Response) => {
         // Include if mentioned or if comment is on assigned issue
         return bodyText.includes(username) || bodyText.includes(email) || isAssignedToMe;
       })
-      .map((comment: any) => ({
-        id: comment.id,
-        author: {
-          displayName: comment.author?.displayName,
-          avatarUrls: comment.author?.avatarUrls,
-        },
-        body: {
-          text: adfToMarkdown(comment.body),
-        },
-        created: comment.created,
-        updated: comment.updated,
-        self: comment.self,
-        issueKey: issue.key,
-        issueSummary: issue.fields?.summary,
-      }));
+      .map((comment: any) => {
+        const bodyText = adfToMarkdown(comment.body).toLowerCase();
+        const isMentioned = bodyText.includes(username) || bodyText.includes(email);
+        const notificationType = isMentioned ? "mentioned" : "assigned";
+
+        return {
+          id: comment.id,
+          author: {
+            displayName: comment.author?.displayName,
+            avatarUrls: comment.author?.avatarUrls,
+          },
+          body: {
+            text: adfToMarkdown(comment.body),
+          },
+          created: comment.created,
+          updated: comment.updated,
+          self: comment.self,
+          issueKey: issue.key,
+          issueSummary: issue.fields?.summary,
+          type: notificationType,
+        };
+      })
   });
 
   allComments.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
