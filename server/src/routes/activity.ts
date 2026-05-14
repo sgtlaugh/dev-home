@@ -4,6 +4,7 @@ import { createJiraClient } from "../clients/jiraApiClient";
 import { createGitHubClient } from "../clients/githubApiClient";
 import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
+import { logError } from "../utils/errors";
 
 const router = Router();
 
@@ -66,7 +67,7 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
       });
     }
   } catch (err) {
-    console.error("[Activity] Failed to fetch created tickets:", err);
+    logError("Activity/JIRA created", err, { query: `creator = currentUser() AND created >= -1d` });
   }
 
   try {
@@ -101,7 +102,7 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
       }
     }
   } catch (err) {
-    console.error("[Activity] Failed to fetch comments:", err);
+    logError("Activity/JIRA comments", err, { query: `assignee = currentUser() AND updated >= -1d` });
   }
 
   return activities;
@@ -153,7 +154,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
         });
         console.log(`[Activity] Fetched ${prTitles.size} PR titles via GraphQL`);
       } catch (err) {
-        console.error("[Activity] Failed to batch-fetch PR titles:", err);
+        logError("Activity/GitHub PR titles", err, { prCount: prRefs.size });
       }
     }
 
@@ -297,7 +298,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
                 });
               }
             } catch (err) {
-              console.error(`[Activity] Failed to fetch commits for ${repoFullName}/${branch}:`, err);
+              logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
             }
           })(),
         );

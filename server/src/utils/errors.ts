@@ -1,6 +1,19 @@
 import { Request, Response, NextFunction } from "express";
 
 /**
+ * Structured logging for API operations with context
+ */
+export function logOperation(operation: string, context: Record<string, any> = {}): void {
+  console.log(`[${operation}]`, context);
+}
+
+export function logError(operation: string, error: any, context: Record<string, any> = {}): void {
+  const message = error?.response?.data?.message || error?.message || String(error);
+  const status = error?.response?.status || "unknown";
+  console.error(`[${operation}] Status ${status}: ${message}`, context);
+}
+
+/**
  * Express error-handling middleware.
  * Used with express-async-errors so routes can just throw
  * instead of wrapping everything in try/catch.
@@ -8,7 +21,11 @@ import { Request, Response, NextFunction } from "express";
 export function errorHandler(err: any, req: Request, res: Response, _next: NextFunction): void {
   const status = err.response?.status || 500;
   const internalMessage = err.response?.data ? JSON.stringify(err.response.data) : err.message;
-  console.error(`[${req.method} ${req.path}] Error:`, status, internalMessage);
+  const stack = err.stack ? err.stack.split("\n").slice(0, 3).join(" → ") : "";
+
+  console.error(
+    `[${req.method} ${req.path}] Error ${status}: ${internalMessage}${stack ? ` ${stack}` : ""}`,
+  );
 
   // For 5xx errors, return a generic message to avoid leaking internal details
   const clientMessage =
