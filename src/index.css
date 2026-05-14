@@ -251,7 +251,14 @@ a:hover {
 
 /* --- Tab Content Area --- */
 .tab-content-area {
+  min-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
   animation: fadeIn 200ms ease;
+}
+
+.tab-content-area > .row {
+  flex: 1;
 }
 
 @keyframes fadeIn {

@@ -228,9 +228,9 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
 
   return (
     <>
-      <Row className="g-3" style={{ flex: 1 }}>
-        <Col style={{ flex: 1, minWidth: 0 }}>
-          <Row className="g-2">
+      <Row className="g-3">
+        <Col md="8" className="d-flex flex-column">
+          <Row className="g-2 flex-grow-1">
             <Col md={6}>
               <Section
                 icon={<IconEye size={13} stroke={1.8} />}
@@ -341,7 +341,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             </Col>
           </Row>
         </Col>
-        <Col md="4" style={{ maxWidth: "220px" }}>
+        <Col md="4">
           <Section
             icon={<IconNote size={13} stroke={1.8} />}
             title="Notes"
