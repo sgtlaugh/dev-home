@@ -1,12 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 
 /**
- * Structured logging for API operations with context
+ * Structured error logging with context
  */
-export function logOperation(operation: string, context: Record<string, any> = {}): void {
-  console.log(`[${operation}]`, context);
-}
-
 export function logError(operation: string, error: any, context: Record<string, any> = {}): void {
   const message = error?.response?.data?.message || error?.message || String(error);
   const status = error?.response?.status || "unknown";
