@@ -66,6 +66,9 @@ a:hover {
   border: 1px solid #30363d;
   border-radius: 8px;
   color: #c9d1d9;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-header {
@@ -75,6 +78,9 @@ a:hover {
 
 .card-body {
   background-color: transparent;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- App Body Layout --- */

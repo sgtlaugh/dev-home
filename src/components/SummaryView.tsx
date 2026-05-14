@@ -130,7 +130,10 @@ function ItemRow({
         >
           {title}
         </a>
-        <div className="text-secondary-custom" style={{ fontSize: "0.75rem", marginTop: 1 }}>
+        <div
+          className="text-secondary-custom text-truncate-custom"
+          style={{ fontSize: "0.75rem", marginTop: 1 }}
+        >
           {subtitle}
         </div>
       </div>
