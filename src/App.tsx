@@ -5,7 +5,6 @@ import Spinner from "react-bootstrap/Spinner";
 import {
   IconRefresh,
   IconSettings,
-  IconPlus,
   IconLayoutDashboard,
   IconNotes,
   IconSubtask,
@@ -127,13 +126,6 @@ export default function App() {
                     {Math.round((Date.now() - lastRefreshTime) / 60000)}m
                   </span>
                 )}
-                <button
-                  className="sidebar-action-btn"
-                  onClick={() => setShowNoteEditor(true)}
-                  title="Add a note"
-                >
-                  <IconPlus size={14} />
-                </button>
                 <button
                   className="sidebar-action-btn"
                   onClick={() => {
