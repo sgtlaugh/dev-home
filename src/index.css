@@ -31,6 +31,7 @@ body {
   font-size: 0.875rem;
   line-height: 1.5;
   -webkit-app-region: no-drag;
+  border-top: 0.5px solid rgba(48, 54, 61, 0.3);
 }
 
 /* --- Electron title bar drag region --- */
