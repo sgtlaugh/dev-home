@@ -6,7 +6,6 @@ import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
 import {
-  IconCode,
   IconRefresh,
   IconSettings,
   IconPlus,
@@ -31,7 +30,6 @@ import { PRTable } from "./components/PRTable";
 import { PersonalNotes } from "./components/PersonalNotes";
 import { NoteEditorModal } from "./components/NoteEditorModal";
 import { SettingsView } from "./components/SettingsView";
-import packageJson from "../package.json";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
@@ -116,57 +114,65 @@ export default function App() {
   return (
     <>
       <FindInPage />
-      {/* Thin top bar -- draggable for Electron, with app name and refresh */}
-      <Navbar className="top-bar" variant="dark">
+      {/* Thin top bar -- draggable for Electron */}
+      <Navbar
+        className="top-bar"
+        variant="dark"
+        style={{ minHeight: "32px", paddingTop: 0, paddingBottom: 0 }}
+      >
         <Container
           fluid
           className="px-3"
-          style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center" }}
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: "8px",
+            height: "32px",
+          }}
         >
-          <div />
-          <Navbar.Brand
-            className="d-flex align-items-center gap-2 mx-auto mb-0"
-            style={{ fontSize: "0.8125rem", fontWeight: 600 }}
+          {loading && <Spinner animation="border" size="sm" variant="secondary" />}
+          {!loading && lastRefreshTime && (
+            <span
+              className="text-secondary"
+              style={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}
+              title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
+            >
+              {Math.round((Date.now() - lastRefreshTime) / 60000)}m ago
+            </span>
+          )}
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => setShowNoteEditor(true)}
+            title="Add a note"
+            style={{ padding: "4px 8px" }}
           >
-            <IconCode size={16} />
-            Dev Home ({packageJson.version})
-          </Navbar.Brand>
-          <div className="d-flex align-items-center gap-2 justify-content-end">
-            {loading && <Spinner animation="border" size="sm" variant="secondary" />}
-            {!loading && lastRefreshTime && (
-              <span
-                className="text-secondary"
-                style={{ fontSize: "0.75rem" }}
-                title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
-              >
-                {Math.round((Date.now() - lastRefreshTime) / 60000)}m ago
-              </span>
-            )}
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setShowNoteEditor(true)}
-              title="Add a note"
-            >
-              <IconPlus size={14} />
-            </Button>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => {
-                refresh();
-                refreshNotes();
-                refreshActivity();
-              }}
-              disabled={loading}
-              title="Refresh"
-            >
-              <IconRefresh size={14} />
-            </Button>
-            <Button variant="outline-secondary" size="sm" onClick={() => setActiveTab("settings")}>
-              <IconSettings size={14} />
-            </Button>
-          </div>
+            <IconPlus size={14} />
+          </Button>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => {
+              refresh();
+              refreshNotes();
+              refreshActivity();
+            }}
+            disabled={loading}
+            title="Refresh"
+            style={{ padding: "4px 8px" }}
+          >
+            <IconRefresh size={14} />
+          </Button>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => setActiveTab("settings")}
+            title="Settings"
+            style={{ padding: "4px 8px" }}
+          >
+            <IconSettings size={14} />
+          </Button>
         </Container>
       </Navbar>
 
