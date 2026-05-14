@@ -9,6 +9,7 @@ import githubRoutes from "./routes/github";
 import jiraRoutes from "./routes/jira";
 import notesRoutes from "./routes/notes";
 import { errorHandler } from "./utils/errors";
+import { apiCache } from "./utils/cache";
 
 export function createServer() {
   const app = express();
@@ -47,6 +48,12 @@ export function createServer() {
   // Health check
   app.get("/api/health", (_req: Request, res: Response) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Cache purge — clear all cached data
+  app.post("/api/cache/purge", (_req: Request, res: Response) => {
+    apiCache.clear();
+    res.json({ status: "cache cleared" });
   });
 
   // Error handling middleware — catches thrown errors from async routes

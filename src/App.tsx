@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Badge from "react-bootstrap/Badge";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
+import { apiClient } from "./services/config";
 import {
   IconRefresh,
   IconSettings,
@@ -128,7 +129,8 @@ export default function App() {
                 )}
                 <button
                   className="sidebar-action-btn"
-                  onClick={() => {
+                  onClick={async () => {
+                    await apiClient.post("/cache/purge");
                     refresh();
                     refreshNotes();
                     refreshActivity();
