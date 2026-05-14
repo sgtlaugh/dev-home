@@ -21,7 +21,7 @@ export const MentionsView: React.FC<MentionsViewProps> = ({
   return (
     <div>
       <div className="section-header">
-        JIRA Mentions
+        JIRA Notifications
         {jiraComments.length > 0 && (
           <Badge bg="secondary" pill>
             {jiraComments.length}

@@ -291,7 +291,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             <Col md={6}>
               <Section
                 icon={<IconAt size={13} stroke={1.8} />}
-                title="JIRA Mentions"
+                title="JIRA Notifications"
                 badgeClass="badge-status-purple"
                 count={jiraComments.length}
                 onSeeMore={jiraComments.length > 5 ? () => onNavigate("mentions") : undefined}

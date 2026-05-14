@@ -179,7 +179,7 @@ export default function App() {
               { key: "jira", label: "JIRA Tasks", icon: IconSubtask, count: jiraIssues.length },
               {
                 key: "mentions",
-                label: "JIRA Mentions",
+                label: "JIRA Notifications",
                 icon: IconAt,
                 count: jiraComments.length,
               },
