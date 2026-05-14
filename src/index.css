@@ -100,7 +100,7 @@ a:hover {
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   padding: 2px 2px 6px;
   border-bottom: 1px solid #21262d;
   margin-bottom: 4px;
