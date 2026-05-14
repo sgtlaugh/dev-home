@@ -20,7 +20,7 @@ interface ActivityItem {
 
 /**
  * GET /api/activity
- * Fetch recent activity from JIRA and GitHub (last 24 hours)
+ * Fetch recent activity from JIRA and GitHub (last 48 hours)
  */
 router.get("/", async (_req: Request, res: Response) => {
   const cacheKey = "activity:recent";
@@ -48,7 +48,7 @@ async function extractUserComments(
   jira: any,
   issues: any[],
   userAccountId: string,
-  oneDayAgo: number,
+  twoDaysAgo: number,
 ): Promise<ActivityItem[]> {
   const activities: ActivityItem[] = [];
   const config = getConfig();
@@ -58,7 +58,7 @@ async function extractUserComments(
     for (const comment of comments) {
       if (comment.author?.accountId !== userAccountId) continue;
       const commentTime = new Date(comment.created).getTime();
-      if (commentTime < oneDayAgo) continue;
+      if (commentTime < twoDaysAgo) continue;
 
       activities.push({
         id: `jira-comment-${comment.id}`,
@@ -82,7 +82,7 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
   try {
     // Fetch issues created by user in last 24h
     const { data: createdData } = await jira.post("/search/jql", {
-      jql: `creator = currentUser() AND created >= -1d ORDER BY created DESC`,
+      jql: `creator = currentUser() AND created >= -2d ORDER BY created DESC`,
       fields: ["summary", "created"],
       maxResults: 20,
     });
@@ -98,25 +98,25 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
       });
     }
   } catch (err) {
-    logError("Activity/JIRA created", err, { query: `creator = currentUser() AND created >= -1d` });
+    logError("Activity/JIRA created", err, { query: `creator = currentUser() AND created >= -2d` });
   }
 
   try {
     // Fetch all issues updated in last 24h, extract your comments
     const { data: userData } = await jira.get("/myself");
     const userAccountId = userData.accountId;
-    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
 
     const { data: allIssues } = await jira.post("/search/jql", {
-      jql: `updated >= -1d ORDER BY updated DESC`,
+      jql: `updated >= -2d ORDER BY updated DESC`,
       fields: ["summary", "comment"],
       maxResults: 250,
     });
 
-    const userComments = await extractUserComments(jira, allIssues.issues || [], userAccountId, oneDayAgo);
+    const userComments = await extractUserComments(jira, allIssues.issues || [], userAccountId, twoDaysAgo);
     activities.push(...userComments);
   } catch (err) {
-    logError("Activity/JIRA comments", err, { query: `updated >= -1d` });
+    logError("Activity/JIRA comments", err, { query: `updated >= -2d` });
   }
 
   return activities;
@@ -126,7 +126,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
   const config = getConfig();
   const github = createGitHubClient();
   const activities: ActivityItem[] = [];
-  const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
 
   try {
     // Use authenticated user events endpoint - includes full commit data for private repos
@@ -137,7 +137,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
     console.log(`[Activity] GitHub events: ${events.length} raw events`);
 
     // Filter to last 24h events first
-    const recentEvents = events.filter((e: any) => new Date(e.created_at).getTime() >= oneDayAgo);
+    const recentEvents = events.filter((e: any) => new Date(e.created_at).getTime() >= twoDaysAgo);
 
     // Collect unique PR references that need title lookup (events API returns abbreviated PR objects without title)
     const prRefs = new Map<string, { owner: string; repo: string; number: number }>();
@@ -287,7 +287,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       }
     }
 
-    const since = new Date(oneDayAgo).toISOString();
+    const since = new Date(twoDaysAgo).toISOString();
     const seenShas = new Set<string>();
     const commitFetches: Promise<void>[] = [];
     for (const [repoFullName, branches] of pushBranches) {

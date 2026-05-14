@@ -49,6 +49,33 @@ function getActivityBadgeClass(item: ActivityItem): string {
   return "badge-status-neutral";
 }
 
+function groupActivitiesByDate(activities: ActivityItem[]): Map<string, ActivityItem[]> {
+  const groups = new Map<string, ActivityItem[]>();
+  const now = Date.now();
+
+  for (const activity of activities) {
+    const actTime = new Date(activity.timestamp).getTime();
+    const hoursAgo = (now - actTime) / (1000 * 60 * 60);
+    let dateKey: string;
+
+    if (hoursAgo < 24) {
+      dateKey = "Today";
+    } else if (hoursAgo < 48) {
+      dateKey = "Yesterday";
+    } else {
+      const actDate = new Date(activity.timestamp);
+      dateKey = actDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+
+    if (!groups.has(dateKey)) {
+      groups.set(dateKey, []);
+    }
+    groups.get(dateKey)!.push(activity);
+  }
+
+  return groups;
+}
+
 export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
   if (loading && activities.length === 0) {
     return (
@@ -66,21 +93,40 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
     );
   }
 
+  const groupedActivities = groupActivitiesByDate(activities);
+
   return (
-    <div className="activity-list">
-      {activities.map((item) => (
-        <div key={item.id} className="activity-item">
-          <div className="activity-icon">{getActivityIcon(item)}</div>
-          <div className="activity-content">
-            <div className="activity-header">
-              <Badge bg="" className={getActivityBadgeClass(item)} style={{ fontSize: "0.625rem" }}>
-                {item.action}
-              </Badge>
-              <span className="activity-time">{formatRelativeTime(item.timestamp)}</span>
-            </div>
-            <a href={item.url} target="_blank" rel="noopener noreferrer" className="activity-title">
-              {item.title}
-            </a>
+    <div className="activity-timeline">
+      {Array.from(groupedActivities.entries()).map(([dateLabel, items]) => (
+        <div key={dateLabel} className="activity-section">
+          <div className="activity-date-label">{dateLabel}</div>
+          <div className="activity-list">
+            {items.map((item) => (
+              <div key={item.id} className="activity-item">
+                <div className="activity-dot" />
+                <div className="activity-icon">{getActivityIcon(item)}</div>
+                <div className="activity-content">
+                  <div className="activity-header">
+                    <Badge
+                      bg=""
+                      className={getActivityBadgeClass(item)}
+                      style={{ fontSize: "0.625rem" }}
+                    >
+                      {item.action}
+                    </Badge>
+                    <span className="activity-time">{formatRelativeTime(item.timestamp)}</span>
+                  </div>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="activity-title"
+                  >
+                    {item.title}
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       ))}
