@@ -178,6 +178,8 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       return prTitles.get(`${repo}#${pr.number}`) || `PR #${pr.number}`;
     };
 
+    const seenShas = new Set<string>();
+
     for (const event of recentEvents) {
       const repo = event.repo?.name || "";
 
@@ -275,7 +277,6 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       }
     }
     // Fetch commits separately - events API strips commit data from private repos
-    // Collect unique repo+branch pairs from PushEvents
     const pushBranches = new Map<string, Set<string>>();
     for (const event of recentEvents) {
       if (event.type === "PushEvent" && event.repo?.name) {
@@ -288,37 +289,30 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
     }
 
     const since = new Date(twoDaysAgo).toISOString();
-    const seenShas = new Set<string>();
-    const commitFetches: Promise<void>[] = [];
     for (const [repoFullName, branches] of pushBranches) {
       for (const branch of branches) {
-        commitFetches.push(
-          (async () => {
-            try {
-              const { data: commits } = await github.get(`/repos/${repoFullName}/commits`, {
-                params: { sha: branch, author: config.githubUsername, since, per_page: 100 },
-              });
-              for (const commit of commits) {
-                if (seenShas.has(commit.sha)) continue;
-                seenShas.add(commit.sha);
-                const firstLine = (commit.commit?.message || "").split("\n")[0].slice(0, 120);
-                activities.push({
-                  id: `github-commit-${commit.sha}`,
-                  type: "github",
-                  action: "Committed",
-                  title: `${repoFullName}: ${firstLine}`,
-                  url: commit.html_url,
-                  timestamp: commit.commit?.author?.date || commit.commit?.committer?.date,
-                });
-              }
-            } catch (err) {
-              logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
-            }
-          })(),
-        );
+        try {
+          const { data: commits } = await github.get(`/repos/${repoFullName}/commits`, {
+            params: { sha: branch, author: config.githubUsername, since, per_page: 100 },
+          });
+          for (const commit of commits) {
+            if (seenShas.has(commit.sha)) continue;
+            seenShas.add(commit.sha);
+            const firstLine = (commit.commit?.message || "").split("\n")[0].slice(0, 120);
+            activities.push({
+              id: `github-commit-${commit.sha}`,
+              type: "github",
+              action: "Committed",
+              title: `${repoFullName}: ${firstLine}`,
+              url: commit.html_url,
+              timestamp: commit.commit?.author?.date || commit.commit?.committer?.date,
+            });
+          }
+        } catch (err: any) {
+          logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
+        }
       }
     }
-    await Promise.all(commitFetches);
   } catch (err) {
     console.error("[Activity] Failed to fetch GitHub events:", err);
   }
