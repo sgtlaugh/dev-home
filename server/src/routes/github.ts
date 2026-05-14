@@ -388,11 +388,17 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
   });
 
   const myPRsNodes = result.myPRs.nodes || [];
-  const prs = myPRsNodes.map(mapGraphQLPr).filter((pr: any) => pr.state === "open");
+  const prs = myPRsNodes
+    .map(mapGraphQLPr)
+    .filter((pr: any) => pr.state === "open")
+    .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   const prComments = extractOwnPRComments(myPRsNodes, config.githubUsername);
 
   const reviewsNodes = result.reviews.nodes || [];
-  const reviews = reviewsNodes.map(mapGraphQLPr).filter((pr: any) => pr.state === "open");
+  const reviews = reviewsNodes
+    .map(mapGraphQLPr)
+    .filter((pr: any) => pr.state === "open")
+    .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
   const responseData = { prs, pr_comments: prComments, reviews };
   apiCache.set(cacheKey, responseData);
@@ -420,7 +426,10 @@ router.get("/prs", async (_req: Request, res: Response) => {
   });
 
   const nodes = result.search.nodes || [];
-  const prs = nodes.map(mapGraphQLPr).filter((pr: any) => pr.state === "open");
+  const prs = nodes
+    .map(mapGraphQLPr)
+    .filter((pr: any) => pr.state === "open")
+    .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   const prComments = extractOwnPRComments(nodes, config.githubUsername);
 
   const responseData = { prs, pr_comments: prComments };
@@ -447,7 +456,8 @@ router.get("/reviews", async (_req: Request, res: Response) => {
 
   const reviews = (result.search.nodes || [])
     .map(mapGraphQLPr)
-    .filter((pr: any) => pr.state === "open");
+    .filter((pr: any) => pr.state === "open")
+    .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
   const responseData = { reviews };
   apiCache.set(cacheKey, responseData);
