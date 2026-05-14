@@ -34,27 +34,6 @@ body {
 }
 
 /* --- Electron title bar drag region --- */
-.top-bar {
-  -webkit-app-region: drag;
-  background-color: #010409 !important;
-  border-bottom: 1px solid #21262d;
-  padding-top: 0;
-  padding-bottom: 0;
-  min-height: 32px;
-  height: 32px;
-}
-
-.top-bar button,
-.top-bar a,
-.top-bar .btn,
-.top-bar input {
-  -webkit-app-region: no-drag;
-}
-
-.top-bar .navbar-brand {
-  color: #c9d1d9 !important;
-  user-select: none;
-}
 
 /* --- Bootstrap CSS Variable Overrides --- */
 :root {
@@ -100,7 +79,7 @@ a:hover {
 /* --- App Body Layout --- */
 .app-body {
   display: flex;
-  height: calc(100vh - 38px);
+  height: 100vh;
   overflow: hidden;
 }
 
@@ -116,6 +95,50 @@ a:hover {
   padding: 8px;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 2px 2px 6px;
+  border-bottom: 1px solid #21262d;
+  margin-bottom: 4px;
+}
+
+.sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sidebar-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #8b949e;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.sidebar-action-btn:hover {
+  background-color: #1c2128;
+  color: #c9d1d9;
+}
+
+.sidebar-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sidebar-refresh-time {
+  font-size: 0.625rem;
+  white-space: nowrap;
 }
 
 .sidebar-tab {
@@ -761,6 +784,19 @@ a,
 [data-theme="light"] .sidebar {
   background-color: #f6f8fa;
   border-right-color: #d1d9e0;
+}
+
+[data-theme="light"] .sidebar-header {
+  border-bottom-color: #d1d9e0;
+}
+
+[data-theme="light"] .sidebar-action-btn {
+  color: #656d76;
+}
+
+[data-theme="light"] .sidebar-action-btn:hover {
+  background-color: #eaeef2;
+  color: #1f2328;
 }
 
 [data-theme="light"] .sidebar-tab {

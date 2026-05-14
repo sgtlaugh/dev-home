@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
-import Container from "react-bootstrap/Container";
-import Navbar from "react-bootstrap/Navbar";
 import Badge from "react-bootstrap/Badge";
-import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
 import {
@@ -114,72 +111,50 @@ export default function App() {
   return (
     <>
       <FindInPage />
-      {/* Thin top bar -- draggable for Electron */}
-      <Navbar
-        className="top-bar"
-        variant="dark"
-        style={{ minHeight: "32px", paddingTop: 0, paddingBottom: 0 }}
-      >
-        <Container
-          fluid
-          className="px-3"
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            gap: "8px",
-            height: "32px",
-          }}
-        >
-          {loading && <Spinner animation="border" size="sm" variant="secondary" />}
-          {!loading && lastRefreshTime && (
-            <span
-              className="text-secondary"
-              style={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}
-              title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
-            >
-              {Math.round((Date.now() - lastRefreshTime) / 60000)}m ago
-            </span>
-          )}
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={() => setShowNoteEditor(true)}
-            title="Add a note"
-            style={{ padding: "4px 8px" }}
-          >
-            <IconPlus size={14} />
-          </Button>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={() => {
-              refresh();
-              refreshNotes();
-              refreshActivity();
-            }}
-            disabled={loading}
-            title="Refresh"
-            style={{ padding: "4px 8px" }}
-          >
-            <IconRefresh size={14} />
-          </Button>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={() => setActiveTab("settings")}
-            title="Settings"
-            style={{ padding: "4px 8px" }}
-          >
-            <IconSettings size={14} />
-          </Button>
-        </Container>
-      </Navbar>
 
       <ErrorBoundary>
         <div className="app-body">
           {/* Sidebar navigation */}
           <nav className={`sidebar${sidebarCollapsed ? " collapsed" : ""}`}>
+            <div className="sidebar-header">
+              <div className="sidebar-actions">
+                {loading && <Spinner animation="border" size="sm" variant="secondary" />}
+                {!loading && lastRefreshTime && (
+                  <span
+                    className="text-secondary sidebar-refresh-time"
+                    title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
+                  >
+                    {Math.round((Date.now() - lastRefreshTime) / 60000)}m
+                  </span>
+                )}
+                <button
+                  className="sidebar-action-btn"
+                  onClick={() => setShowNoteEditor(true)}
+                  title="Add a note"
+                >
+                  <IconPlus size={14} />
+                </button>
+                <button
+                  className="sidebar-action-btn"
+                  onClick={() => {
+                    refresh();
+                    refreshNotes();
+                    refreshActivity();
+                  }}
+                  disabled={loading}
+                  title="Refresh"
+                >
+                  <IconRefresh size={14} />
+                </button>
+                <button
+                  className="sidebar-action-btn"
+                  onClick={() => setActiveTab("settings")}
+                  title="Settings"
+                >
+                  <IconSettings size={14} />
+                </button>
+              </div>
+            </div>
             {[
               { key: "summary", label: "Summary", icon: IconLayoutDashboard, count: undefined },
               { key: "jira", label: "JIRA Tasks", icon: IconSubtask, count: jiraIssues.length },
