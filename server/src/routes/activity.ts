@@ -117,7 +117,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
   try {
     // Use authenticated user events endpoint - includes full commit data for private repos
     const { data: events } = await github.get(`/users/${config.githubUsername}/events`, {
-      params: { per_page: 100 },
+      params: { per_page: 300 },
     });
 
     console.log(`[Activity] GitHub events: ${events.length} raw events`);
@@ -282,7 +282,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           (async () => {
             try {
               const { data: commits } = await github.get(`/repos/${repoFullName}/commits`, {
-                params: { sha: branch, author: config.githubUsername, since, per_page: 30 },
+                params: { sha: branch, author: config.githubUsername, since, per_page: 100 },
               });
               for (const commit of commits) {
                 if (seenShas.has(commit.sha)) continue;

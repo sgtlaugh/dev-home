@@ -175,8 +175,8 @@ router.get("/mentions", async (_req: Request, res: Response) => {
 
   const [{ data: searchData }, { data: userData }] = await Promise.all([
     jira.post("/search/jql", {
-      jql: `comment ~ currentUser() AND updated >= -90d ORDER BY updated DESC`,
-      fields: ["summary", "comment"],
+      jql: `(comment ~ currentUser() OR assignee = currentUser()) AND updated >= -90d ORDER BY updated DESC`,
+      fields: ["summary", "comment", "assignee"],
       maxResults: 50,
     }),
     jira.get("/myself"),
@@ -189,11 +189,13 @@ router.get("/mentions", async (_req: Request, res: Response) => {
 
   const allComments = issues.flatMap((issue: any) => {
     const comments = issue.fields?.comment?.comments || [];
+    const isAssignedToMe = issue.fields?.assignee?.accountId === userAccountId;
     return comments
       .filter((comment: any) => {
         if (comment.author?.accountId === userAccountId) return false;
         const bodyText = adfToMarkdown(comment.body).toLowerCase();
-        return bodyText.includes(username) || bodyText.includes(email);
+        // Include if mentioned or if comment is on assigned issue
+        return bodyText.includes(username) || bodyText.includes(email) || isAssignedToMe;
       })
       .map((comment: any) => ({
         id: comment.id,
