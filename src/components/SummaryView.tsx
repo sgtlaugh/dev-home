@@ -61,7 +61,7 @@ function Section({
   loading,
 }: SectionProps) {
   return (
-    <Card className="h-100">
+    <Card className="h-100 summary-card">
       <Card.Body className="p-0">
         <div className="section-header px-3 pt-3 mb-0">
           {icon}
