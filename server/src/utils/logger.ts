@@ -19,7 +19,8 @@ function timestamp(): string {
 function format(level: LogLevel, tag: string, message: string, context?: Record<string, any>): string {
   const color = COLORS[level];
   const lvl = level.toUpperCase().padEnd(5);
-  const base = `${color}[${timestamp()}] [${lvl}]${RESET} [${tag}] ${message}`;
+  const paddedTag = tag.padEnd(10);
+  const base = `${color}[${timestamp()}] [${lvl}]${RESET} [${paddedTag}] ${message}`;
   if (context && Object.keys(context).length > 0) {
     return `${base} ${JSON.stringify(context)}`;
   }
