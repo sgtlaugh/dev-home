@@ -290,7 +290,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-truncate-custom d-block"
-                  style={{ fontWeight: 500, maxWidth: 360 }}
+                  style={{ fontWeight: 500, maxWidth: 600 }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   {pr.title}
