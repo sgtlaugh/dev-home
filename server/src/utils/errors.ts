@@ -1,12 +1,10 @@
 import { Request, Response, NextFunction } from "express";
+import { logger } from "./logger";
 
-/**
- * Structured error logging with context
- */
 export function logError(operation: string, error: any, context: Record<string, any> = {}): void {
   const message = error?.response?.data?.message || error?.message || String(error);
   const status = error?.response?.status || "unknown";
-  console.error(`[${operation}] Status ${status}: ${message}`, context);
+  logger.error(operation, `Status ${status}: ${message}`, context);
 }
 
 /**
@@ -19,9 +17,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   const internalMessage = err.response?.data ? JSON.stringify(err.response.data) : err.message;
   const stack = err.stack ? err.stack.split("\n").slice(0, 3).join(" → ") : "";
 
-  console.error(
-    `[${req.method} ${req.path}] Error ${status}: ${internalMessage}${stack ? ` ${stack}` : ""}`,
-  );
+  logger.error(`${req.method} ${req.path}`, `Error ${status}: ${internalMessage}${stack ? ` ${stack}` : ""}`);
 
   // For 5xx errors, return a generic message to avoid leaking internal details
   const clientMessage =

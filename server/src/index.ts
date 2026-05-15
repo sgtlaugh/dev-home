@@ -10,6 +10,7 @@ import jiraRoutes from "./routes/jira";
 import notesRoutes from "./routes/notes";
 import { errorHandler } from "./utils/errors";
 import { apiCache } from "./utils/cache";
+import { logger } from "./utils/logger";
 
 export function createServer() {
   const app = express();
@@ -66,15 +67,15 @@ export function startServer() {
   // Validate env vars
   const missingVars = validateEnv();
   if (missingVars.length > 0) {
-    console.warn(`\n⚠  WARNING: Missing environment variables: ${missingVars.join(", ")}`);
-    console.warn("   Copy .env.example to .env and fill in the required values.\n");
+    logger.warn("Config", `Missing environment variables: ${missingVars.join(", ")}`);
+    logger.warn("Config", "Copy .env.example to .env and fill in the required values");
   }
 
   const app = createServer();
   const PORT = parseInt(process.env.VITE_API_PORT || "3571", 10);
 
   const server = app.listen(PORT, () => {
-    console.log(`[dev-home] server listening on http://localhost:${PORT}`);
+    logger.info("Server", `listening on http://localhost:${PORT}`);
   });
 
   return server;

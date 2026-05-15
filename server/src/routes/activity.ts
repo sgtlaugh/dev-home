@@ -5,6 +5,7 @@ import { createGitHubClient } from "../clients/githubApiClient";
 import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
 import { logError } from "../utils/errors";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -36,7 +37,7 @@ router.get("/", async (_req: Request, res: Response) => {
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
   );
 
-  console.log(`[Activity] Found ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub = ${allActivities.length} total`);
+  logger.info("Activity", `Found ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub = ${allActivities.length} total`);
 
   const result = { activities: allActivities };
   apiCache.set(cacheKey, result);
@@ -134,7 +135,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       params: { per_page: 300 },
     });
 
-    console.log(`[Activity] GitHub events: ${events.length} raw events`);
+    logger.info("Activity", `GitHub events: ${events.length} raw`);
 
     // Filter to last 24h events first
     const recentEvents = events.filter((e: any) => new Date(e.created_at).getTime() >= twoDaysAgo);
@@ -166,7 +167,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           const title = data[`pr${i}`]?.pullRequest?.title;
           if (title) prTitles.set(key, title);
         });
-        console.log(`[Activity] Fetched ${prTitles.size} PR titles via GraphQL`);
+        logger.info("Activity", `Fetched ${prTitles.size} PR titles via GraphQL`);
       } catch (err) {
         logError("Activity/GitHub PR titles", err, { prCount: prRefs.size });
       }
@@ -314,10 +315,10 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       }
     }
   } catch (err) {
-    console.error("[Activity] Failed to fetch GitHub events:", err);
+    logger.error("Activity", "Failed to fetch GitHub events", { error: String(err) });
   }
 
-  console.log(`[Activity] GitHub: ${activities.length} activities`);
+  logger.info("Activity", `GitHub: ${activities.length} activities`);
   return activities;
 }
 

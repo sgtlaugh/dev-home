@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import path from "path";
+import { logger } from "./logger";
 
 class ApiCache {
   private db: Database.Database;
@@ -24,23 +25,23 @@ class ApiCache {
       | undefined;
 
     if (!row) {
-      console.log(`[Cache] MISS ${key}`);
+      logger.debug("Cache", `MISS ${key}`);
       return null;
     }
 
     const age = Date.now() - row.timestamp;
     if (age > this.ttl) {
-      console.log(`[Cache] EXPIRED ${key} (${Math.round(age / 1000)}s old)`);
+      logger.debug("Cache", `EXPIRED ${key}`, { age: Math.round(age / 1000) });
       this.db.prepare("DELETE FROM cache WHERE key = ?").run(key);
       return null;
     }
 
-    console.log(`[Cache] HIT ${key} (${Math.round(age / 1000)}s old)`);
+    logger.debug("Cache", `HIT ${key}`, { age: Math.round(age / 1000) });
     return JSON.parse(row.data);
   }
 
   set<T>(key: string, data: T): void {
-    console.log(`[Cache] SET ${key}`);
+    logger.debug("Cache", `SET ${key}`);
     this.db
       .prepare("INSERT OR REPLACE INTO cache (key, data, timestamp) VALUES (?, ?, ?)")
       .run(key, JSON.stringify(data), Date.now());
@@ -54,7 +55,7 @@ class ApiCache {
     const cutoff = Date.now() - this.ttl;
     const result = this.db.prepare("DELETE FROM cache WHERE timestamp < ?").run(cutoff);
     if (result.changes > 0) {
-      console.log(`[Cache] Cleaned ${result.changes} expired entries on startup`);
+      logger.info("Cache", `Cleaned ${result.changes} expired entries`);
     }
   }
 }

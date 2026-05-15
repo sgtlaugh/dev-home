@@ -3,6 +3,7 @@ import { getConfig } from "../config";
 import { createGitHubClient } from "../clients/githubApiClient";
 import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -774,7 +775,7 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   const allNodes = await fetchAllPRsByDateRange(config.githubUsername, startDate, endDate);
   const prs = allNodes.map(mapGraphQLPr);
 
-  console.log(`[PRs] ${prs.length} PRs for ${startDate}..${endDate}`);
+  logger.info("PRs", `${prs.length} PRs for ${startDate}..${endDate}`);
 
   const responseData = { prs };
   apiCache.set(cacheKey, responseData);
@@ -909,7 +910,7 @@ router.get("/commits-search", async (req: Request, res: Response) => {
       }
     }
 
-    console.log(`[Commits] contributionsCollection: ${contribCount} (${chunks.length} chunks)`);
+    logger.info("Commits", `contributionsCollection: ${contribCount} (${chunks.length} chunks)`);
 
     // Skip forks whose upstream is already counted by contributionsCollection
     const contribRepoNames = new Set([...repoTotals.keys()].map((n) => n.split("/")[1]));
@@ -950,7 +951,7 @@ router.get("/commits-search", async (req: Request, res: Response) => {
           for (let idx = 0; idx < batch.length; idx++) {
             const count = forkData[`f${idx}`]?.defaultBranchRef?.target?.history?.totalCount || 0;
             if (count > 0) {
-              console.log(`[Commits] fork ${batch[idx].full_name}: ${count}`);
+              logger.info("Commits", `fork ${batch[idx].full_name}: ${count}`);
               repoTotals.set(batch[idx].full_name, (repoTotals.get(batch[idx].full_name) || 0) + count);
             }
             forkCount += count;
@@ -958,35 +959,35 @@ router.get("/commits-search", async (req: Request, res: Response) => {
           break;
         } catch (err: any) {
           if (attempt < MAX_RETRIES) {
-            console.log(`[Commits] Fork batch retry ${attempt + 1}: ${err.message}`);
+            logger.warn("Commits", `Fork batch retry ${attempt + 1}: ${err.message}`);
             await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
           } else {
-            console.error(`[Commits] Fork batch DROPPED: ${batch.map((r: any) => r.full_name).join(", ")}`);
+            logger.error("Commits", `Fork batch DROPPED: ${batch.map((r: any) => r.full_name).join(", ")}`);
           }
         }
       }
     }
 
     if (forkCount > 0) {
-      console.log(`[Commits] Forks: ${forkCount} from ${forkRepos.length} repos`);
+      logger.info("Commits", `Forks: ${forkCount} from ${forkRepos.length} repos`);
     }
 
     const totalCount = contribCount + forkCount;
 
     const sortedRepos = [...repoTotals.entries()].sort((a, b) => b[1] - a[1]);
     for (const [repo, count] of sortedRepos.slice(0, 20)) {
-      console.log(`[Commits] ${repo}: ${count}`);
+      logger.info("Commits", `${repo}: ${count}`);
     }
     if (sortedRepos.length > 20) {
-      console.log(`[Commits] ... and ${sortedRepos.length - 20} more repos`);
+      logger.info("Commits", `... and ${sortedRepos.length - 20} more repos`);
     }
 
-    console.log(`[Commits] Total: ${totalCount} (contributions: ${contribCount}, forks: ${forkCount})`);
+    logger.info("Commits", `Total: ${totalCount} (contributions: ${contribCount}, forks: ${forkCount})`);
     const responseData = { commitCount: totalCount };
     apiCache.set(cacheKey, responseData);
     res.json(responseData);
   } catch (err: any) {
-    console.error("[Commits] Error:", err.message);
+    logger.error("Commits", err.message);
     res.status(500).json({ error: "Failed to search commits", commitCount: 0 });
   }
 });

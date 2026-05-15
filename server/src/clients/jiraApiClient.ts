@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getConfig } from "../config";
+import { logger } from "../utils/logger";
 
 /**
  * Creates an Axios instance pre-configured for the JIRA REST API.
@@ -22,19 +23,19 @@ export function createJiraClient() {
   });
 
   client.interceptors.request.use((config) => {
-    console.log(`[JIRA] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    logger.debug("JIRA", `${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;
   });
 
   client.interceptors.response.use(
     (response) => {
-      console.log(`[JIRA] ${response.status} ${response.config.url}`);
+      logger.debug("JIRA", `${response.status} ${response.config.url}`);
       return response;
     },
     (error) => {
       const status = error?.response?.status;
       const url = error?.config?.url;
-      console.error(`[JIRA] ${status || "ERROR"} ${url}`);
+      logger.error("JIRA", `${status || "ERROR"} ${url}`);
       return Promise.reject(error);
     },
   );

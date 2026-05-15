@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getConfig } from "../config";
+import { logger } from "../utils/logger";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -20,19 +21,19 @@ export function createGitHubClient(baseUrl: string = GITHUB_API) {
   });
 
   client.interceptors.request.use((config) => {
-    console.log(`[GitHub] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    logger.debug("GitHub", `${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;
   });
 
   client.interceptors.response.use(
     (response) => {
-      console.log(`[GitHub] ${response.status} ${response.config.url}`);
+      logger.debug("GitHub", `${response.status} ${response.config.url}`);
       return response;
     },
     (error) => {
       const status = error?.response?.status;
       const url = error?.config?.url;
-      console.error(`[GitHub] ${status || "ERROR"} ${url}`);
+      logger.error("GitHub", `${status || "ERROR"} ${url}`);
       return Promise.reject(error);
     },
   );
