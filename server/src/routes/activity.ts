@@ -310,7 +310,11 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             });
           }
         } catch (err: any) {
-          logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
+          if (err?.response?.status === 404) {
+            logger.warn("Activity", `Repo not found: ${repoFullName}@${branch}`);
+          } else {
+            logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
+          }
         }
       }
     }

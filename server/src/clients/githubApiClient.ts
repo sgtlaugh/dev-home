@@ -33,7 +33,11 @@ export function createGitHubClient(baseUrl: string = GITHUB_API) {
     (error) => {
       const status = error?.response?.status;
       const url = error?.config?.url;
-      logger.error("GitHub", `${status || "ERROR"} ${url}`);
+      if (status === 404) {
+        logger.warn("GitHub", `${status} ${url}`);
+      } else {
+        logger.error("GitHub", `${status || "ERROR"} ${url}`);
+      }
       return Promise.reject(error);
     },
   );
