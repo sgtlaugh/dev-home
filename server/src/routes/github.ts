@@ -699,8 +699,59 @@ router.get("/mentions", async (_req: Request, res: Response) => {
 });
 
 /**
+ * Fetch all PRs within a date range, handling the 1000-result limit by recursively narrowing.
+ * If a query returns 1000 results, use the oldest PR's creation date to split the range.
+ */
+async function fetchAllPRsByDateRange(
+  username: string,
+  startDate: string,
+  endDate: string,
+): Promise<any[]> {
+  const MAX_RESULTS = 1000;
+  const allPrs: any[] = [];
+  let currentStart = startDate;
+  let currentEnd = endDate;
+
+  while (true) {
+    const q = `author:${username} type:pr created:${currentStart}..${currentEnd}`;
+    let rangeNodes: any[] = [];
+    let cursor: string | null = null;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+      const result = await graphql<{
+        search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
+      }>(SEARCH_MY_PRS_QUERY, {
+        query: q,
+        first: 100,
+        after: cursor,
+      });
+
+      const nodes = result.search?.nodes || [];
+      rangeNodes.push(...nodes);
+      hasNextPage = result.search?.pageInfo?.hasNextPage ?? false;
+      cursor = result.search?.pageInfo?.endCursor ?? null;
+    }
+
+    allPrs.push(...rangeNodes);
+
+    if (rangeNodes.length < MAX_RESULTS) break;
+
+    const oldestDate = rangeNodes[rangeNodes.length - 1].createdAt?.split("T")[0];
+    if (!oldestDate || oldestDate === currentStart) break;
+
+    const prevDay = new Date(oldestDate);
+    prevDay.setDate(prevDay.getDate() - 1);
+    currentEnd = prevDay.toISOString().split("T")[0];
+  }
+
+  return allPrs;
+}
+
+/**
  * GET /api/github/prs-by-date-range
  * Fetch all PRs authored by user created within a date range.
+ * Handles GitHub's 1000-result limit by recursively narrowing date ranges.
  * Query params: startDate (YYYY-MM-DD), endDate (YYYY-MM-DD)
  */
 router.get("/prs-by-date-range", async (req: Request, res: Response) => {
@@ -720,28 +771,10 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   const cached = apiCache.get(cacheKey);
   if (cached) return res.json(cached);
 
-  const q = `author:${config.githubUsername} type:pr created:${startDate}..${endDate}`;
-
-  // Fetch all pages
-  let allNodes: any[] = [];
-  let hasNextPage = true;
-  let cursor: string | null = null;
-
-  while (hasNextPage) {
-    const result = await graphql<{
-      search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
-    }>(SEARCH_MY_PRS_QUERY, {
-      query: q,
-      first: 100,
-      after: cursor,
-    });
-
-    allNodes = allNodes.concat(result.search.nodes || []);
-    hasNextPage = result.search.pageInfo.hasNextPage;
-    cursor = result.search.pageInfo.endCursor;
-  }
-
+  const allNodes = await fetchAllPRsByDateRange(config.githubUsername, startDate, endDate);
   const prs = allNodes.map(mapGraphQLPr);
+
+  console.log(`[PRs] ${prs.length} PRs for ${startDate}..${endDate}`);
 
   const responseData = { prs };
   apiCache.set(cacheKey, responseData);

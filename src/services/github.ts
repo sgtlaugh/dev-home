@@ -66,8 +66,9 @@ export async function fetchPRsByDateRange(
     1000,
     signal,
   );
-  apiCache.set(cacheKey, data.prs);
-  return data.prs;
+  const prs = data.prs || [];
+  apiCache.set(cacheKey, prs);
+  return prs;
 }
 
 export async function fetchCommitCount(

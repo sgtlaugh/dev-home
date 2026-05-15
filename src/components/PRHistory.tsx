@@ -61,15 +61,15 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       setLoading(true);
       setError(null);
       try {
-        const [prsData, commits] = await Promise.all([
+        const [prsResult, commits] = await Promise.all([
           fetchPRsByDateRange(range.start, range.end, signal),
           fetchCommitCount(range.start, range.end, signal),
         ]);
         if (signal.aborted) return;
-        setPrs(prsData);
+        setPrs(prsResult);
         setCommitCount(commits);
 
-        onCountChange?.(prsData.length);
+        onCountChange?.(prsResult.length);
       } catch (err) {
         if (signal.aborted) return;
         setError(`Failed to load PRs: ${err instanceof Error ? err.message : "Unknown error"}`);
