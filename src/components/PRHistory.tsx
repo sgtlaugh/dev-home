@@ -8,6 +8,8 @@ import { EmptyState } from "./EmptyState";
 
 type DateMode = "month" | "year" | "custom";
 
+const MIN_YEAR = 2000;
+
 interface PRHistoryProps {
   onCountChange?: (count: number) => void;
 }
@@ -23,6 +25,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   const [prs, setPrs] = useState<GitHubPR[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = React.useRef<AbortController | null>(null);
 
   const getDateRange = (): { start: string; end: string } => {
     if (mode === "month") {
@@ -39,10 +42,17 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   };
 
   useEffect(() => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
+
     const loadPRs = async () => {
       const range = getDateRange();
       if (!range.start || !range.end) {
-        setPrs([]);
+        if (!signal.aborted) {
+          setPrs([]);
+          setLoading(false);
+        }
         return;
       }
 
@@ -50,18 +60,24 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchPRsByDateRange(range.start, range.end);
+        const data = await fetchPRsByDateRange(range.start, range.end, signal);
+        if (signal.aborted) return;
         setPrs(data);
         onCountChange?.(data.length);
       } catch (err) {
+        if (signal.aborted) return;
         setError(`Failed to load PRs: ${err instanceof Error ? err.message : "Unknown error"}`);
         onCountChange?.(0);
       } finally {
-        setLoading(false);
+        if (!signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     loadPRs();
+
+    return () => abortRef.current?.abort();
   }, [mode, year, month, startDate, endDate, onCountChange]);
 
   const getLabel = () => {
@@ -121,20 +137,26 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       <Card className="controls-card mb-4">
         <Card.Body>
           <div className="d-flex gap-3 align-items-center flex-wrap">
-            <label style={{ marginBottom: 0 }}>
-              <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
-                Mode:
-              </span>
-              <select
-                value={mode}
-                onChange={(e) => setMode(e.target.value as DateMode)}
-                className="filter-select"
+            <div className="segmented-control">
+              <button
+                className={`segmented-btn ${mode === "month" ? "active" : ""}`}
+                onClick={() => setMode("month")}
               >
-                <option value="month">Month</option>
-                <option value="year">Year</option>
-                <option value="custom">Custom</option>
-              </select>
-            </label>
+                Month
+              </button>
+              <button
+                className={`segmented-btn ${mode === "year" ? "active" : ""}`}
+                onClick={() => setMode("year")}
+              >
+                Year
+              </button>
+              <button
+                className={`segmented-btn ${mode === "custom" ? "active" : ""}`}
+                onClick={() => setMode("custom")}
+              >
+                Custom
+              </button>
+            </div>
 
             {mode === "month" && (
               <>
@@ -142,14 +164,20 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                   <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
                     Year:
                   </span>
-                  <input
-                    type="number"
+                  <select
                     value={year}
                     onChange={(e) => setYear(parseInt(e.target.value, 10))}
-                    min="2010"
-                    max={now.getFullYear() + 1}
-                    className="filter-input"
-                  />
+                    className="filter-select"
+                  >
+                    {Array.from(
+                      { length: now.getFullYear() - MIN_YEAR + 1 },
+                      (_, i) => MIN_YEAR + i,
+                    ).map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label style={{ marginBottom: 0 }}>
                   <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
@@ -188,14 +216,20 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                 <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
                   Year:
                 </span>
-                <input
-                  type="number"
+                <select
                   value={year}
                   onChange={(e) => setYear(parseInt(e.target.value, 10))}
-                  min="2010"
-                  max={now.getFullYear() + 1}
-                  className="filter-input"
-                />
+                  className="filter-select"
+                >
+                  {Array.from(
+                    { length: now.getFullYear() - MIN_YEAR + 1 },
+                    (_, i) => MIN_YEAR + i,
+                  ).map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
               </label>
             )}
 

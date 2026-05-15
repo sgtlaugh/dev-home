@@ -47,15 +47,24 @@ export async function fetchReviewRequests(): Promise<GitHubReviewRequest[]> {
   return data.reviews;
 }
 
-export async function fetchPRsByDateRange(startDate: string, endDate: string): Promise<GitHubPR[]> {
+export async function fetchPRsByDateRange(
+  startDate: string,
+  endDate: string,
+  signal?: AbortSignal,
+): Promise<GitHubPR[]> {
   const cacheKey = `github:prs-by-date:${startDate}:${endDate}`;
   const cached = apiCache.get<GitHubPR[]>(cacheKey);
   if (cached) return cached;
 
-  const { data } = await withRetry(() =>
-    apiClient.get("/github/prs-by-date-range", {
-      params: { startDate, endDate },
-    }),
+  const { data } = await withRetry(
+    () =>
+      apiClient.get("/github/prs-by-date-range", {
+        params: { startDate, endDate },
+        signal,
+      }),
+    3,
+    1000,
+    signal,
   );
   apiCache.set(cacheKey, data.prs);
   return data.prs;

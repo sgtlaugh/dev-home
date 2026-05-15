@@ -2,13 +2,22 @@ export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
   initialDelay: number = 1000,
+  signal?: AbortSignal,
 ): Promise<T> {
   let lastError: any;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (signal?.aborted) {
+      throw new Error("Request aborted");
+    }
+
     try {
       return await fn();
     } catch (error: any) {
+      if (signal?.aborted) {
+        throw new Error("Request aborted");
+      }
+
       lastError = error;
       const status = error?.response?.status;
 

@@ -2122,3 +2122,55 @@ a,
   background-color: #ffffff;
   color: #1f2328;
 }
+
+/* Segmented Control */
+.segmented-control {
+  display: inline-flex;
+  gap: 0;
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.segmented-btn {
+  background-color: transparent;
+  border: none;
+  color: #8b949e;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+  border-radius: 4px;
+}
+
+.segmented-btn:hover {
+  color: #c9d1d9;
+  background-color: rgba(88, 166, 255, 0.05);
+}
+
+.segmented-btn.active {
+  background-color: #58a6ff;
+  color: #ffffff;
+}
+
+/* Light theme segmented control */
+[data-theme="light"] .segmented-control {
+  background-color: #ffffff;
+  border-color: #d0d7de;
+}
+
+[data-theme="light"] .segmented-btn {
+  color: #656d76;
+}
+
+[data-theme="light"] .segmented-btn:hover {
+  color: #1f2328;
+  background-color: rgba(9, 105, 218, 0.05);
+}
+
+[data-theme="light"] .segmented-btn.active {
+  background-color: #0969da;
+  color: #ffffff;
+}
