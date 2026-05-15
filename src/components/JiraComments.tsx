@@ -7,6 +7,21 @@ import { formatRelativeTime } from "../utils/time";
 import { EmptyState } from "./EmptyState";
 import { truncateText } from "../utils/text";
 
+// Highlight @mentions in text
+function highlightMentions(text: string, maxLen: number = 120): React.ReactNode {
+  const truncated = truncateText(text, maxLen);
+  const parts = truncated.split(/(@[\w-]+)/);
+  return parts.map((part, i) =>
+    part.startsWith("@") ? (
+      <mark key={i} style={{ backgroundColor: "rgba(88, 166, 255, 0.2)", fontWeight: 600 }}>
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+}
+
 interface JiraCommentsProps {
   comments: JiraComment[];
   loading: boolean;
@@ -94,7 +109,7 @@ export const JiraComments: React.FC<JiraCommentsProps> = ({ comments, loading, b
                     lineHeight: 1.5,
                   }}
                 >
-                  {truncateText(comment.body?.text || "", 120)}
+                  {highlightMentions(comment.body?.text || "", 120)}
                 </div>
               </div>
             </div>
