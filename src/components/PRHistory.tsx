@@ -52,12 +52,14 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       if (!range.start || !range.end) {
         if (!signal.aborted) {
           setPrs([]);
+          setCommitCount(0);
           setLoading(false);
         }
         return;
       }
 
       setPrs([]);
+      setCommitCount(0);
       setLoading(true);
       setError(null);
       try {
