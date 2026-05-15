@@ -782,9 +782,76 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
 });
 
 /**
+ * Split a date range into <=365-day chunks for contributionsCollection (max 1-year range).
+ */
+function buildYearChunks(startDate: string, endDate: string) {
+  const chunks: { from: string; to: string; alias: string }[] = [];
+  let chunkStart = new Date(`${startDate}T00:00:00Z`);
+  const rangeEnd = new Date(`${endDate}T23:59:59Z`);
+
+  while (chunkStart < rangeEnd) {
+    const chunkEnd = new Date(chunkStart);
+    chunkEnd.setFullYear(chunkEnd.getFullYear() + 1);
+    chunkEnd.setDate(chunkEnd.getDate() - 1);
+    const actualEnd = chunkEnd > rangeEnd ? rangeEnd : chunkEnd;
+
+    chunks.push({
+      from: chunkStart.toISOString(),
+      to: actualEnd.toISOString(),
+      alias: `c${chunks.length}`,
+    });
+
+    const nextStart = new Date(actualEnd);
+    nextStart.setDate(nextStart.getDate() + 1);
+    nextStart.setHours(0, 0, 0, 0);
+    chunkStart = nextStart;
+  }
+
+  return chunks;
+}
+
+/**
+ * Fetch all user repos with pagination (cached).
+ */
+async function fetchUserRepos(github: ReturnType<typeof createGitHubClient>): Promise<any[]> {
+  const cacheKey = `github:user-repos`;
+  const cached = apiCache.get<any[]>(cacheKey);
+  if (cached) return cached;
+
+  let all: any[] = [];
+  let page = 1;
+  while (true) {
+    const { data } = await github.get("/user/repos", {
+      params: { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member", page },
+    });
+    all = all.concat(data);
+    if (data.length < 100) break;
+    page++;
+  }
+  apiCache.set(cacheKey, all);
+  return all;
+}
+
+/**
+ * Fetch user's GraphQL node ID (cached).
+ */
+async function fetchUserNodeId(
+  github: ReturnType<typeof createGitHubClient>,
+  username: string,
+): Promise<string> {
+  const cacheKey = `github:user-node-id:${username}`;
+  const cached = apiCache.get<string>(cacheKey);
+  if (cached) return cached;
+
+  const { data: user } = await github.get(`/users/${username}`);
+  apiCache.set(cacheKey, user.node_id);
+  return user.node_id;
+}
+
+/**
  * GET /api/github/commits-search
- * Search commits by user within a date range using Search API with pagination.
- * Query params: startDate (YYYY-MM-DD), endDate (YYYY-MM-DD)
+ * Hybrid approach: contributionsCollection for non-fork repos + GraphQL history
+ * for user-owned forks (GitHub excludes forks from contribution counts).
  */
 router.get("/commits-search", async (req: Request, res: Response) => {
   const config = getConfig();
@@ -806,73 +873,63 @@ router.get("/commits-search", async (req: Request, res: Response) => {
   const github = createGitHubClient();
 
   try {
-    // Get user's GraphQL node ID (cached)
-    const userCacheKey = `github:user-node-id:${config.githubUsername}`;
-    let userId = apiCache.get<string>(userCacheKey);
-    if (!userId) {
-      const { data: user } = await github.get(`/users/${config.githubUsername}`);
-      userId = user.node_id;
-      apiCache.set(userCacheKey, userId);
-    }
-
-    // Fetch all user's repos (paginated, include forks)
-    const repoCacheKey = `github:user-repos`;
-    let repos = apiCache.get<any[]>(repoCacheKey);
-    if (!repos) {
-      repos = [];
-      let page = 1;
-      while (true) {
-        const { data } = await github.get("/user/repos", {
-          params: { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member", page },
-        });
-        repos = repos.concat(data);
-        if (data.length < 100) break;
-        page++;
-      }
-      apiCache.set(repoCacheKey, repos);
-    }
-
     const since = `${startDate}T00:00:00Z`;
     const until = `${endDate}T23:59:59Z`;
+    const chunks = buildYearChunks(startDate, endDate);
 
-    // Build map of repo name -> owners for fork dedup
-    const reposByName = new Map<string, string[]>();
-    for (const r of repos) {
-      const name = r.name;
-      if (!reposByName.has(name)) reposByName.set(name, []);
-      reposByName.get(name)!.push(r.owner.login);
+    const fragments = chunks.map(
+      (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
+        totalCommitContributions
+        commitContributionsByRepository(maxRepositories: 100) {
+          repository { nameWithOwner }
+          contributions { totalCount }
+        }
+      }`,
+    );
+
+    const contribQuery = `query { viewer { ${fragments.join("\n")} } }`;
+
+    const [contribData, userId, repos] = await Promise.all([
+      graphql<{ viewer: Record<string, any> }>(contribQuery),
+      fetchUserNodeId(github, config.githubUsername),
+      fetchUserRepos(github),
+    ]);
+
+    let contribCount = 0;
+    const repoTotals = new Map<string, number>();
+
+    for (const chunk of chunks) {
+      const collection = contribData.viewer?.[chunk.alias];
+      contribCount += collection?.totalCommitContributions || 0;
+
+      for (const entry of collection?.commitContributionsByRepository || []) {
+        const repoName = entry.repository?.nameWithOwner || "unknown";
+        const count = entry.contributions?.totalCount || 0;
+        repoTotals.set(repoName, (repoTotals.get(repoName) || 0) + count);
+      }
     }
 
-    // Filter: skip forks where another owner has same repo name (likely upstream), skip inactive
-    let skippedForks = 0;
-    const activeRepos = repos.filter((r: any) => {
-      if (!r.pushed_at) return false;
-      if (r.pushed_at < since) return false;
-      // Skip fork if another non-fork copy exists (upstream)
-      if (r.fork) {
-        const owners = reposByName.get(r.name) || [];
-        const hasUpstream = repos.some(
-          (other: any) => other.name === r.name && !other.fork && other.full_name !== r.full_name,
-        );
-        if (hasUpstream) {
-          skippedForks++;
-          return false;
-        }
-      }
-      return true;
-    });
+    console.log(`[Commits] contributionsCollection: ${contribCount} (${chunks.length} chunks)`);
 
-    console.log(`[Commits] ${activeRepos.length}/${repos.length} repos (skipped ${skippedForks} duplicate forks)`);
+    // Skip forks whose upstream is already counted by contributionsCollection
+    const contribRepoNames = new Set([...repoTotals.keys()].map((n) => n.split("/")[1]));
 
-    let totalCount = 0;
+    const forkRepos = repos.filter((r: any) =>
+      r.fork &&
+      r.owner.login === config.githubUsername &&
+      r.pushed_at >= since &&
+      !contribRepoNames.has(r.name),
+    );
 
-    // Batch repos into GraphQL queries
-    const batchSize = 100;
-    for (let i = 0; i < activeRepos.length; i += batchSize) {
-      const batch = activeRepos.slice(i, i + batchSize);
-      const fragments = batch.map((repo: any, idx: number) => {
+    let forkCount = 0;
+    const BATCH_SIZE = 25;
+    const MAX_RETRIES = 2;
+
+    for (let i = 0; i < forkRepos.length; i += BATCH_SIZE) {
+      const batch = forkRepos.slice(i, i + BATCH_SIZE);
+      const forkFragments = batch.map((repo: any, idx: number) => {
         const [owner, name] = repo.full_name.split("/");
-        return `r${idx}: repository(owner: "${owner}", name: "${name}") {
+        return `f${idx}: repository(owner: "${owner}", name: "${name}") {
           defaultBranchRef {
             target {
               ... on Commit {
@@ -885,23 +942,46 @@ router.get("/commits-search", async (req: Request, res: Response) => {
         }`;
       });
 
-      const query = `query { ${fragments.join("\n")} }`;
+      const forkQuery = `query { ${forkFragments.join("\n")} }`;
 
-      try {
-        const data = await graphql(query);
-        for (let idx = 0; idx < batch.length; idx++) {
-          const count = data[`r${idx}`]?.defaultBranchRef?.target?.history?.totalCount || 0;
-          if (count > 0) {
-            console.log(`[Commits] ${batch[idx].full_name}: ${count}`);
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const forkData = await graphql(forkQuery);
+          for (let idx = 0; idx < batch.length; idx++) {
+            const count = forkData[`f${idx}`]?.defaultBranchRef?.target?.history?.totalCount || 0;
+            if (count > 0) {
+              console.log(`[Commits] fork ${batch[idx].full_name}: ${count}`);
+              repoTotals.set(batch[idx].full_name, (repoTotals.get(batch[idx].full_name) || 0) + count);
+            }
+            forkCount += count;
           }
-          totalCount += count;
+          break;
+        } catch (err: any) {
+          if (attempt < MAX_RETRIES) {
+            console.log(`[Commits] Fork batch retry ${attempt + 1}: ${err.message}`);
+            await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+          } else {
+            console.error(`[Commits] Fork batch DROPPED: ${batch.map((r: any) => r.full_name).join(", ")}`);
+          }
         }
-      } catch (err: any) {
-        console.log(`[Commits] GraphQL batch error: ${err.message}`);
       }
     }
 
-    console.log(`[Commits] Total: ${totalCount} commits`);
+    if (forkCount > 0) {
+      console.log(`[Commits] Forks: ${forkCount} from ${forkRepos.length} repos`);
+    }
+
+    const totalCount = contribCount + forkCount;
+
+    const sortedRepos = [...repoTotals.entries()].sort((a, b) => b[1] - a[1]);
+    for (const [repo, count] of sortedRepos.slice(0, 20)) {
+      console.log(`[Commits] ${repo}: ${count}`);
+    }
+    if (sortedRepos.length > 20) {
+      console.log(`[Commits] ... and ${sortedRepos.length - 20} more repos`);
+    }
+
+    console.log(`[Commits] Total: ${totalCount} (contributions: ${contribCount}, forks: ${forkCount})`);
     const responseData = { commitCount: totalCount };
     apiCache.set(cacheKey, responseData);
     res.json(responseData);

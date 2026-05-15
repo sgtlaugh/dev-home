@@ -90,5 +90,7 @@ export async function fetchCommitCount(
     1000,
     signal,
   );
-  return data.commitCount || 0;
+  const count = data.commitCount || 0;
+  apiCache.set(cacheKey, { commitCount: count });
+  return count;
 }
