@@ -740,9 +740,10 @@ async function fetchPRsForSubRange(username: string, startDate: string, endDate:
   return allPrs;
 }
 
-/** Split into yearly sub-ranges and fetch PRs in parallel, deduped by ID. */
+/** Split date range into N equal chunks, fetch PRs in parallel, dedupe. */
 async function fetchAllPRsByDateRange(username: string, startDate: string, endDate: string): Promise<any[]> {
-  const subRanges = buildYearRanges(startDate, endDate);
+  const PR_PARALLEL_CHUNKS = 4;
+  const subRanges = buildEqualRanges(startDate, endDate, PR_PARALLEL_CHUNKS);
 
   if (subRanges.length <= 1) {
     return fetchPRsForSubRange(username, startDate, endDate);
@@ -793,6 +794,41 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   apiCache.set(cacheKey, responseData);
   res.json(responseData);
 });
+
+/** Split a date range into N roughly equal chunks (YYYY-MM-DD strings). */
+function buildEqualRanges(startDate: string, endDate: string, chunks: number): { start: string; end: string }[] {
+  const start = new Date(`${startDate}T00:00:00Z`).getTime();
+  const end = new Date(`${endDate}T23:59:59Z`).getTime();
+  const totalDays = Math.ceil((end - start) / (24 * 60 * 60 * 1000));
+
+  if (totalDays <= 1 || chunks <= 1) {
+    return [{ start: startDate, end: endDate }];
+  }
+
+  const n = Math.min(chunks, totalDays);
+  const daysPerChunk = Math.ceil(totalDays / n);
+  const ranges: { start: string; end: string }[] = [];
+
+  let cur = new Date(`${startDate}T00:00:00Z`);
+  const rangeEnd = new Date(`${endDate}T00:00:00Z`);
+
+  for (let i = 0; i < n && cur <= rangeEnd; i++) {
+    const chunkEnd = new Date(cur);
+    chunkEnd.setDate(chunkEnd.getDate() + daysPerChunk - 1);
+    const actualEnd = chunkEnd > rangeEnd ? rangeEnd : chunkEnd;
+
+    ranges.push({
+      start: cur.toISOString().split("T")[0],
+      end: actualEnd.toISOString().split("T")[0],
+    });
+
+    const next = new Date(actualEnd);
+    next.setDate(next.getDate() + 1);
+    cur = next;
+  }
+
+  return ranges;
+}
 
 /** Split a date range into yearly sub-ranges (YYYY-MM-DD strings). */
 function buildYearRanges(startDate: string, endDate: string): { start: string; end: string }[] {
@@ -906,45 +942,35 @@ router.get("/commits-search", async (req: Request, res: Response) => {
     const until = `${endDate}T23:59:59Z`;
     const chunks = buildYearChunks(startDate, endDate);
 
-    const CHUNK_BATCH_SIZE = 3;
-    const chunkBatches = [];
-    for (let i = 0; i < chunks.length; i += CHUNK_BATCH_SIZE) {
-      chunkBatches.push(chunks.slice(i, i + CHUNK_BATCH_SIZE));
-    }
+    const fragments = chunks.map(
+      (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
+        totalCommitContributions
+        commitContributionsByRepository(maxRepositories: 100) {
+          repository { nameWithOwner }
+          contributions { totalCount }
+        }
+      }`,
+    );
+    const contribQuery = `query { viewer { id ${fragments.join("\n")} } }`;
 
-    const [userId, repos, ...contribBatchResults] = await Promise.all([
-      fetchUserNodeId(github, config.githubUsername),
+    const [contribData, repos] = await Promise.all([
+      graphql<{ viewer: Record<string, any> }>(contribQuery),
       fetchUserRepos(github),
-      ...chunkBatches.map((batch) => {
-        const fragments = batch.map(
-          (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
-            totalCommitContributions
-            commitContributionsByRepository(maxRepositories: 100) {
-              repository { nameWithOwner }
-              contributions { totalCount }
-            }
-          }`,
-        );
-        const query = `query { viewer { ${fragments.join("\n")} } }`;
-        return graphql<{ viewer: Record<string, any> }>(query);
-      }),
     ]);
+
+    const userId = contribData.viewer?.id;
 
     let contribCount = 0;
     const repoTotals = new Map<string, number>();
 
-    for (let batchIdx = 0; batchIdx < chunkBatches.length; batchIdx++) {
-      const batch = chunkBatches[batchIdx];
-      const contribData = contribBatchResults[batchIdx];
-      for (const chunk of batch) {
-        const collection = contribData.viewer?.[chunk.alias];
-        contribCount += collection?.totalCommitContributions || 0;
+    for (const chunk of chunks) {
+      const collection = contribData.viewer?.[chunk.alias];
+      contribCount += collection?.totalCommitContributions || 0;
 
-        for (const entry of collection?.commitContributionsByRepository || []) {
-          const repoName = entry.repository?.nameWithOwner || "unknown";
-          const count = entry.contributions?.totalCount || 0;
-          repoTotals.set(repoName, (repoTotals.get(repoName) || 0) + count);
-        }
+      for (const entry of collection?.commitContributionsByRepository || []) {
+        const repoName = entry.repository?.nameWithOwner || "unknown";
+        const count = entry.contributions?.totalCount || 0;
+        repoTotals.set(repoName, (repoTotals.get(repoName) || 0) + count);
       }
     }
 
