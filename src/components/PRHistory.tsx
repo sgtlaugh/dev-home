@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { IconGitPullRequest } from "@tabler/icons-react";
+import { IconGitPullRequest, IconGitMerge, IconX } from "@tabler/icons-react";
+import Card from "react-bootstrap/Card";
 import { GitHubPR } from "../types";
 import { fetchPRsByDateRange } from "../services/github";
 import { GroupedPRTable } from "./GroupedPRTable";
@@ -84,149 +85,169 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
     return true;
   });
 
+  const mergedCount = prs.filter((pr) => pr.merged).length;
+  const closedCount = prs.filter((pr) => pr.state === "closed" && !pr.merged).length;
+  const openCount = prs.filter((pr) => pr.state === "open" && !pr.merged).length;
+
   return (
     <div style={{ padding: "1rem" }}>
-      <div className="d-flex gap-3 mb-4 align-items-center flex-wrap">
-        <label style={{ marginBottom: 0 }}>
-          <span style={{ fontWeight: 500, marginRight: "0.5rem" }}>Mode:</span>
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as DateMode)}
-            style={{
-              padding: "0.25rem 0.5rem",
-              borderRadius: "0.25rem",
-              border: "1px solid var(--bs-border-color)",
-              minWidth: "100px",
-            }}
-          >
-            <option value="month">Month</option>
-            <option value="year">Year</option>
-            <option value="custom">Custom</option>
-          </select>
-        </label>
+      {/* Summary Stats */}
+      <div className="d-flex gap-2 mb-4 flex-wrap">
+        <div className="stat-card">
+          <div className="stat-value">{prs.length}</div>
+          <div className="stat-label">Total</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: "#3fb950" }}>
+            {mergedCount}
+          </div>
+          <div className="stat-label">Merged</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: "#f85149" }}>
+            {closedCount}
+          </div>
+          <div className="stat-label">Closed</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: "#58a6ff" }}>
+            {openCount}
+          </div>
+          <div className="stat-label">Open</div>
+        </div>
+      </div>
 
-        {mode === "month" && (
-          <>
+      {/* Controls Section */}
+      <Card className="controls-card mb-4">
+        <Card.Body>
+          <div className="d-flex gap-3 align-items-center flex-wrap">
             <label style={{ marginBottom: 0 }}>
-              <span style={{ fontWeight: 500, marginRight: "0.5rem" }}>Year:</span>
-              <input
-                type="number"
-                value={year}
-                onChange={(e) => setYear(parseInt(e.target.value, 10))}
-                min="2010"
-                max={now.getFullYear() + 1}
-                style={{
-                  width: "100px",
-                  padding: "0.25rem 0.5rem",
-                  borderRadius: "0.25rem",
-                  border: "1px solid var(--bs-border-color)",
-                }}
-              />
-            </label>
-            <label style={{ marginBottom: 0 }}>
-              <span style={{ fontWeight: 500, marginRight: "0.5rem" }}>Month:</span>
+              <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
+                Mode:
+              </span>
               <select
-                value={month}
-                onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-                style={{
-                  padding: "0.25rem 0.5rem",
-                  borderRadius: "0.25rem",
-                  border: "1px solid var(--bs-border-color)",
-                  minWidth: "120px",
-                }}
+                value={mode}
+                onChange={(e) => setMode(e.target.value as DateMode)}
+                className="filter-select"
               >
-                {[
-                  "January",
-                  "February",
-                  "March",
-                  "April",
-                  "May",
-                  "June",
-                  "July",
-                  "August",
-                  "September",
-                  "October",
-                  "November",
-                  "December",
-                ].map((m, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {m}
-                  </option>
-                ))}
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+                <option value="custom">Custom</option>
               </select>
             </label>
-          </>
-        )}
 
-        {mode === "year" && (
-          <label style={{ marginBottom: 0 }}>
-            <span style={{ fontWeight: 500, marginRight: "0.5rem" }}>Year:</span>
-            <input
-              type="number"
-              value={year}
-              onChange={(e) => setYear(parseInt(e.target.value, 10))}
-              min="2010"
-              max={now.getFullYear() + 1}
-              style={{
-                width: "100px",
-                padding: "0.25rem 0.5rem",
-                borderRadius: "0.25rem",
-                border: "1px solid var(--bs-border-color)",
-              }}
-            />
-          </label>
-        )}
+            {mode === "month" && (
+              <>
+                <label style={{ marginBottom: 0 }}>
+                  <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
+                    Year:
+                  </span>
+                  <input
+                    type="number"
+                    value={year}
+                    onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                    min="2010"
+                    max={now.getFullYear() + 1}
+                    className="filter-input"
+                  />
+                </label>
+                <label style={{ marginBottom: 0 }}>
+                  <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
+                    Month:
+                  </span>
+                  <select
+                    value={month}
+                    onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                    className="filter-select"
+                  >
+                    {[
+                      "January",
+                      "February",
+                      "March",
+                      "April",
+                      "May",
+                      "June",
+                      "July",
+                      "August",
+                      "September",
+                      "October",
+                      "November",
+                      "December",
+                    ].map((m, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
 
-        {mode === "custom" && (
-          <>
+            {mode === "year" && (
+              <label style={{ marginBottom: 0 }}>
+                <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
+                  Year:
+                </span>
+                <input
+                  type="number"
+                  value={year}
+                  onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                  min="2010"
+                  max={now.getFullYear() + 1}
+                  className="filter-input"
+                />
+              </label>
+            )}
+
+            {mode === "custom" && (
+              <>
+                <label style={{ marginBottom: 0 }}>
+                  <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
+                    From:
+                  </span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="filter-input"
+                  />
+                </label>
+                <label style={{ marginBottom: 0 }}>
+                  <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
+                    To:
+                  </span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="filter-input"
+                  />
+                </label>
+              </>
+            )}
+
             <label style={{ marginBottom: 0 }}>
-              <span style={{ fontWeight: 500, marginRight: "0.5rem" }}>From:</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+              <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
+                Status:
+              </span>
+              <select
+                value={stateFilter}
+                onChange={(e) => setStateFilter(e.target.value as typeof stateFilter)}
+                className="filter-select"
                 style={{
-                  padding: "0.25rem 0.5rem",
-                  borderRadius: "0.25rem",
-                  border: "1px solid var(--bs-border-color)",
+                  borderColor: stateFilter !== "all" ? "#58a6ff" : "var(--bs-border-color)",
+                  color: stateFilter !== "all" ? "#58a6ff" : "inherit",
                 }}
-              />
+              >
+                <option value="all">All</option>
+                <option value="open">Open</option>
+                <option value="merged">Merged</option>
+                <option value="closed">Closed</option>
+              </select>
             </label>
-            <label style={{ marginBottom: 0 }}>
-              <span style={{ fontWeight: 500, marginRight: "0.5rem" }}>To:</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                style={{
-                  padding: "0.25rem 0.5rem",
-                  borderRadius: "0.25rem",
-                  border: "1px solid var(--bs-border-color)",
-                }}
-              />
-            </label>
-          </>
-        )}
-
-        <label style={{ marginBottom: 0 }}>
-          <span style={{ fontWeight: 500, marginRight: "0.5rem" }}>Status:</span>
-          <select
-            value={stateFilter}
-            onChange={(e) => setStateFilter(e.target.value as typeof stateFilter)}
-            style={{
-              padding: "0.25rem 0.5rem",
-              borderRadius: "0.25rem",
-              border: "1px solid var(--bs-border-color)",
-              minWidth: "100px",
-            }}
-          >
-            <option value="all">All</option>
-            <option value="open">Open</option>
-            <option value="merged">Merged</option>
-            <option value="closed">Closed</option>
-          </select>
-        </label>
-      </div>
+          </div>
+        </Card.Body>
+      </Card>
 
       {error && (
         <div className="alert alert-danger small" role="alert">
