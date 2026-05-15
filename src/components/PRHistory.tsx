@@ -273,30 +273,17 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
         <GroupedPRTable
           prs={filteredPrs}
           loading={loading}
-          columnCount={5}
+          columnCount={4}
           headers={
             <>
-              <th>PR</th>
               <th>Title</th>
               <th>Repository</th>
-              <th>Status</th>
               <th>Created</th>
+              <th>Status</th>
             </>
           }
           renderRow={(pr, onClick) => (
             <tr key={pr.id} onClick={onClick} style={{ cursor: "pointer" }}>
-              <td>
-                <a
-                  href={pr.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-secondary-custom"
-                  style={{ fontWeight: 500, whiteSpace: "nowrap" }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  #{pr.number}
-                </a>
-              </td>
               <td>
                 <a
                   href={pr.html_url}
@@ -313,6 +300,11 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                 <span className="badge badge-status-neutral">{pr.repo_full_name}</span>
               </td>
               <td>
+                <span className="text-secondary-custom" style={{ whiteSpace: "nowrap" }}>
+                  {new Date(pr.created_at).toLocaleDateString()}
+                </span>
+              </td>
+              <td>
                 <div className="d-flex align-items-center gap-2">
                   {pr.draft && <span className="badge badge-status-neutral">Draft</span>}
                   {pr.merged ? (
@@ -323,11 +315,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                     <span className="badge badge-status-red">Closed</span>
                   )}
                 </div>
-              </td>
-              <td>
-                <span className="text-secondary-custom" style={{ whiteSpace: "nowrap" }}>
-                  {new Date(pr.created_at).toLocaleDateString()}
-                </span>
               </td>
             </tr>
           )}
