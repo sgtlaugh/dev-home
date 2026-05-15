@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
-import { IconMessageCircle } from "@tabler/icons-react";
+import { IconMessageCircle, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import { JiraComment } from "../types";
 import { formatRelativeTime } from "../utils/time";
 import { EmptyState } from "./EmptyState";
@@ -29,6 +29,18 @@ interface JiraCommentsProps {
 }
 
 export const JiraComments: React.FC<JiraCommentsProps> = ({ comments, loading, baseUrl }) => {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => {
+    const newSet = new Set(expandedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setExpandedIds(newSet);
+  };
+
   if (loading && comments.length === 0) {
     return (
       <div className="d-flex justify-content-center align-items-center py-5">
@@ -107,9 +119,29 @@ export const JiraComments: React.FC<JiraCommentsProps> = ({ comments, loading, b
                     fontSize: "0.8125rem",
                     marginTop: 6,
                     lineHeight: 1.5,
+                    cursor: "pointer",
                   }}
+                  onClick={() => toggleExpanded(comment.id)}
                 >
-                  {highlightMentions(comment.body?.text || "", 120)}
+                  {expandedIds.has(comment.id)
+                    ? comment.body?.text || ""
+                    : highlightMentions(comment.body?.text || "", 120)}
+                  {(comment.body?.text || "").length > 120 && (
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      {expandedIds.has(comment.id) ? (
+                        <IconChevronUp size={14} />
+                      ) : (
+                        <IconChevronDown size={14} />
+                      )}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
