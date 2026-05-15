@@ -812,23 +812,53 @@ function buildYearChunks(startDate: string, endDate: string) {
 }
 
 /**
- * Fetch all user repos with pagination (cached).
+ * Fetch all user repos with parallel pagination (cached).
  */
 async function fetchUserRepos(github: ReturnType<typeof createGitHubClient>): Promise<any[]> {
   const cacheKey = `github:user-repos`;
   const cached = apiCache.get<any[]>(cacheKey);
   if (cached) return cached;
 
-  let all: any[] = [];
-  let page = 1;
+  // Fetch first page to determine total
+  const { data: firstPage } = await github.get("/user/repos", {
+    params: { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member", page: 1 },
+  });
+
+  if (firstPage.length < 100) {
+    apiCache.set(cacheKey, firstPage);
+    return firstPage;
+  }
+
+  // Fetch remaining pages in parallel
+  const pages = [firstPage];
+  let page = 2;
+  const requests = [];
   while (true) {
+    const nextPage = github.get("/user/repos", {
+      params: { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member", page },
+    });
+    requests.push(nextPage);
+    page++;
+    if (requests.length >= 3) break;
+  }
+
+  const results = await Promise.all(requests);
+  for (const result of results) {
+    pages.push(result.data);
+    if (result.data.length < 100) break;
+  }
+
+  // Fetch any remaining pages sequentially if needed
+  while (results[results.length - 1].data.length === 100) {
     const { data } = await github.get("/user/repos", {
       params: { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member", page },
     });
-    all = all.concat(data);
-    if (data.length < 100) break;
+    pages.push(data);
     page++;
+    if (data.length < 100) break;
   }
+
+  const all = pages.flat();
   apiCache.set(cacheKey, all);
   return all;
 }
@@ -923,7 +953,7 @@ router.get("/commits-search", async (req: Request, res: Response) => {
     );
 
     let forkCount = 0;
-    const BATCH_SIZE = 25;
+    const BATCH_SIZE = 10;
     const MAX_RETRIES = 2;
 
     for (let i = 0; i < forkRepos.length; i += BATCH_SIZE) {
