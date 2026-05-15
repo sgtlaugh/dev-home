@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { IconGitPullRequest, IconGitMerge, IconX } from "@tabler/icons-react";
 import Card from "react-bootstrap/Card";
 import { GitHubPR } from "../types";
-import { fetchPRsByDateRange } from "../services/github";
+import { fetchPRsByDateRange, fetchCommitCount } from "../services/github";
 import { GroupedPRTable } from "./GroupedPRTable";
 import { EmptyState } from "./EmptyState";
 
@@ -23,6 +23,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   const [endDate, setEndDate] = useState("");
   const [stateFilter, setStateFilter] = useState<"all" | "open" | "merged" | "closed">("all");
   const [prs, setPrs] = useState<GitHubPR[]>([]);
+  const [commitCount, setCommitCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = React.useRef<AbortController | null>(null);
@@ -60,10 +61,15 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchPRsByDateRange(range.start, range.end, signal);
+        const [prsData, commits] = await Promise.all([
+          fetchPRsByDateRange(range.start, range.end, signal),
+          fetchCommitCount(range.start, range.end, signal),
+        ]);
         if (signal.aborted) return;
-        setPrs(data);
-        onCountChange?.(data.length);
+        setPrs(prsData);
+        setCommitCount(commits);
+
+        onCountChange?.(prsData.length);
       } catch (err) {
         if (signal.aborted) return;
         setError(`Failed to load PRs: ${err instanceof Error ? err.message : "Unknown error"}`);
@@ -132,6 +138,12 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
             {closedCount}
           </div>
           <div className="stat-label">Closed</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: "#58a6ff" }}>
+            {commitCount}
+          </div>
+          <div className="stat-label">Commits</div>
         </div>
       </div>
 

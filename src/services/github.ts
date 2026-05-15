@@ -69,3 +69,25 @@ export async function fetchPRsByDateRange(
   apiCache.set(cacheKey, data.prs);
   return data.prs;
 }
+
+export async function fetchCommitCount(
+  startDate: string,
+  endDate: string,
+  signal?: AbortSignal,
+): Promise<number> {
+  const cacheKey = `github:commits-count:${startDate}:${endDate}`;
+  const cached = apiCache.get<{ commitCount: number }>(cacheKey);
+  if (cached) return cached.commitCount;
+
+  const { data } = await withRetry(
+    () =>
+      apiClient.get("/github/commits-search", {
+        params: { startDate, endDate },
+        signal,
+      }),
+    3,
+    1000,
+    signal,
+  );
+  return data.commitCount || 0;
+}

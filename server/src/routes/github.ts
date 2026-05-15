@@ -748,4 +748,113 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   res.json(responseData);
 });
 
+/**
+ * GET /api/github/commits-search
+ * Search commits by user within a date range using Search API with pagination.
+ * Query params: startDate (YYYY-MM-DD), endDate (YYYY-MM-DD)
+ */
+router.get("/commits-search", async (req: Request, res: Response) => {
+  const config = getConfig();
+  const startDate = req.query.startDate as string;
+  const endDate = req.query.endDate as string;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ error: "startDate and endDate are required" });
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+    return res.status(400).json({ error: "Dates must be in YYYY-MM-DD format" });
+  }
+
+  const cacheKey = `github:commits-search:${startDate}:${endDate}`;
+  const cached = apiCache.get(cacheKey);
+  if (cached) return res.json(cached);
+
+  const github = createGitHubClient();
+
+  try {
+    // Get user's GraphQL node ID (cached)
+    const userCacheKey = `github:user-node-id:${config.githubUsername}`;
+    let userId = apiCache.get<string>(userCacheKey);
+    if (!userId) {
+      const { data: user } = await github.get(`/users/${config.githubUsername}`);
+      userId = user.node_id;
+      apiCache.set(userCacheKey, userId);
+    }
+
+    // Fetch all user's repos (paginated, include forks)
+    const repoCacheKey = `github:user-repos`;
+    let repos = apiCache.get<any[]>(repoCacheKey);
+    if (!repos) {
+      repos = [];
+      let page = 1;
+      while (true) {
+        const { data } = await github.get("/user/repos", {
+          params: { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member", page },
+        });
+        repos = repos.concat(data);
+        if (data.length < 100) break;
+        page++;
+      }
+      apiCache.set(repoCacheKey, repos);
+    }
+
+    const since = `${startDate}T00:00:00Z`;
+    const until = `${endDate}T23:59:59Z`;
+
+    // Filter repos that were pushed to after start date
+    const activeRepos = repos.filter((r: any) => {
+      if (!r.pushed_at) return false;
+      return r.pushed_at >= since;
+    });
+
+    console.log(`[Commits] ${activeRepos.length}/${repos.length} repos active since ${startDate}`);
+
+    let totalCount = 0;
+
+    // Batch repos into GraphQL queries (50 per batch)
+    const batchSize = 50;
+    for (let i = 0; i < activeRepos.length; i += batchSize) {
+      const batch = activeRepos.slice(i, i + batchSize);
+      const fragments = batch.map((repo: any, idx: number) => {
+        const [owner, name] = repo.full_name.split("/");
+        return `r${idx}: repository(owner: "${owner}", name: "${name}") {
+          defaultBranchRef {
+            target {
+              ... on Commit {
+                history(since: "${since}", until: "${until}", author: { id: "${userId}" }) {
+                  totalCount
+                }
+              }
+            }
+          }
+        }`;
+      });
+
+      const query = `query { ${fragments.join("\n")} }`;
+
+      try {
+        const data = await graphql(query);
+        for (let idx = 0; idx < batch.length; idx++) {
+          const count = data[`r${idx}`]?.defaultBranchRef?.target?.history?.totalCount || 0;
+          if (count > 0) {
+            console.log(`[Commits] ${batch[idx].full_name}: ${count}`);
+          }
+          totalCount += count;
+        }
+      } catch (err: any) {
+        console.log(`[Commits] GraphQL batch error: ${err.message}`);
+      }
+    }
+
+    console.log(`[Commits] Total: ${totalCount} commits`);
+    const responseData = { commitCount: totalCount };
+    apiCache.set(cacheKey, responseData);
+    res.json(responseData);
+  } catch (err: any) {
+    console.error("[Commits] Error:", err.message);
+    res.status(500).json({ error: "Failed to search commits", commitCount: 0 });
+  }
+});
+
 export default router;
