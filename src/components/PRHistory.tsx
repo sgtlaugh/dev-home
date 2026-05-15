@@ -110,26 +110,28 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       {/* Summary Stats */}
       <div className="d-flex gap-2 mb-4 flex-wrap">
         <div className="stat-card">
-          <div className="stat-value">{prs.length}</div>
+          <div className="stat-value" style={{ color: "#3fb950" }}>
+            {prs.length}
+          </div>
           <div className="stat-label">Total</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value" style={{ color: "#3fb950" }}>
+          <div className="stat-value" style={{ color: "#a371f7" }}>
             {mergedCount}
           </div>
           <div className="stat-label">Merged</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: "#f85149" }}>
-            {closedCount}
-          </div>
-          <div className="stat-label">Closed</div>
         </div>
         <div className="stat-card">
           <div className="stat-value" style={{ color: "#58a6ff" }}>
             {openCount}
           </div>
           <div className="stat-label">Open</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: "#f85149" }}>
+            {closedCount}
+          </div>
+          <div className="stat-label">Closed</div>
         </div>
       </div>
 
