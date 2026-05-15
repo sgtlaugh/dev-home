@@ -703,11 +703,8 @@ router.get("/mentions", async (_req: Request, res: Response) => {
  * Fetch all PRs within a date range, handling the 1000-result limit by recursively narrowing.
  * If a query returns 1000 results, use the oldest PR's creation date to split the range.
  */
-async function fetchAllPRsByDateRange(
-  username: string,
-  startDate: string,
-  endDate: string,
-): Promise<any[]> {
+/** Fetch PRs for a single sub-range, narrowing dates if hitting GitHub's 1000-result cap. */
+async function fetchPRsForSubRange(username: string, startDate: string, endDate: string): Promise<any[]> {
   const MAX_RESULTS = 1000;
   const allPrs: any[] = [];
   let currentStart = startDate;
@@ -715,27 +712,21 @@ async function fetchAllPRsByDateRange(
 
   while (true) {
     const q = `author:${username} type:pr created:${currentStart}..${currentEnd}`;
-    let rangeNodes: any[] = [];
+    const rangeNodes: any[] = [];
     let cursor: string | null = null;
     let hasNextPage = true;
 
     while (hasNextPage) {
       const result = await graphql<{
         search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
-      }>(SEARCH_MY_PRS_QUERY, {
-        query: q,
-        first: 100,
-        after: cursor,
-      });
+      }>(SEARCH_MY_PRS_QUERY, { query: q, first: 100, after: cursor });
 
-      const nodes = result.search?.nodes || [];
-      rangeNodes.push(...nodes);
+      rangeNodes.push(...(result.search?.nodes || []));
       hasNextPage = result.search?.pageInfo?.hasNextPage ?? false;
       cursor = result.search?.pageInfo?.endCursor ?? null;
     }
 
     allPrs.push(...rangeNodes);
-
     if (rangeNodes.length < MAX_RESULTS) break;
 
     const oldestDate = rangeNodes[rangeNodes.length - 1].createdAt?.split("T")[0];
@@ -749,12 +740,33 @@ async function fetchAllPRsByDateRange(
   return allPrs;
 }
 
-/**
- * GET /api/github/prs-by-date-range
- * Fetch all PRs authored by user created within a date range.
- * Handles GitHub's 1000-result limit by recursively narrowing date ranges.
- * Query params: startDate (YYYY-MM-DD), endDate (YYYY-MM-DD)
- */
+/** Split into yearly sub-ranges and fetch PRs in parallel, deduped by ID. */
+async function fetchAllPRsByDateRange(username: string, startDate: string, endDate: string): Promise<any[]> {
+  const subRanges = buildYearRanges(startDate, endDate);
+
+  if (subRanges.length <= 1) {
+    return fetchPRsForSubRange(username, startDate, endDate);
+  }
+
+  const results = await Promise.all(
+    subRanges.map((r) => fetchPRsForSubRange(username, r.start, r.end)),
+  );
+
+  const seen = new Set<string>();
+  const allPrs: any[] = [];
+  for (const prs of results) {
+    for (const pr of prs) {
+      const id = pr.id || pr.url;
+      if (!seen.has(id)) {
+        seen.add(id);
+        allPrs.push(pr);
+      }
+    }
+  }
+  return allPrs;
+}
+
+/** GET /api/github/prs-by-date-range */
 router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   const config = getConfig();
   const startDate = req.query.startDate as string;
@@ -782,79 +794,71 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   res.json(responseData);
 });
 
-/**
- * Split a date range into <=365-day chunks for contributionsCollection (max 1-year range).
- */
-function buildYearChunks(startDate: string, endDate: string) {
-  const chunks: { from: string; to: string; alias: string }[] = [];
-  let chunkStart = new Date(`${startDate}T00:00:00Z`);
+/** Split a date range into yearly sub-ranges (YYYY-MM-DD strings). */
+function buildYearRanges(startDate: string, endDate: string): { start: string; end: string }[] {
+  const ranges: { start: string; end: string }[] = [];
+  let cur = new Date(`${startDate}T00:00:00Z`);
   const rangeEnd = new Date(`${endDate}T23:59:59Z`);
 
-  while (chunkStart < rangeEnd) {
-    const chunkEnd = new Date(chunkStart);
-    chunkEnd.setFullYear(chunkEnd.getFullYear() + 1);
-    chunkEnd.setDate(chunkEnd.getDate() - 1);
-    const actualEnd = chunkEnd > rangeEnd ? rangeEnd : chunkEnd;
+  while (cur < rangeEnd) {
+    const yearEnd = new Date(cur);
+    yearEnd.setFullYear(yearEnd.getFullYear() + 1);
+    yearEnd.setDate(yearEnd.getDate() - 1);
+    const actualEnd = yearEnd > rangeEnd ? rangeEnd : yearEnd;
 
-    chunks.push({
-      from: chunkStart.toISOString(),
-      to: actualEnd.toISOString(),
-      alias: `c${chunks.length}`,
+    ranges.push({
+      start: cur.toISOString().split("T")[0],
+      end: actualEnd.toISOString().split("T")[0],
     });
 
-    const nextStart = new Date(actualEnd);
-    nextStart.setDate(nextStart.getDate() + 1);
-    nextStart.setHours(0, 0, 0, 0);
-    chunkStart = nextStart;
+    const next = new Date(actualEnd);
+    next.setDate(next.getDate() + 1);
+    cur = next;
   }
 
-  return chunks;
+  return ranges;
 }
 
-/**
- * Fetch all user repos with parallel pagination (cached).
- */
+/** Build yearly chunks with ISO timestamps and aliases for contributionsCollection. */
+function buildYearChunks(startDate: string, endDate: string) {
+  return buildYearRanges(startDate, endDate).map((r, i) => ({
+    from: `${r.start}T00:00:00Z`,
+    to: `${r.end}T23:59:59Z`,
+    alias: `c${i}`,
+  }));
+}
+
+/** Fetch all user repos with parallel pagination (cached). */
 async function fetchUserRepos(github: ReturnType<typeof createGitHubClient>): Promise<any[]> {
   const cacheKey = `github:user-repos`;
   const cached = apiCache.get<any[]>(cacheKey);
   if (cached) return cached;
 
-  // Fetch first page to determine total
-  const { data: firstPage } = await github.get("/user/repos", {
-    params: { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member", page: 1 },
-  });
+  const repoParams = { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member" };
+  const { data: firstPage } = await github.get("/user/repos", { params: { ...repoParams, page: 1 } });
 
   if (firstPage.length < 100) {
     apiCache.set(cacheKey, firstPage);
     return firstPage;
   }
 
-  // Fetch remaining pages in parallel
   const pages = [firstPage];
   let page = 2;
-  const requests = [];
-  while (true) {
-    const nextPage = github.get("/user/repos", {
-      params: { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member", page },
-    });
-    requests.push(nextPage);
-    page++;
-    if (requests.length >= 3) break;
-  }
 
+  // Speculatively fetch pages 2-4 in parallel
+  const requests = [2, 3, 4].map((p) => github.get("/user/repos", { params: { ...repoParams, page: p } }));
   const results = await Promise.all(requests);
   for (const result of results) {
     pages.push(result.data);
     if (result.data.length < 100) break;
+    page++;
   }
 
-  // Fetch any remaining pages sequentially if needed
-  while (results[results.length - 1].data.length === 100) {
-    const { data } = await github.get("/user/repos", {
-      params: { per_page: 100, visibility: "all", affiliation: "owner,collaborator,organization_member", page },
-    });
-    pages.push(data);
+  // Continue sequentially if still more pages
+  while (pages[pages.length - 1].length === 100) {
     page++;
+    const { data } = await github.get("/user/repos", { params: { ...repoParams, page } });
+    pages.push(data);
     if (data.length < 100) break;
   }
 
@@ -863,9 +867,7 @@ async function fetchUserRepos(github: ReturnType<typeof createGitHubClient>): Pr
   return all;
 }
 
-/**
- * Fetch user's GraphQL node ID (cached).
- */
+/** Fetch user's GraphQL node ID (cached). */
 async function fetchUserNodeId(
   github: ReturnType<typeof createGitHubClient>,
   username: string,
@@ -879,11 +881,7 @@ async function fetchUserNodeId(
   return user.node_id;
 }
 
-/**
- * GET /api/github/commits-search
- * Hybrid approach: contributionsCollection for non-fork repos + GraphQL history
- * for user-owned forks (GitHub excludes forks from contribution counts).
- */
+/** GET /api/github/commits-search — contributionsCollection + fork history. */
 router.get("/commits-search", async (req: Request, res: Response) => {
   const config = getConfig();
   const startDate = req.query.startDate as string;
@@ -908,41 +906,50 @@ router.get("/commits-search", async (req: Request, res: Response) => {
     const until = `${endDate}T23:59:59Z`;
     const chunks = buildYearChunks(startDate, endDate);
 
-    const fragments = chunks.map(
-      (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
-        totalCommitContributions
-        commitContributionsByRepository(maxRepositories: 100) {
-          repository { nameWithOwner }
-          contributions { totalCount }
-        }
-      }`,
-    );
+    const CHUNK_BATCH_SIZE = 3;
+    const chunkBatches = [];
+    for (let i = 0; i < chunks.length; i += CHUNK_BATCH_SIZE) {
+      chunkBatches.push(chunks.slice(i, i + CHUNK_BATCH_SIZE));
+    }
 
-    const contribQuery = `query { viewer { ${fragments.join("\n")} } }`;
-
-    const [contribData, userId, repos] = await Promise.all([
-      graphql<{ viewer: Record<string, any> }>(contribQuery),
+    const [userId, repos, ...contribBatchResults] = await Promise.all([
       fetchUserNodeId(github, config.githubUsername),
       fetchUserRepos(github),
+      ...chunkBatches.map((batch) => {
+        const fragments = batch.map(
+          (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
+            totalCommitContributions
+            commitContributionsByRepository(maxRepositories: 100) {
+              repository { nameWithOwner }
+              contributions { totalCount }
+            }
+          }`,
+        );
+        const query = `query { viewer { ${fragments.join("\n")} } }`;
+        return graphql<{ viewer: Record<string, any> }>(query);
+      }),
     ]);
 
     let contribCount = 0;
     const repoTotals = new Map<string, number>();
 
-    for (const chunk of chunks) {
-      const collection = contribData.viewer?.[chunk.alias];
-      contribCount += collection?.totalCommitContributions || 0;
+    for (let batchIdx = 0; batchIdx < chunkBatches.length; batchIdx++) {
+      const batch = chunkBatches[batchIdx];
+      const contribData = contribBatchResults[batchIdx];
+      for (const chunk of batch) {
+        const collection = contribData.viewer?.[chunk.alias];
+        contribCount += collection?.totalCommitContributions || 0;
 
-      for (const entry of collection?.commitContributionsByRepository || []) {
-        const repoName = entry.repository?.nameWithOwner || "unknown";
-        const count = entry.contributions?.totalCount || 0;
-        repoTotals.set(repoName, (repoTotals.get(repoName) || 0) + count);
+        for (const entry of collection?.commitContributionsByRepository || []) {
+          const repoName = entry.repository?.nameWithOwner || "unknown";
+          const count = entry.contributions?.totalCount || 0;
+          repoTotals.set(repoName, (repoTotals.get(repoName) || 0) + count);
+        }
       }
     }
 
     logger.info("Commits", `contributionsCollection: ${contribCount} (${chunks.length} chunks)`);
 
-    // Skip forks whose upstream is already counted by contributionsCollection
     const contribRepoNames = new Set([...repoTotals.keys()].map((n) => n.split("/")[1]));
 
     const forkRepos = repos.filter((r: any) =>
