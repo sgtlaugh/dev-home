@@ -2037,6 +2037,7 @@ a,
   background-color: #161b22;
   border: 1px solid #30363d;
   border-radius: 8px;
+  min-height: auto;
 }
 
 .controls-card .card-body {
@@ -2052,6 +2053,10 @@ a,
   color: #c9d1d9;
   font-size: 0.8125rem;
   transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.filter-select {
+  width: auto;
 }
 
 .filter-select:hover,
