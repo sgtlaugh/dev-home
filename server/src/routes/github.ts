@@ -802,18 +802,39 @@ router.get("/commits-search", async (req: Request, res: Response) => {
     const since = `${startDate}T00:00:00Z`;
     const until = `${endDate}T23:59:59Z`;
 
-    // Filter repos that were pushed to after start date
+    // Build map of repo name -> owners for fork dedup
+    const reposByName = new Map<string, string[]>();
+    for (const r of repos) {
+      const name = r.name;
+      if (!reposByName.has(name)) reposByName.set(name, []);
+      reposByName.get(name)!.push(r.owner.login);
+    }
+
+    // Filter: skip forks where another owner has same repo name (likely upstream), skip inactive
+    let skippedForks = 0;
     const activeRepos = repos.filter((r: any) => {
       if (!r.pushed_at) return false;
-      return r.pushed_at >= since;
+      if (r.pushed_at < since) return false;
+      // Skip fork if another non-fork copy exists (upstream)
+      if (r.fork) {
+        const owners = reposByName.get(r.name) || [];
+        const hasUpstream = repos.some(
+          (other: any) => other.name === r.name && !other.fork && other.full_name !== r.full_name,
+        );
+        if (hasUpstream) {
+          skippedForks++;
+          return false;
+        }
+      }
+      return true;
     });
 
-    console.log(`[Commits] ${activeRepos.length}/${repos.length} repos active since ${startDate}`);
+    console.log(`[Commits] ${activeRepos.length}/${repos.length} repos (skipped ${skippedForks} duplicate forks)`);
 
     let totalCount = 0;
 
-    // Batch repos into GraphQL queries (50 per batch)
-    const batchSize = 50;
+    // Batch repos into GraphQL queries
+    const batchSize = 100;
     for (let i = 0; i < activeRepos.length; i += batchSize) {
       const batch = activeRepos.slice(i, i + batchSize);
       const fragments = batch.map((repo: any, idx: number) => {
