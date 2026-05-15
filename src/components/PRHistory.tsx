@@ -273,13 +273,12 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
         <GroupedPRTable
           prs={filteredPrs}
           loading={loading}
-          columnCount={6}
+          columnCount={5}
           headers={
             <>
               <th>PR</th>
               <th>Title</th>
               <th>Repository</th>
-              <th>Branch</th>
               <th>Status</th>
               <th>Created</th>
             </>
@@ -312,15 +311,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
               </td>
               <td>
                 <span className="badge badge-status-neutral">{pr.repo_full_name}</span>
-              </td>
-              <td>
-                <div className="d-flex align-items-center gap-1">
-                  <span className="branch-tag">{pr.head.ref}</span>
-                  <span className="text-secondary-custom" style={{ fontSize: "0.75rem" }}>
-                    {"\u2192"}
-                  </span>
-                  <span className="branch-tag">{pr.base.ref}</span>
-                </div>
               </td>
               <td>
                 <div className="d-flex align-items-center gap-2">
