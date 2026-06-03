@@ -3,9 +3,9 @@ import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
 import { IconMessageCircle, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import { JiraComment } from "../types";
-import { formatRelativeTime } from "../utils/time";
 import { EmptyState } from "./EmptyState";
 import { truncateText } from "../utils/text";
+import { Timestamp } from "./Timestamp";
 
 // Highlight @mentions in text
 function highlightMentions(text: string, maxLen: number = 120): React.ReactNode {
@@ -80,9 +80,7 @@ export const JiraComments: React.FC<JiraCommentsProps> = ({ comments, loading, b
                     <span style={{ fontWeight: 600, fontSize: "0.8125rem" }}>
                       {comment.author.displayName}
                     </span>
-                    <span className="text-secondary-custom" style={{ fontSize: "0.75rem" }}>
-                      {formatRelativeTime(comment.created)}
-                    </span>
+                    <Timestamp timestamp={comment.created} />
                   </div>
                   <div className="d-flex align-items-center gap-2">
                     <a

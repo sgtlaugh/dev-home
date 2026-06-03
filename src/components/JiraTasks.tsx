@@ -3,10 +3,10 @@ import Table from "react-bootstrap/Table";
 import Spinner from "react-bootstrap/Spinner";
 import { IconChecklist } from "@tabler/icons-react";
 import { JiraIssue } from "../types";
-import { formatRelativeTime } from "../hooks/useRelativeTime";
 import { StatusBadge } from "./StatusBadge";
 import { EmptyState } from "./EmptyState";
 import { DescriptionModal } from "./DescriptionModal";
+import { Timestamp } from "./Timestamp";
 
 interface JiraTasksProps {
   issues: JiraIssue[];
@@ -98,9 +98,7 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
                   <span className="badge badge-status-neutral">{issue.project.key}</span>
                 </td>
                 <td>
-                  <span className="text-secondary-custom" style={{ whiteSpace: "nowrap" }}>
-                    {formatRelativeTime(issue.updated)}
-                  </span>
+                  <Timestamp timestamp={issue.updated} />
                 </td>
               </tr>
             );
