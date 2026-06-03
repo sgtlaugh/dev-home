@@ -151,6 +151,10 @@ function getActionSummary(actions: ActivityItem[]): string {
   return `${types[0]} & ${types.length - 1} more`;
 }
 
+function Timestamp({ timestamp }: { timestamp: string }) {
+  return <span className="activity-time">{formatRelativeTime(timestamp)}</span>;
+}
+
 export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
   const groupedActivities = useMemo(() => groupActivitiesByDate(activities), [activities]);
@@ -249,9 +253,7 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
                               ({entityActionCount})
                             </span>
                           )}
-                          <span className="activity-time">
-                            {formatRelativeTime(collapsed.lastTimestamp)}
-                          </span>
+                          <Timestamp timestamp={collapsed.lastTimestamp} />
                         </div>
                         <a
                           href={collapsed.url}
@@ -288,9 +290,7 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
                             >
                               {action.action}
                             </Badge>
-                            <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                              {formatRelativeTime(action.timestamp)}
-                            </span>
+                            <Timestamp timestamp={action.timestamp} />
                           </div>
                         ))}
                       </div>
