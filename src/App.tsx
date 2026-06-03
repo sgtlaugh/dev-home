@@ -115,39 +115,7 @@ export default function App() {
         <div className="app-body">
           {/* Sidebar navigation */}
           <nav className={`sidebar${sidebarCollapsed ? " collapsed" : ""}`}>
-            <div className="sidebar-header">
-              <div className="sidebar-actions">
-                {loading && <Spinner animation="border" size="sm" variant="secondary" />}
-                {!loading && lastRefreshTime && (
-                  <span
-                    className="text-secondary sidebar-refresh-time"
-                    title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
-                  >
-                    {Math.round((Date.now() - lastRefreshTime) / 60000)}m
-                  </span>
-                )}
-                <button
-                  className="sidebar-action-btn"
-                  onClick={async () => {
-                    await apiClient.post("/cache/purge");
-                    refresh();
-                    refreshNotes();
-                    refreshActivity();
-                  }}
-                  disabled={loading}
-                  title="Refresh"
-                >
-                  <IconRefresh size={14} />
-                </button>
-                <button
-                  className="sidebar-action-btn"
-                  onClick={() => setActiveTab("settings")}
-                  title="Settings"
-                >
-                  <IconSettings size={14} />
-                </button>
-              </div>
-            </div>
+            <div className="sidebar-header" />
             {[
               { key: "summary", label: "Overview", icon: IconLayoutDashboard },
               { group: "separator" },
@@ -240,70 +208,107 @@ export default function App() {
                 onToggleTheme={toggleTheme}
               />
             ) : (
-              <div className="tab-content-area" key={effectiveTab}>
-                {effectiveTab === "summary" && (
-                  <SummaryView
-                    jiraIssues={jiraIssues}
-                    jiraComments={jiraComments}
-                    openPRs={openPRs}
-                    reviewRequests={reviewRequests}
-                    loading={loading}
-                    jiraIssuesLoading={jiraIssuesLoading}
-                    jiraCommentsLoading={jiraCommentsLoading}
-                    openPRsLoading={openPRsLoading}
-                    reviewRequestsLoading={reviewRequestsLoading}
-                    notesLoading={notesLoading}
-                    jiraBaseUrl={jiraBaseUrl}
-                    onNavigate={setActiveTab}
-                    notes={unresolvedNotes}
-                    onResolveNote={resolveNote}
-                    onAddNote={() => setShowNoteEditor(true)}
-                    onOpenNote={(note) => {
-                      setOpenNote(note);
-                      setShowNoteEditor(true);
-                    }}
-                  />
-                )}
-                {effectiveTab === "jira" && (
-                  <JiraTasks issues={jiraIssues} loading={loading} baseUrl={jiraBaseUrl} />
-                )}
-                {effectiveTab === "mentions" && (
-                  <MentionsView
-                    jiraComments={jiraComments}
-                    loading={loading}
-                    jiraBaseUrl={jiraBaseUrl}
-                  />
-                )}
-                {effectiveTab === "prs" && (
-                  <PRTable prs={openPRs} loading={loading} variant="my-prs" />
-                )}
-                {effectiveTab === "reviews" && (
-                  <PRTable prs={reviewRequests} loading={loading} variant="review-requests" />
-                )}
-                {effectiveTab === "notes" && (
-                  <PersonalNotes
-                    notes={notes}
-                    loading={notesLoading}
-                    onResolve={resolveNote}
-                    onDelete={removeNote}
-                    onOpenNote={(note) => {
-                      setOpenNote(note);
-                      setShowNoteEditor(true);
-                    }}
-                    onAdd={() => setShowNoteEditor(true)}
-                    jiraBaseUrl={jiraBaseUrl}
-                  />
-                )}
-                {effectiveTab === "pr-history" && (
-                  <PRHistory onCountChange={setCurrentMonthPRsCount} />
-                )}
-                {effectiveTab === "velocity" && (
-                  <JiraVelocity active={effectiveTab === "velocity"} />
-                )}
-                {effectiveTab === "activity" && (
-                  <Activity activities={activities} loading={activityLoading} />
-                )}
-              </div>
+              <>
+                <div className="content-header">
+                  <div className="content-header-time">
+                    {loading && <Spinner animation="border" size="sm" variant="secondary" />}
+                    {!loading && lastRefreshTime && (
+                      <span
+                        className="text-secondary sidebar-refresh-time"
+                        title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
+                      >
+                        {Math.round((Date.now() - lastRefreshTime) / 60000)}m
+                      </span>
+                    )}
+                  </div>
+                  <div className="content-header-actions">
+                    <button
+                      className="sidebar-action-btn"
+                      onClick={async () => {
+                        await apiClient.post("/cache/purge");
+                        refresh();
+                        refreshNotes();
+                        refreshActivity();
+                      }}
+                      disabled={loading}
+                      title="Refresh"
+                    >
+                      <IconRefresh size={14} />
+                    </button>
+                    <button
+                      className="sidebar-action-btn"
+                      onClick={() => setActiveTab("settings")}
+                      title="Settings"
+                    >
+                      <IconSettings size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="tab-content-area" key={effectiveTab}>
+                  {effectiveTab === "summary" && (
+                    <SummaryView
+                      jiraIssues={jiraIssues}
+                      jiraComments={jiraComments}
+                      openPRs={openPRs}
+                      reviewRequests={reviewRequests}
+                      loading={loading}
+                      jiraIssuesLoading={jiraIssuesLoading}
+                      jiraCommentsLoading={jiraCommentsLoading}
+                      openPRsLoading={openPRsLoading}
+                      reviewRequestsLoading={reviewRequestsLoading}
+                      notesLoading={notesLoading}
+                      jiraBaseUrl={jiraBaseUrl}
+                      onNavigate={setActiveTab}
+                      notes={unresolvedNotes}
+                      onResolveNote={resolveNote}
+                      onAddNote={() => setShowNoteEditor(true)}
+                      onOpenNote={(note) => {
+                        setOpenNote(note);
+                        setShowNoteEditor(true);
+                      }}
+                    />
+                  )}
+                  {effectiveTab === "jira" && (
+                    <JiraTasks issues={jiraIssues} loading={loading} baseUrl={jiraBaseUrl} />
+                  )}
+                  {effectiveTab === "mentions" && (
+                    <MentionsView
+                      jiraComments={jiraComments}
+                      loading={loading}
+                      jiraBaseUrl={jiraBaseUrl}
+                    />
+                  )}
+                  {effectiveTab === "prs" && (
+                    <PRTable prs={openPRs} loading={loading} variant="my-prs" />
+                  )}
+                  {effectiveTab === "reviews" && (
+                    <PRTable prs={reviewRequests} loading={loading} variant="review-requests" />
+                  )}
+                  {effectiveTab === "notes" && (
+                    <PersonalNotes
+                      notes={notes}
+                      loading={notesLoading}
+                      onResolve={resolveNote}
+                      onDelete={removeNote}
+                      onOpenNote={(note) => {
+                        setOpenNote(note);
+                        setShowNoteEditor(true);
+                      }}
+                      onAdd={() => setShowNoteEditor(true)}
+                      jiraBaseUrl={jiraBaseUrl}
+                    />
+                  )}
+                  {effectiveTab === "pr-history" && (
+                    <PRHistory onCountChange={setCurrentMonthPRsCount} />
+                  )}
+                  {effectiveTab === "velocity" && (
+                    <JiraVelocity active={effectiveTab === "velocity"} />
+                  )}
+                  {effectiveTab === "activity" && (
+                    <Activity activities={activities} loading={activityLoading} />
+                  )}
+                </div>
+              </>
             )}
           </main>
         </div>
