@@ -123,3 +123,26 @@ export interface Note {
   created_at: string;
   updated_at: string;
 }
+
+export interface JiraVelocityMetrics {
+  period: { startDate: string; endDate: string };
+  totalCompleted: number;
+  completionsByWeek: Array<{
+    week: string;
+    count: number;
+    issues: string[];
+  }>;
+  averageCompletionTime: {
+    mean: number;
+    median: number;
+    fastest: number;
+    slowest: number;
+  };
+  velocity: {
+    tasksPerWeek: number;
+    currentWeek: number;
+    previousWeek: number;
+    trend: "improving" | "stable" | "declining";
+    trendPercentage: number;
+  };
+}

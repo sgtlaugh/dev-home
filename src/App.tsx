@@ -16,6 +16,7 @@ import {
   IconChevronsRight,
   IconCalendarStats,
   IconHistory,
+  IconChartBar,
 } from "@tabler/icons-react";
 import { useConfig } from "./hooks/useConfig";
 import { useDashboard } from "./hooks/useDashboard";
@@ -31,6 +32,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FindInPage } from "./components/FindInPage";
 import { PRHistory } from "./components/PRHistory";
 import { Activity } from "./components/Activity";
+import { JiraVelocity } from "./components/JiraVelocity";
 import { useActivity } from "./hooks/useActivity";
 
 export default function App() {
@@ -180,6 +182,12 @@ export default function App() {
                 count: currentMonthPRsCount,
               },
               {
+                key: "velocity",
+                label: "Velocity",
+                icon: IconChartBar,
+                count: undefined,
+              },
+              {
                 key: "notes",
                 label: "Notes",
                 icon: IconNotes,
@@ -288,6 +296,9 @@ export default function App() {
                 )}
                 {effectiveTab === "pr-history" && (
                   <PRHistory onCountChange={setCurrentMonthPRsCount} />
+                )}
+                {effectiveTab === "velocity" && (
+                  <JiraVelocity active={effectiveTab === "velocity"} />
                 )}
                 {effectiveTab === "activity" && (
                   <Activity activities={activities} loading={activityLoading} />
