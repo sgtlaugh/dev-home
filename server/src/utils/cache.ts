@@ -7,7 +7,11 @@ class ApiCache {
   private ttl = 5 * 60 * 1000;
 
   constructor() {
-    const dbPath = path.join(process.cwd(), "server", "cache.db");
+    const dbDir = path.join(process.cwd(), "server");
+    if (!require("fs").existsSync(dbDir)) {
+      require("fs").mkdirSync(dbDir, { recursive: true });
+    }
+    const dbPath = path.join(dbDir, "cache.db");
     this.db = new Database(dbPath);
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS cache (
