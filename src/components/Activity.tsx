@@ -1,6 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
+import { IconChevronDown } from "@tabler/icons-react";
 import {
   IconBrandGithub,
   IconTicket,
@@ -151,7 +152,18 @@ function getActionSummary(actions: ActivityItem[]): string {
 }
 
 export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
+  const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
   const groupedActivities = useMemo(() => groupActivitiesByDate(activities), [activities]);
+
+  const toggleExpanded = (entityKey: string) => {
+    const newSet = new Set(expandedEntities);
+    if (newSet.has(entityKey)) {
+      newSet.delete(entityKey);
+    } else {
+      newSet.add(entityKey);
+    }
+    setExpandedEntities(newSet);
+  };
 
   if (loading && activities.length === 0) {
     return (
@@ -183,48 +195,106 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
                 const entityActionCount = collapsed.actions.length;
                 const reviewBadge = getReviewBadgeLabel(collapsed.reviewState);
 
+                const isExpanded = expandedEntities.has(collapsed.entityKey);
+                const showExpand = entityActionCount > 1;
+
                 return (
-                  <div key={collapsed.entityKey} className="activity-item">
-                    <div className="activity-dot" />
-                    <div className="activity-icon">{getActivityIcon(latestAction)}</div>
-                    <div className="activity-content">
-                      <div className="activity-header">
-                        {reviewBadge && (
-                          <Badge
-                            bg=""
-                            className={getReviewBadgeClass(collapsed.reviewState)}
-                            style={{ fontSize: "0.625rem", marginRight: "4px" }}
-                          >
-                            {reviewBadge}
-                          </Badge>
-                        )}
-                        {!reviewBadge && (
-                          <Badge
-                            bg=""
-                            className="badge-status-neutral"
-                            style={{ fontSize: "0.625rem", marginRight: "4px" }}
-                          >
-                            {getActionSummary(collapsed.actions)}
-                          </Badge>
-                        )}
-                        {entityActionCount > 1 && (
-                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                            ({entityActionCount})
+                  <div key={collapsed.entityKey}>
+                    <div
+                      className="activity-item"
+                      style={{ cursor: showExpand ? "pointer" : "default" }}
+                      onClick={() => showExpand && toggleExpanded(collapsed.entityKey)}
+                    >
+                      <div className="activity-dot" />
+                      <div className="activity-icon">{getActivityIcon(latestAction)}</div>
+                      <div className="activity-content">
+                        <div className="activity-header">
+                          {showExpand && (
+                            <IconChevronDown
+                              size={14}
+                              style={{
+                                transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                                transition: "transform 200ms ease",
+                                marginRight: "4px",
+                                flexShrink: 0,
+                              }}
+                            />
+                          )}
+                          {reviewBadge && (
+                            <Badge
+                              bg=""
+                              className={getReviewBadgeClass(collapsed.reviewState)}
+                              style={{ fontSize: "0.625rem", marginRight: "4px" }}
+                            >
+                              {reviewBadge}
+                            </Badge>
+                          )}
+                          {!reviewBadge && (
+                            <Badge
+                              bg=""
+                              className="badge-status-neutral"
+                              style={{ fontSize: "0.625rem", marginRight: "4px" }}
+                            >
+                              {getActionSummary(collapsed.actions)}
+                            </Badge>
+                          )}
+                          {entityActionCount > 1 && (
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                color: "var(--text-secondary)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ({entityActionCount})
+                            </span>
+                          )}
+                          <span className="activity-time">
+                            {formatRelativeTime(collapsed.lastTimestamp)}
                           </span>
-                        )}
-                        <span className="activity-time">
-                          {formatRelativeTime(collapsed.lastTimestamp)}
-                        </span>
+                        </div>
+                        <a
+                          href={collapsed.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="activity-title"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {collapsed.title}
+                        </a>
                       </div>
-                      <a
-                        href={collapsed.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="activity-title"
-                      >
-                        {collapsed.title}
-                      </a>
                     </div>
+                    {isExpanded && (
+                      <div style={{ marginTop: "6px", marginLeft: "60px" }}>
+                        {collapsed.actions.map((action) => (
+                          <div
+                            key={action.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              paddingTop: "3px",
+                              paddingBottom: "3px",
+                              fontSize: "0.8rem",
+                            }}
+                          >
+                            <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>
+                              •
+                            </span>
+                            <Badge
+                              bg=""
+                              className={getActivityBadgeClass(action)}
+                              style={{ fontSize: "0.625rem", flexShrink: 0 }}
+                            >
+                              {action.action}
+                            </Badge>
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                              {formatRelativeTime(action.timestamp)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
