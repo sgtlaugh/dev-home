@@ -27,9 +27,7 @@ import { PRTable } from "./components/PRTable";
 import { PersonalNotes } from "./components/PersonalNotes";
 import { NoteEditorModal } from "./components/NoteEditorModal";
 import { SettingsView } from "./components/SettingsView";
-import { UpdateBanner } from "./components/UpdateBanner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { useUpdateCheck } from "./hooks/useUpdateCheck";
 import { FindInPage } from "./components/FindInPage";
 import { PRHistory } from "./components/PRHistory";
 import { Activity } from "./components/Activity";
@@ -96,7 +94,6 @@ export default function App() {
     removeNote,
     refresh: refreshNotes,
   } = useNotes(configured);
-  const { updateInfo, dismiss: dismissUpdate } = useUpdateCheck();
   const {
     activities,
     loading: activityLoading,
@@ -215,16 +212,6 @@ export default function App() {
 
           {/* Main content panel */}
           <main className="main-content">
-            {/* Update banner */}
-            {updateInfo && (
-              <UpdateBanner
-                latestVersion={updateInfo.latestVersion}
-                currentVersion={updateInfo.currentVersion}
-                downloadUrl={updateInfo.downloadUrl}
-                onDismiss={dismissUpdate}
-              />
-            )}
-
             {/* Error alert */}
             {error && (
               <Alert variant="danger" className="small" dismissible>
