@@ -137,19 +137,24 @@ function ItemRow({
           {subtitle}
         </div>
       </div>
-      <div style={{ minWidth: "60px", flexShrink: 0 }}>
-        <Timestamp timestamp={time} />
-      </div>
-      {(badge || checksStatus) && (
-        <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
-          {badge && (
-            <Badge bg="" className={badgeClass || "badge-status-neutral"}>
-              {badge}
-            </Badge>
-          )}
-          <ChecksStatusIcon status={checksStatus ?? null} />
+      <div
+        className="d-flex align-items-center gap-2"
+        style={badge || checksStatus ? { width: "140px", flexShrink: 0 } : { flexShrink: 0 }}
+      >
+        <div style={{ width: "60px" }}>
+          <Timestamp timestamp={time} />
         </div>
-      )}
+        {badge && (
+          <Badge
+            bg=""
+            className={badgeClass || "badge-status-neutral"}
+            style={{ flex: 1, textAlign: "center" }}
+          >
+            {badge}
+          </Badge>
+        )}
+        {checksStatus && <ChecksStatusIcon status={checksStatus} />}
+      </div>
     </div>
   );
 }
