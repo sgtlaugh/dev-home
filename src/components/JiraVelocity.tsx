@@ -65,12 +65,12 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
           </div>
           <div className="stat-label">Avg Time</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card" title="Comparison: recent 2 weeks vs prior 2 weeks">
           <div className="stat-value" style={{ color: trendColor }}>
             {trendArrow}
             {Math.abs(metrics?.velocity.trendPercentage || 0).toFixed(0)}%
           </div>
-          <div className="stat-label">Trend</div>
+          <div className="stat-label">Trend (2w vs 2w)</div>
         </div>
       </div>
 

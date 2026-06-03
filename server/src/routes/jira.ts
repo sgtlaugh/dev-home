@@ -273,11 +273,12 @@ function getWeekKey(date: Date): string {
 }
 
 // Helper: Format date range for display (e.g., "Jun 04 - Jun 10")
-function formatWeekRange(startDate: string): string {
-  const start = new Date(startDate);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
+function formatWeekRange(startDateStr: string): string {
+  const [year, month, day] = startDateStr.split("-").map(Number);
+  const start = new Date(year, month - 1, day);
+  const end = new Date(year, month - 1, day + 6);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
   return `${fmt(start)} - ${fmt(end)}`;
 }
 
@@ -325,11 +326,14 @@ function calculateTrend(completionsByWeek: Array<{ week: string; count: number }
 
 // Helper: Format time as "Xd Yh" or just "Xh" if < 1 day
 function formatCompletionTime(days: number): { value: string; days: number } {
-  const hours = Math.round((days % 1) * 24);
   const wholeDays = Math.floor(days);
+  const fractionalDays = days - wholeDays;
+  const hours = Math.ceil(fractionalDays * 24);
 
   if (wholeDays === 0) {
-    return { value: `${hours}h`, days };
+    // Less than 1 day: show hours, minimum 1h
+    const displayHours = Math.max(1, hours);
+    return { value: `${displayHours}h`, days };
   }
   if (hours === 0) {
     return { value: `${wholeDays}d`, days };
