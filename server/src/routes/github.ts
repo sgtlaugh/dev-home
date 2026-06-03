@@ -1055,4 +1055,127 @@ router.get("/commits-search", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/peer-activity", async (req: Request, res: Response) => {
+  const cacheKey = "github:peer-activity";
+  const cached = apiCache.get(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const config = getConfig();
+    const client = createGitHubClient();
+    const username = config.githubUsername;
+
+    const myPRsQuery = `
+      query {
+        search(query: "is:pr author:${username} is:merged,is:open,is:closed", type: ISSUE, first: 100) {
+          nodes {
+            ... on PullRequest {
+              number
+              author { login }
+              reviews(last: 100) {
+                nodes {
+                  state
+                  author { login avatarUrl }
+                  submittedAt
+                }
+              }
+              comments(last: 100) {
+                nodes {
+                  author { login avatarUrl }
+                  createdAt
+                  body
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const reviewingQuery = `
+      query {
+        search(query: "is:pr reviewed-by:${username}", type: ISSUE, first: 100) {
+          nodes {
+            ... on PullRequest {
+              author { login avatarUrl }
+            }
+          }
+        }
+      }
+    `;
+
+    const [myPRsData, reviewingData] = await Promise.all([
+      graphql(myPRsQuery),
+      graphql(reviewingQuery),
+    ]);
+
+    const peerMap = new Map<string, any>();
+
+    for (const pr of myPRsData.search.nodes || []) {
+      for (const review of pr.reviews?.nodes || []) {
+        if (review.author.login === username) continue;
+        const peer = peerMap.get(review.author.login) || {
+          login: review.author.login,
+          avatarUrl: review.author.avatarUrl,
+          reviewsOnMyPRs: 0,
+          approvalsOnMyPRs: 0,
+          changesRequestedOnMyPRs: 0,
+          commentsOnMyPRs: 0,
+          prsIReviewed: 0,
+          latestActivity: review.submittedAt || new Date().toISOString(),
+        };
+        peer.reviewsOnMyPRs++;
+        if (review.state === "APPROVED") peer.approvalsOnMyPRs++;
+        if (review.state === "CHANGES_REQUESTED") peer.changesRequestedOnMyPRs++;
+        peer.latestActivity = review.submittedAt || peer.latestActivity;
+        peerMap.set(review.author.login, peer);
+      }
+
+      for (const comment of pr.comments?.nodes || []) {
+        if (comment.author.login === username) continue;
+        const peer = peerMap.get(comment.author.login) || {
+          login: comment.author.login,
+          avatarUrl: comment.author.avatarUrl,
+          reviewsOnMyPRs: 0,
+          approvalsOnMyPRs: 0,
+          changesRequestedOnMyPRs: 0,
+          commentsOnMyPRs: 0,
+          prsIReviewed: 0,
+          latestActivity: comment.createdAt,
+        };
+        peer.commentsOnMyPRs++;
+        peer.latestActivity = comment.createdAt || peer.latestActivity;
+        peerMap.set(comment.author.login, peer);
+      }
+    }
+
+    for (const pr of reviewingData.search.nodes || []) {
+      if (!pr.author || pr.author.login === username) continue;
+      const peer = peerMap.get(pr.author.login) || {
+        login: pr.author.login,
+        avatarUrl: pr.author.avatarUrl,
+        reviewsOnMyPRs: 0,
+        approvalsOnMyPRs: 0,
+        changesRequestedOnMyPRs: 0,
+        commentsOnMyPRs: 0,
+        prsIReviewed: 0,
+        latestActivity: new Date().toISOString(),
+      };
+      peer.prsIReviewed++;
+      peerMap.set(pr.author.login, peer);
+    }
+
+    const peers = Array.from(peerMap.values())
+      .map((p) => ({ ...p, totalInteractions: p.reviewsOnMyPRs + p.commentsOnMyPRs + p.prsIReviewed }))
+      .sort((a, b) => b.totalInteractions - a.totalInteractions);
+
+    const result = { peers };
+    apiCache.set(cacheKey, result);
+    res.json(result);
+  } catch (err: any) {
+    logger.error("PeerActivity", err.message);
+    res.status(500).json({ error: "Failed to fetch peer activity" });
+  }
+});
+
 export default router;
