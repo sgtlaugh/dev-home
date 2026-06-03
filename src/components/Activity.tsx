@@ -99,7 +99,9 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
     <div className="activity-timeline">
       {Array.from(groupedActivities.entries()).map(([dateLabel, items]) => (
         <div key={dateLabel} className="activity-section">
-          <div className="activity-date-label">{dateLabel}</div>
+          <div className="activity-date-label">
+            {dateLabel} ({items.length})
+          </div>
           <div className="activity-list">
             {items.map((item) => (
               <div key={item.id} className="activity-item">
