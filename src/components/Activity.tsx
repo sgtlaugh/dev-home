@@ -36,9 +36,9 @@ function getActivityIcon(item: ActivityItem) {
 
 function getActivityBadgeClass(item: ActivityItem): string {
   if (item.type === "github") {
-    if (item.action.includes("Committed")) return "badge-status-green-light";
-    if (item.action.includes("Created PR")) return "badge-status-green-dark";
+    if (item.action.includes("Committed")) return "badge-status-green-dark";
     if (item.action.includes("Approved")) return "badge-status-purple-light";
+    if (item.action.includes("Created PR")) return "badge-status-green-dark";
     if (item.action.includes("Merged")) return "badge-status-purple-dark";
     if (item.action.includes("Comment")) return "badge-status-blue";
     return "badge-status-neutral";
@@ -132,7 +132,7 @@ function groupActivitiesByDate(
 }
 
 function getReviewBadgeClass(reviewState?: string): string {
-  if (reviewState === "approved") return "badge-status-green-dark";
+  if (reviewState === "approved") return "badge-status-purple-light";
   if (reviewState === "changes_requested") return "badge-status-red-dark";
   return "";
 }
@@ -149,6 +149,22 @@ function getActionSummary(actions: ActivityItem[]): string {
   if (types.length === 1) return types[0];
   if (types.length === 2) return types.join(" & ");
   return `${types[0]} & ${types.length - 1} more`;
+}
+
+function getBadgeColor(badgeClass: string): string {
+  const colorMap: Record<string, string> = {
+    "badge-status-green-light": "#3fb950",
+    "badge-status-green-dark": "#3fb950",
+    "badge-status-blue": "#58a6ff",
+    "badge-status-blue-dark": "#58a6ff",
+    "badge-status-purple-light": "#bc8ef9",
+    "badge-status-purple-dark": "#bc8ef9",
+    "badge-status-yellow": "#d29922",
+    "badge-status-red": "#f85149",
+    "badge-status-red-dark": "#f85149",
+    "badge-status-neutral": "#8b949e",
+  };
+  return colorMap[badgeClass] || "#30363d";
 }
 
 function Timestamp({ timestamp }: { timestamp: string }) {
@@ -234,17 +250,38 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
                       <div className="activity-icon">{getActivityIcon(latestAction)}</div>
                       <div className="activity-content">
                         <div className="activity-header">
-                          {showExpand && (
-                            <IconChevronDown
-                              size={14}
-                              style={{
-                                transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
-                                transition: "transform 200ms ease",
-                                marginRight: "4px",
-                                flexShrink: 0,
-                              }}
-                            />
-                          )}
+                          <div
+                            style={{
+                              width: "18px",
+                              height: "14px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {showExpand ? (
+                              <IconChevronDown
+                                size={14}
+                                style={{
+                                  transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                                  transition: "transform 200ms ease",
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: "6px",
+                                  height: "6px",
+                                  borderRadius: "50%",
+                                  backgroundColor: getBadgeColor(
+                                    getActivityBadgeClass(latestAction),
+                                  ),
+                                  opacity: 0.7,
+                                }}
+                              />
+                            )}
+                          </div>
                           {reviewBadge && (
                             <Badge
                               bg=""
@@ -257,7 +294,7 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
                           {!reviewBadge && (
                             <Badge
                               bg=""
-                              className="badge-status-neutral"
+                              className={getActivityBadgeClass(latestAction)}
                               style={{ fontSize: "0.625rem", marginRight: "4px" }}
                             >
                               {getActionSummary(collapsed.actions)}
