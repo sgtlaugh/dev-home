@@ -203,9 +203,7 @@ a:hover {
 }
 
 .sidebar-separator {
-  height: 1px;
-  background-color: #30363d;
-  margin: 6px 0;
+  height: 12px;
   flex-shrink: 0;
 }
 
