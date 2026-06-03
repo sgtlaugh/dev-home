@@ -16,9 +16,9 @@ import {
 } from "@tabler/icons-react";
 import { JiraIssue, JiraComment, GitHubPR, Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
-import { formatRelativeTime } from "../utils/time";
 import { DescriptionModal } from "./DescriptionModal";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
+import { Timestamp } from "./Timestamp";
 
 interface SummaryViewProps {
   jiraIssues: JiraIssue[];
@@ -144,12 +144,7 @@ function ItemRow({
           </Badge>
         )}
         <ChecksStatusIcon status={checksStatus ?? null} />
-        <span
-          className="text-secondary-custom"
-          style={{ fontSize: "0.6875rem", whiteSpace: "nowrap" }}
-        >
-          {formatRelativeTime(time)}
-        </span>
+        <Timestamp timestamp={time} />
       </div>
     </div>
   );
@@ -396,12 +391,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                             {noteTitle}
                           </span>
                         )}
-                        <span
-                          className="text-secondary-custom"
-                          style={{ fontSize: "0.6875rem", whiteSpace: "nowrap", flexShrink: 0 }}
-                        >
-                          {formatRelativeTime(note.created_at)}
-                        </span>
+                        <Timestamp timestamp={note.created_at} />
                       </div>
                       {note.content && (
                         <div

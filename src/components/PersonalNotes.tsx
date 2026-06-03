@@ -14,8 +14,8 @@ import {
 } from "@tabler/icons-react";
 import { Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
-import { formatRelativeTime } from "../utils/time";
 import { EmptyState } from "./EmptyState";
+import { Timestamp } from "./Timestamp";
 
 interface PersonalNotesProps {
   notes: Note[];
@@ -186,12 +186,7 @@ function NoteRow({
               {title}
             </span>
           )}
-          <span
-            className="text-secondary-custom"
-            style={{ fontSize: "0.6875rem", whiteSpace: "nowrap", flexShrink: 0 }}
-          >
-            {formatRelativeTime(note.created_at)}
-          </span>
+          <Timestamp timestamp={note.created_at} />
         </div>
         {note.content && (
           <div

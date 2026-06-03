@@ -1,9 +1,9 @@
 import React from "react";
 import { IconGitPullRequest, IconEye } from "@tabler/icons-react";
 import { GitHubPR } from "../types";
-import { formatRelativeTime } from "../utils/time";
 import { GroupedPRTable } from "./GroupedPRTable";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
+import { Timestamp } from "./Timestamp";
 
 const REVIEW_STATUS_CONFIG: Record<string, { label: string; badgeClass: string }> = {
   APPROVED: { label: "Approved", badgeClass: "badge-status-green" },
@@ -71,9 +71,7 @@ const MyPRRow: React.FC<{ pr: GitHubPR; onClick: () => void }> = ({ pr, onClick 
       </div>
     </td>
     <td>
-      <span className="text-secondary-custom" style={{ whiteSpace: "nowrap" }}>
-        {formatRelativeTime(pr.updated_at)}
-      </span>
+      <Timestamp timestamp={pr.updated_at} />
     </td>
   </tr>
 );
@@ -105,9 +103,7 @@ const ReviewRequestRow: React.FC<{ pr: GitHubPR; onClick: () => void }> = ({ pr,
       <ChecksStatusIcon status={pr.checks_status} />
     </td>
     <td>
-      <span className="text-secondary-custom" style={{ whiteSpace: "nowrap" }}>
-        {formatRelativeTime(pr.updated_at)}
-      </span>
+      <Timestamp timestamp={pr.updated_at} />
     </td>
   </tr>
 );

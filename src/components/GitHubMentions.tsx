@@ -2,7 +2,7 @@ import React from "react";
 import Spinner from "react-bootstrap/Spinner";
 import { IconAt } from "@tabler/icons-react";
 import { GitHubComment } from "../types";
-import { formatRelativeTime } from "../utils/time";
+import { Timestamp } from "./Timestamp";
 import { EmptyState } from "./EmptyState";
 import { truncateText } from "../utils/text";
 import { REASON_LABELS } from "../utils/github";
@@ -43,9 +43,7 @@ export const GitHubMentions: React.FC<GitHubMentionsProps> = ({ mentions, loadin
                   <span style={{ fontWeight: 600, fontSize: "0.8125rem" }}>
                     {mention.user.login}
                   </span>
-                  <span className="text-secondary-custom" style={{ fontSize: "0.75rem" }}>
-                    {formatRelativeTime(mention.created_at)}
-                  </span>
+                  <Timestamp timestamp={mention.created_at} />
                 </div>
                 <div className="d-flex align-items-center gap-2">
                   {mention.reason && (
