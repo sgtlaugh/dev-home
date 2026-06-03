@@ -139,9 +139,9 @@ function ItemRow({
       </div>
       <div
         className="d-flex align-items-center gap-2"
-        style={badge || checksStatus ? { width: "140px", flexShrink: 0 } : { flexShrink: 0 }}
+        style={badge ? { width: "140px", flexShrink: 0 } : { flexShrink: 0 }}
       >
-        <div style={{ width: "60px" }}>
+        <div style={badge ? { width: "60px" } : {}}>
           <Timestamp timestamp={time} />
         </div>
         {badge && (
