@@ -16,6 +16,7 @@ interface ActivityItem {
   title: string;
   url: string;
   timestamp: string;
+  entityKey: string;
   metadata?: Record<string, any>;
 }
 
@@ -68,6 +69,7 @@ async function extractUserComments(
         title: `${issue.key}: ${issue.fields.summary}`,
         url: `${config.jiraBaseUrl}/browse/${issue.key}?focusedCommentId=${comment.id}`,
         timestamp: comment.created,
+        entityKey: issue.key,
       });
     }
   }
@@ -96,6 +98,7 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
         title: `${issue.key}: ${issue.fields.summary}`,
         url: `${config.jiraBaseUrl}/browse/${issue.key}`,
         timestamp: issue.fields.created,
+        entityKey: issue.key,
       });
     }
   } catch (err) {
@@ -207,6 +210,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
             url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
             timestamp: event.created_at,
+            entityKey: `${repo}#${pr.number}`,
           });
           break;
         }
@@ -226,6 +230,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
             url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
             timestamp: event.created_at,
+            entityKey: `${repo}#${pr.number}`,
             metadata: { state: review?.state },
           });
           break;
@@ -243,6 +248,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             title: `${repo}#${issue.number}: ${issue.title}`,
             url: comment?.html_url || issue.html_url,
             timestamp: event.created_at,
+            entityKey: `${repo}#${issue.number}`,
           });
           break;
         }
@@ -258,6 +264,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
             url: comment?.html_url || `https://github.com/${repo}/pull/${pr.number}`,
             timestamp: event.created_at,
+            entityKey: `${repo}#${pr.number}`,
           });
           break;
         }
@@ -272,6 +279,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             title: `${repo}#${issue.number}: ${issue.title}`,
             url: issue.html_url,
             timestamp: event.created_at,
+            entityKey: `${repo}#${issue.number}`,
           });
           break;
         }
@@ -307,6 +315,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
               title: `${repoFullName}: ${firstLine}`,
               url: commit.html_url,
               timestamp: commit.commit?.author?.date || commit.commit?.committer?.date,
+              entityKey: `${repoFullName}:${commit.sha}`,
             });
           }
         } catch (err: any) {

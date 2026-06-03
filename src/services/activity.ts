@@ -7,6 +7,7 @@ export interface ActivityItem {
   title: string;
   url: string;
   timestamp: string;
+  entityKey: string;
   metadata?: Record<string, any>;
 }
 

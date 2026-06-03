@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
 import {
@@ -49,12 +49,62 @@ function getActivityBadgeClass(item: ActivityItem): string {
   return "badge-status-neutral";
 }
 
-function groupActivitiesByDate(activities: ActivityItem[]): Map<string, ActivityItem[]> {
-  const groups = new Map<string, ActivityItem[]>();
-  const now = Date.now();
+interface CollapsedActivity {
+  entityKey: string;
+  title: string;
+  url: string;
+  lastTimestamp: string;
+  actions: ActivityItem[];
+  reviewState?: string;
+}
+
+function getReviewState(items: ActivityItem[]): string | undefined {
+  for (const item of items) {
+    if (item.action === "Approved PR") return "approved";
+    if (item.action === "Requested changes") return "changes_requested";
+  }
+  return undefined;
+}
+
+function collapseActivitiesByEntity(activities: ActivityItem[]): CollapsedActivity[] {
+  const map = new Map<string, CollapsedActivity>();
 
   for (const activity of activities) {
-    const actTime = new Date(activity.timestamp).getTime();
+    if (!map.has(activity.entityKey)) {
+      map.set(activity.entityKey, {
+        entityKey: activity.entityKey,
+        title: activity.title,
+        url: activity.url,
+        lastTimestamp: activity.timestamp,
+        actions: [],
+      });
+    }
+    const collapsed = map.get(activity.entityKey)!;
+    collapsed.actions.push(activity);
+    if (new Date(activity.timestamp).getTime() > new Date(collapsed.lastTimestamp).getTime()) {
+      collapsed.lastTimestamp = activity.timestamp;
+    }
+  }
+
+  for (const collapsed of map.values()) {
+    collapsed.reviewState = getReviewState(collapsed.actions);
+    collapsed.actions.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
+  }
+
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.lastTimestamp).getTime() - new Date(a.lastTimestamp).getTime(),
+  );
+}
+
+function groupActivitiesByDate(activities: ActivityItem[]): Map<string, CollapsedActivity[]> {
+  const collapsed = collapseActivitiesByEntity(activities);
+  const groups = new Map<string, CollapsedActivity[]>();
+  const now = Date.now();
+
+  for (const activity of collapsed) {
+    const actTime = new Date(activity.lastTimestamp).getTime();
     const hoursAgo = (now - actTime) / (1000 * 60 * 60);
     let dateKey: string;
 
@@ -63,7 +113,7 @@ function groupActivitiesByDate(activities: ActivityItem[]): Map<string, Activity
     } else if (hoursAgo < 48) {
       dateKey = "Yesterday";
     } else {
-      const actDate = new Date(activity.timestamp);
+      const actDate = new Date(activity.lastTimestamp);
       dateKey = actDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     }
 
@@ -76,7 +126,21 @@ function groupActivitiesByDate(activities: ActivityItem[]): Map<string, Activity
   return groups;
 }
 
+function getReviewBadgeClass(reviewState?: string): string {
+  if (reviewState === "approved") return "badge-status-green-dark";
+  if (reviewState === "changes_requested") return "badge-status-red-dark";
+  return "";
+}
+
+function getReviewBadgeLabel(reviewState?: string): string | null {
+  if (reviewState === "approved") return "Approved";
+  if (reviewState === "changes_requested") return "Changes Requested";
+  return null;
+}
+
 export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
+  const groupedActivities = useMemo(() => groupActivitiesByDate(activities), [activities]);
+
   if (loading && activities.length === 0) {
     return (
       <div className="d-flex justify-content-center align-items-center py-5">
@@ -93,8 +157,6 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
     );
   }
 
-  const groupedActivities = groupActivitiesByDate(activities);
-
   return (
     <div className="activity-timeline">
       {Array.from(groupedActivities.entries()).map(([dateLabel, items]) => (
@@ -103,32 +165,66 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
             {dateLabel} ({items.length})
           </div>
           <div className="activity-list">
-            {items.map((item) => (
-              <div key={item.id} className="activity-item">
-                <div className="activity-dot" />
-                <div className="activity-icon">{getActivityIcon(item)}</div>
-                <div className="activity-content">
-                  <div className="activity-header">
-                    <Badge
-                      bg=""
-                      className={getActivityBadgeClass(item)}
-                      style={{ fontSize: "0.625rem" }}
+            {items.map((collapsed) => {
+              const latestAction = collapsed.actions[0];
+              const actionCount = collapsed.actions.length;
+              const actionTypes = new Set(collapsed.actions.map((a) => a.action));
+              const reviewBadge = getReviewBadgeLabel(collapsed.reviewState);
+
+              return (
+                <div key={collapsed.entityKey} className="activity-item">
+                  <div className="activity-dot" />
+                  <div className="activity-icon">{getActivityIcon(latestAction)}</div>
+                  <div className="activity-content">
+                    <div className="activity-header">
+                      {reviewBadge && (
+                        <Badge
+                          bg=""
+                          className={getReviewBadgeClass(collapsed.reviewState)}
+                          style={{ fontSize: "0.625rem", marginRight: "4px" }}
+                        >
+                          {reviewBadge}
+                        </Badge>
+                      )}
+                      {!reviewBadge && actionCount > 1 && (
+                        <Badge
+                          bg=""
+                          className="badge-status-neutral"
+                          style={{ fontSize: "0.625rem", marginRight: "4px" }}
+                        >
+                          {Array.from(actionTypes).join(" & ")}
+                        </Badge>
+                      )}
+                      {!reviewBadge && actionCount === 1 && (
+                        <Badge
+                          bg=""
+                          className={getActivityBadgeClass(latestAction)}
+                          style={{ fontSize: "0.625rem", marginRight: "4px" }}
+                        >
+                          {latestAction.action}
+                        </Badge>
+                      )}
+                      {actionCount > 1 && (
+                        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                          ({actionCount})
+                        </span>
+                      )}
+                      <span className="activity-time">
+                        {formatRelativeTime(collapsed.lastTimestamp)}
+                      </span>
+                    </div>
+                    <a
+                      href={collapsed.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="activity-title"
                     >
-                      {item.action}
-                    </Badge>
-                    <span className="activity-time">{formatRelativeTime(item.timestamp)}</span>
+                      {collapsed.title}
+                    </a>
                   </div>
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="activity-title"
-                  >
-                    {item.title}
-                  </a>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}

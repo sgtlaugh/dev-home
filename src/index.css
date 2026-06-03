@@ -375,6 +375,11 @@ a:hover {
   color: #f85149;
 }
 
+.badge-status-red-dark {
+  background-color: rgba(248, 81, 73, 0.25);
+  color: #f85149;
+}
+
 .badge-status-purple {
   background-color: rgba(163, 113, 247, 0.15);
   color: #a371f7;
@@ -921,6 +926,11 @@ a,
 
 [data-theme="light"] .badge-status-red {
   background-color: rgba(207, 34, 46, 0.1);
+  color: #cf222e;
+}
+
+[data-theme="light"] .badge-status-red-dark {
+  background-color: rgba(207, 34, 46, 0.2);
   color: #cf222e;
 }
 
