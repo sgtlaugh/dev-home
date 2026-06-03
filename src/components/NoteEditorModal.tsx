@@ -315,7 +315,8 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   }, [note, editorContent, jiraBaseUrl]);
 
   const hasContent = editorContent.trim().length > 0;
-  const canSave = isEditing ? isDirty : hasContent;
+  const hasTitle = titleText.trim().length > 0;
+  const canSave = isEditing ? isDirty : hasContent || hasTitle;
 
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered className="description-modal">
