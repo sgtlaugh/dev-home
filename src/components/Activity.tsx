@@ -98,9 +98,11 @@ function collapseActivitiesByEntity(activities: ActivityItem[]): CollapsedActivi
   );
 }
 
-function groupActivitiesByDate(activities: ActivityItem[]): Map<string, CollapsedActivity[]> {
+function groupActivitiesByDate(
+  activities: ActivityItem[],
+): Map<string, { collapsed: CollapsedActivity[]; actionCount: number }> {
   const collapsed = collapseActivitiesByEntity(activities);
-  const groups = new Map<string, CollapsedActivity[]>();
+  const groups = new Map<string, { collapsed: CollapsedActivity[]; actionCount: number }>();
   const now = Date.now();
 
   for (const activity of collapsed) {
@@ -118,9 +120,11 @@ function groupActivitiesByDate(activities: ActivityItem[]): Map<string, Collapse
     }
 
     if (!groups.has(dateKey)) {
-      groups.set(dateKey, []);
+      groups.set(dateKey, { collapsed: [], actionCount: 0 });
     }
-    groups.get(dateKey)!.push(activity);
+    const group = groups.get(dateKey)!;
+    group.collapsed.push(activity);
+    group.actionCount += activity.actions.length;
   }
 
   return groups;
@@ -136,6 +140,14 @@ function getReviewBadgeLabel(reviewState?: string): string | null {
   if (reviewState === "approved") return "Approved";
   if (reviewState === "changes_requested") return "Changes Requested";
   return null;
+}
+
+function getActionSummary(actions: ActivityItem[]): string {
+  const actionTypes = new Set(actions.map((a) => a.action));
+  const types = Array.from(actionTypes);
+  if (types.length === 1) return types[0];
+  if (types.length === 2) return types.join(" & ");
+  return `${types[0]} & ${types.length - 1} more`;
 }
 
 export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
@@ -159,75 +171,67 @@ export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
 
   return (
     <div className="activity-timeline">
-      {Array.from(groupedActivities.entries()).map(([dateLabel, items]) => (
-        <div key={dateLabel} className="activity-section">
-          <div className="activity-date-label">
-            {dateLabel} ({items.length})
-          </div>
-          <div className="activity-list">
-            {items.map((collapsed) => {
-              const latestAction = collapsed.actions[0];
-              const actionCount = collapsed.actions.length;
-              const actionTypes = new Set(collapsed.actions.map((a) => a.action));
-              const reviewBadge = getReviewBadgeLabel(collapsed.reviewState);
+      {Array.from(groupedActivities.entries()).map(
+        ([dateLabel, { collapsed: items, actionCount }]) => (
+          <div key={dateLabel} className="activity-section">
+            <div className="activity-date-label">
+              {dateLabel} ({actionCount})
+            </div>
+            <div className="activity-list">
+              {items.map((collapsed) => {
+                const latestAction = collapsed.actions[0];
+                const entityActionCount = collapsed.actions.length;
+                const reviewBadge = getReviewBadgeLabel(collapsed.reviewState);
 
-              return (
-                <div key={collapsed.entityKey} className="activity-item">
-                  <div className="activity-dot" />
-                  <div className="activity-icon">{getActivityIcon(latestAction)}</div>
-                  <div className="activity-content">
-                    <div className="activity-header">
-                      {reviewBadge && (
-                        <Badge
-                          bg=""
-                          className={getReviewBadgeClass(collapsed.reviewState)}
-                          style={{ fontSize: "0.625rem", marginRight: "4px" }}
-                        >
-                          {reviewBadge}
-                        </Badge>
-                      )}
-                      {!reviewBadge && actionCount > 1 && (
-                        <Badge
-                          bg=""
-                          className="badge-status-neutral"
-                          style={{ fontSize: "0.625rem", marginRight: "4px" }}
-                        >
-                          {Array.from(actionTypes).join(" & ")}
-                        </Badge>
-                      )}
-                      {!reviewBadge && actionCount === 1 && (
-                        <Badge
-                          bg=""
-                          className={getActivityBadgeClass(latestAction)}
-                          style={{ fontSize: "0.625rem", marginRight: "4px" }}
-                        >
-                          {latestAction.action}
-                        </Badge>
-                      )}
-                      {actionCount > 1 && (
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                          ({actionCount})
+                return (
+                  <div key={collapsed.entityKey} className="activity-item">
+                    <div className="activity-dot" />
+                    <div className="activity-icon">{getActivityIcon(latestAction)}</div>
+                    <div className="activity-content">
+                      <div className="activity-header">
+                        {reviewBadge && (
+                          <Badge
+                            bg=""
+                            className={getReviewBadgeClass(collapsed.reviewState)}
+                            style={{ fontSize: "0.625rem", marginRight: "4px" }}
+                          >
+                            {reviewBadge}
+                          </Badge>
+                        )}
+                        {!reviewBadge && (
+                          <Badge
+                            bg=""
+                            className="badge-status-neutral"
+                            style={{ fontSize: "0.625rem", marginRight: "4px" }}
+                          >
+                            {getActionSummary(collapsed.actions)}
+                          </Badge>
+                        )}
+                        {entityActionCount > 1 && (
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                            ({entityActionCount})
+                          </span>
+                        )}
+                        <span className="activity-time">
+                          {formatRelativeTime(collapsed.lastTimestamp)}
                         </span>
-                      )}
-                      <span className="activity-time">
-                        {formatRelativeTime(collapsed.lastTimestamp)}
-                      </span>
+                      </div>
+                      <a
+                        href={collapsed.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="activity-title"
+                      >
+                        {collapsed.title}
+                      </a>
                     </div>
-                    <a
-                      href={collapsed.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="activity-title"
-                    >
-                      {collapsed.title}
-                    </a>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        ),
+      )}
     </div>
   );
 };
