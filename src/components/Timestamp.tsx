@@ -6,7 +6,16 @@ export function Timestamp({ timestamp }: { timestamp: string }) {
   const actTime = new Date(timestamp).getTime();
   const hoursAgo = (now - actTime) / (1000 * 60 * 60);
 
-  const exactTime = new Date(timestamp).toLocaleTimeString("en-US", {
+  const date = new Date(timestamp);
+  const exactTime = date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const fullDateTime = date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -20,7 +29,7 @@ export function Timestamp({ timestamp }: { timestamp: string }) {
   }
 
   return (
-    <span className="activity-time" title={hoursAgo >= 24 ? exactTime : undefined}>
+    <span className="activity-time" title={fullDateTime}>
       {displayText}
     </span>
   );
