@@ -61,7 +61,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
         </div>
         <div className="stat-card">
           <div className="stat-value" style={{ color: "#a371f7" }}>
-            {metrics?.averageCompletionTime.mean.toFixed(1) || "0.0"}d
+            {metrics?.averageCompletionTime.mean || "0h"}
           </div>
           <div className="stat-label">Avg Time</div>
         </div>
@@ -173,8 +173,8 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                 </thead>
                 <tbody>
                   {metrics.completionsByWeek.map((week) => (
-                    <tr key={week.week}>
-                      <td style={{ fontWeight: 500 }}>{week.week}</td>
+                    <tr key={week.weekRange}>
+                      <td style={{ fontWeight: 500 }}>{week.weekRange}</td>
                       <td>{week.count}</td>
                     </tr>
                   ))}
@@ -190,25 +190,25 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
               <div className="d-flex gap-3 flex-wrap">
                 <div className="stat-card">
                   <div className="stat-value" style={{ color: "#3fb950", fontSize: "1.5rem" }}>
-                    {metrics.averageCompletionTime.mean.toFixed(1)}d
+                    {metrics.averageCompletionTime.mean}
                   </div>
                   <div className="stat-label">Mean</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-value" style={{ color: "#58a6ff", fontSize: "1.5rem" }}>
-                    {metrics.averageCompletionTime.median.toFixed(1)}d
+                    {metrics.averageCompletionTime.median}
                   </div>
                   <div className="stat-label">Median</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-value" style={{ color: "#a371f7", fontSize: "1.5rem" }}>
-                    {metrics.averageCompletionTime.fastest.toFixed(1)}d
+                    {metrics.averageCompletionTime.fastest}
                   </div>
                   <div className="stat-label">Fastest</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-value" style={{ color: "#f85149", fontSize: "1.5rem" }}>
-                    {metrics.averageCompletionTime.slowest.toFixed(1)}d
+                    {metrics.averageCompletionTime.slowest}
                   </div>
                   <div className="stat-label">Slowest</div>
                 </div>

@@ -263,14 +263,22 @@ router.get("/velocity", async (req: Request, res: Response) => {
   res.json(result);
 });
 
-// Helper: Get ISO week string (e.g., "2026-W23")
-function getISOWeek(date: Date): string {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, "0")}`;
+// Helper: Get week key for grouping (Monday-Sunday, returned as "YYYY-MM-DD")
+function getWeekKey(date: Date): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d.setDate(diff));
+  return monday.toISOString().split("T")[0];
+}
+
+// Helper: Format date range for display (e.g., "Jun 04 - Jun 10")
+function formatWeekRange(startDate: string): string {
+  const start = new Date(startDate);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
+  return `${fmt(start)} - ${fmt(end)}`;
 }
 
 // Helper: Calculate completion time in days
@@ -315,6 +323,20 @@ function calculateTrend(completionsByWeek: Array<{ week: string; count: number }
   return { trend: "stable", percentage: change };
 }
 
+// Helper: Format time as "Xd Yh" or just "Xh" if < 1 day
+function formatCompletionTime(days: number): { value: string; days: number } {
+  const hours = Math.round((days % 1) * 24);
+  const wholeDays = Math.floor(days);
+
+  if (wholeDays === 0) {
+    return { value: `${hours}h`, days };
+  }
+  if (hours === 0) {
+    return { value: `${wholeDays}d`, days };
+  }
+  return { value: `${wholeDays}d ${hours}h`, days };
+}
+
 // Helper: Calculate velocity metrics
 function calculateVelocityMetrics(
   issues: any[],
@@ -328,18 +350,18 @@ function calculateVelocityMetrics(
     const time = getCompletionTime(issue);
     completionTimes.push(time);
 
-    const week = getISOWeek(new Date(issue.fields?.resolutiondate));
-    const entry = completionsByWeekMap.get(week) || { count: 0, issues: [] };
+    const weekKey = getWeekKey(new Date(issue.fields?.resolutiondate));
+    const entry = completionsByWeekMap.get(weekKey) || { count: 0, issues: [] };
     entry.count++;
     entry.issues.push(issue.key);
-    completionsByWeekMap.set(week, entry);
+    completionsByWeekMap.set(weekKey, entry);
   }
 
   // Sort weeks chronologically
   const completionsByWeek = Array.from(completionsByWeekMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([week, data]) => ({
-      week,
+    .map(([weekKey, data]) => ({
+      weekRange: formatWeekRange(weekKey),
       count: data.count,
       issues: data.issues,
     }));
@@ -357,25 +379,49 @@ function calculateVelocityMetrics(
   const totalWeeks = completionsByWeek.length || 1;
   const tasksPerWeek = issues.length / totalWeeks;
 
-  const { trend, percentage: trendPercentage } = calculateTrend(completionsByWeek);
+  const currentWeekCount = completionsByWeek.length > 0 ? completionsByWeek[completionsByWeek.length - 1].count : 0;
+  const previousWeekCount = completionsByWeek.length > 1 ? completionsByWeek[completionsByWeek.length - 2].count : 0;
 
-  const currentWeek = completionsByWeek.length > 0 ? completionsByWeek[completionsByWeek.length - 1].count : 0;
-  const previousWeek = completionsByWeek.length > 1 ? completionsByWeek[completionsByWeek.length - 2].count : 0;
+  // Calculate trend: compare recent 2 weeks vs previous 2 weeks
+  let trend: "improving" | "stable" | "declining" = "stable";
+  let trendPercentage = 0;
+  if (completionsByWeek.length >= 2) {
+    const recent = currentWeekCount + previousWeekCount;
+    if (completionsByWeek.length >= 4) {
+      const thirdLast = completionsByWeek[completionsByWeek.length - 3].count;
+      const fourthLast = completionsByWeek[completionsByWeek.length - 4].count;
+      const previous = thirdLast + fourthLast;
+      if (previous > 0) {
+        trendPercentage = ((recent - previous) / previous) * 100;
+        if (trendPercentage > 10) trend = "improving";
+        else if (trendPercentage < -10) trend = "declining";
+      }
+    }
+  }
+
+  const meanFormatted = formatCompletionTime(mean);
+  const medianFormatted = formatCompletionTime(median);
+  const fastestFormatted = formatCompletionTime(fastest);
+  const slowestFormatted = formatCompletionTime(slowest);
 
   return {
     period: { startDate, endDate },
     totalCompleted: issues.length,
     completionsByWeek,
     averageCompletionTime: {
-      mean: Math.round(mean * 100) / 100,
-      median: Math.round(median * 100) / 100,
-      fastest: Math.round(fastest * 100) / 100,
-      slowest: Math.round(slowest * 100) / 100,
+      mean: meanFormatted.value,
+      meanDays: Math.round(mean * 100) / 100,
+      median: medianFormatted.value,
+      medianDays: Math.round(median * 100) / 100,
+      fastest: fastestFormatted.value,
+      fastestDays: Math.round(fastest * 100) / 100,
+      slowest: slowestFormatted.value,
+      slowestDays: Math.round(slowest * 100) / 100,
     },
     velocity: {
       tasksPerWeek: Math.round(tasksPerWeek * 100) / 100,
-      currentWeek,
-      previousWeek,
+      currentWeek: currentWeekCount,
+      previousWeek: previousWeekCount,
       trend,
       trendPercentage: Math.round(trendPercentage * 100) / 100,
     },

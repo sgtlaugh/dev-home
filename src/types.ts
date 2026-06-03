@@ -128,15 +128,19 @@ export interface JiraVelocityMetrics {
   period: { startDate: string; endDate: string };
   totalCompleted: number;
   completionsByWeek: Array<{
-    week: string;
+    weekRange: string;
     count: number;
     issues: string[];
   }>;
   averageCompletionTime: {
-    mean: number;
-    median: number;
-    fastest: number;
-    slowest: number;
+    mean: string;
+    meanDays: number;
+    median: string;
+    medianDays: number;
+    fastest: string;
+    fastestDays: number;
+    slowest: string;
+    slowestDays: number;
   };
   velocity: {
     tasksPerWeek: number;
