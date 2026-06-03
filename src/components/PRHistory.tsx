@@ -324,6 +324,17 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
           prs={filteredPrs}
           loading={loading}
           columnCount={4}
+          emptyIcon={<IconGitPullRequest size={40} stroke={1.5} />}
+          emptyTitle={
+            prs.length === 0
+              ? `No pull requests in ${getLabel()}`
+              : `No ${stateFilter} pull requests in ${getLabel()}`
+          }
+          emptyDescription={
+            prs.length === 0
+              ? "No pull requests were opened in this period."
+              : `No ${stateFilter} pull requests were opened in this period.`
+          }
           headers={
             <>
               <th>Title</th>
