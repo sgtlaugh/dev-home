@@ -73,26 +73,31 @@ export function groupActivitiesByDate(
   const groups = new Map<string, { collapsed: CollapsedActivity[]; actionCount: number }>();
   const now = Date.now();
 
-  for (const activity of collapsed) {
-    const actTime = new Date(activity.lastTimestamp).getTime();
+  function getDateKey(timestamp: string): string {
+    const actTime = new Date(timestamp).getTime();
     const hoursAgo = (now - actTime) / (1000 * 60 * 60);
-    let dateKey: string;
 
     if (hoursAgo < 24) {
-      dateKey = "Today";
+      return "Today";
     } else if (hoursAgo < 48) {
-      dateKey = "Yesterday";
+      return "Yesterday";
     } else {
-      const actDate = new Date(activity.lastTimestamp);
-      dateKey = actDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const actDate = new Date(timestamp);
+      return actDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     }
+  }
+
+  for (const activity of collapsed) {
+    const dateKey = getDateKey(activity.lastTimestamp);
+    const filteredActions = activity.actions.filter((a) => getDateKey(a.timestamp) === dateKey);
+    if (filteredActions.length === 0) continue;
 
     if (!groups.has(dateKey)) {
       groups.set(dateKey, { collapsed: [], actionCount: 0 });
     }
     const group = groups.get(dateKey)!;
-    group.collapsed.push(activity);
-    group.actionCount += activity.actions.length;
+    group.collapsed.push({ ...activity, actions: filteredActions });
+    group.actionCount += filteredActions.length;
   }
 
   return groups;
