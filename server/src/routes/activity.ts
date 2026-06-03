@@ -90,7 +90,7 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
   try {
     // Fetch issues created by user in last 24h
     const { data: createdData } = await jira.post("/search/jql", {
-      jql: `creator = currentUser() AND created >= -2d ORDER BY created DESC`,
+      jql: `creator = currentUser() AND created >= -30d ORDER BY created DESC`,
       fields: ["summary", "created"],
       maxResults: 20,
     });
@@ -107,17 +107,17 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
       });
     }
   } catch (err) {
-    logError("Activity/JIRA created", err, { query: `creator = currentUser() AND created >= -2d` });
+    logError("Activity/JIRA created", err, { query: `creator = currentUser() AND created >= -30d` });
   }
 
   try {
     // Fetch all issues updated in last 24h, extract your comments
     const { data: userData } = await jira.get("/myself");
     const userAccountId = userData.accountId;
-    const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+    const twoDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
     const { data: allIssues } = await jira.post("/search/jql", {
-      jql: `updated >= -2d ORDER BY updated DESC`,
+      jql: `updated >= -30d ORDER BY updated DESC`,
       fields: ["summary", "comment"],
       maxResults: 250,
     });
@@ -125,7 +125,7 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
     const userComments = await extractUserComments(jira, allIssues.issues || [], userAccountId, twoDaysAgo);
     activities.push(...userComments);
   } catch (err) {
-    logError("Activity/JIRA comments", err, { query: `updated >= -2d` });
+    logError("Activity/JIRA comments", err, { query: `updated >= -30d` });
   }
 
   return activities;
@@ -135,18 +135,21 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
   const config = getConfig();
   const github = createGitHubClient();
   const activities: ActivityItem[] = [];
-  const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
   try {
-    // Use authenticated user events endpoint - includes full commit data for private repos
-    const { data: events } = await github.get(`/users/${config.githubUsername}/events`, {
-      params: { per_page: 300 },
-    });
+    // Fetch user avatar and events in parallel
+    const [{ data: userProfile }, { data: events }] = await Promise.all([
+      github.get(`/users/${config.githubUsername}`),
+      github.get(`/users/${config.githubUsername}/events`, { params: { per_page: 300 } }),
+    ]);
+
+    const userActor = { login: config.githubUsername, avatar_url: userProfile.avatar_url };
 
     logger.info("Activity", `GitHub events: ${events.length} raw`);
 
     // Filter to last 24h events first
-    const recentEvents = events.filter((e: any) => new Date(e.created_at).getTime() >= twoDaysAgo);
+    const recentEvents = events.filter((e: any) => new Date(e.created_at).getTime() >= thirtyDaysAgo);
 
     // Collect unique PR references that need title lookup (events API returns abbreviated PR objects without title)
     const prRefs = new Map<string, { owner: string; repo: string; number: number }>();
@@ -216,6 +219,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
             timestamp: event.created_at,
             entityKey: `${repo}#${pr.number}`,
+            metadata: { actor: userActor },
           });
           break;
         }
@@ -234,7 +238,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
               url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
               timestamp: event.created_at,
               entityKey: `${repo}#${pr.number}`,
-              metadata: { state: review?.state },
+              metadata: { state: review?.state, actor: userActor },
             });
           } else if (review?.state === "changes_requested") {
             activities.push({
@@ -245,7 +249,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
               url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
               timestamp: event.created_at,
               entityKey: `${repo}#${pr.number}`,
-              metadata: { state: review?.state },
+              metadata: { state: review?.state, actor: userActor },
             });
           }
           break;
@@ -264,6 +268,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             url: comment?.html_url || issue.html_url,
             timestamp: event.created_at,
             entityKey: `${repo}#${issue.number}`,
+            metadata: { actor: userActor },
           });
           break;
         }
@@ -280,6 +285,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             url: comment?.html_url || `https://github.com/${repo}/pull/${pr.number}`,
             timestamp: event.created_at,
             entityKey: `${repo}#${pr.number}`,
+            metadata: { actor: userActor },
           });
           break;
         }
@@ -295,6 +301,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             url: issue.html_url,
             timestamp: event.created_at,
             entityKey: `${repo}#${issue.number}`,
+            metadata: { actor: userActor },
           });
           break;
         }
@@ -312,7 +319,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       }
     }
 
-    const since = new Date(twoDaysAgo).toISOString();
+    const since = new Date(thirtyDaysAgo).toISOString();
     for (const [repoFullName, branches] of pushBranches) {
       for (const branch of branches) {
         try {
@@ -331,6 +338,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
               url: commit.html_url,
               timestamp: commit.commit?.author?.date || commit.commit?.committer?.date,
               entityKey: `${repoFullName}:${commit.sha}`,
+              metadata: { actor: userActor },
             });
           }
         } catch (err: any) {

@@ -147,24 +147,6 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                               />
                             )}
                           </div>
-                          {reviewBadge && (
-                            <Badge
-                              bg=""
-                              className={getReviewBadgeClass(collapsed.reviewState)}
-                              style={{ fontSize: "0.625rem", marginRight: "4px" }}
-                            >
-                              {reviewBadge}
-                            </Badge>
-                          )}
-                          {!reviewBadge && (
-                            <Badge
-                              bg=""
-                              className={getActivityBadgeClass(latestAction)}
-                              style={{ fontSize: "0.625rem", marginRight: "4px" }}
-                            >
-                              {getActionSummary(collapsed.actions)}
-                            </Badge>
-                          )}
                           {actors.length > 0 && (
                             <div
                               style={{
@@ -196,6 +178,24 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                               )}
                             </div>
                           )}
+                          {reviewBadge && (
+                            <Badge
+                              bg=""
+                              className={getReviewBadgeClass(collapsed.reviewState)}
+                              style={{ fontSize: "0.625rem", marginRight: "4px" }}
+                            >
+                              {reviewBadge}
+                            </Badge>
+                          )}
+                          {!reviewBadge && (
+                            <Badge
+                              bg=""
+                              className={getActivityBadgeClass(latestAction)}
+                              style={{ fontSize: "0.625rem", marginRight: "4px" }}
+                            >
+                              {getActionSummary(collapsed.actions)}
+                            </Badge>
+                          )}
                           {entityActionCount > 1 && (
                             <span
                               style={{
@@ -221,7 +221,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                       </div>
                     </div>
                     {isExpanded && (
-                      <div style={{ marginTop: "6px", marginLeft: "60px" }}>
+                      <div style={{ marginTop: "6px", marginLeft: "76px" }}>
                         {collapsed.actions.map((action) => (
                           <div
                             key={action.id}
@@ -257,11 +257,6 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                             >
                               {action.action}
                             </Badge>
-                            {action.metadata?.actor && (
-                              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                                {action.metadata.actor.login}
-                              </span>
-                            )}
                             <Timestamp timestamp={action.timestamp} />
                           </div>
                         ))}
