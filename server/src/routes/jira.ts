@@ -386,20 +386,18 @@ function calculateVelocityMetrics(
   const currentWeekCount = completionsByWeek.length > 0 ? completionsByWeek[completionsByWeek.length - 1].count : 0;
   const previousWeekCount = completionsByWeek.length > 1 ? completionsByWeek[completionsByWeek.length - 2].count : 0;
 
-  // Calculate trend: compare recent 2 weeks vs previous 2 weeks
+  // Calculate trend: compare last half of range vs first half
   let trend: "improving" | "stable" | "declining" = "stable";
   let trendPercentage = 0;
   if (completionsByWeek.length >= 2) {
-    const recent = currentWeekCount + previousWeekCount;
-    if (completionsByWeek.length >= 4) {
-      const thirdLast = completionsByWeek[completionsByWeek.length - 3].count;
-      const fourthLast = completionsByWeek[completionsByWeek.length - 4].count;
-      const previous = thirdLast + fourthLast;
-      if (previous > 0) {
-        trendPercentage = ((recent - previous) / previous) * 100;
-        if (trendPercentage > 10) trend = "improving";
-        else if (trendPercentage < -10) trend = "declining";
-      }
+    const midpoint = Math.ceil(completionsByWeek.length / 2);
+    const secondHalf = completionsByWeek.slice(midpoint).reduce((sum, w) => sum + w.count, 0);
+    const firstHalf = completionsByWeek.slice(0, midpoint).reduce((sum, w) => sum + w.count, 0);
+
+    if (firstHalf > 0) {
+      trendPercentage = ((secondHalf - firstHalf) / firstHalf) * 100;
+      if (trendPercentage > 10) trend = "improving";
+      else if (trendPercentage < -10) trend = "declining";
     }
   }
 
