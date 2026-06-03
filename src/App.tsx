@@ -149,66 +149,66 @@ export default function App() {
               </div>
             </div>
             {[
-              { key: "summary", label: "Overview", icon: IconLayoutDashboard, count: undefined },
-              {
-                key: "prs",
-                label: "Pull Requests",
-                icon: IconGitPullRequest,
-                count: openPRs.length,
-              },
-              {
-                key: "reviews",
-                label: "Review Requests",
-                icon: IconEye,
-                count: reviewRequests.length,
-              },
-              { key: "jira", label: "Tasks", icon: IconSubtask, count: jiraIssues.length },
-              {
-                key: "mentions",
-                label: "Notifications",
-                icon: IconAt,
-                count: jiraComments.length,
-              },
-              {
-                key: "activity",
-                label: "Activity",
-                icon: IconHistory,
-                count: activities.length,
-              },
-              {
-                key: "pr-history",
-                label: "Statistics",
-                icon: IconCalendarStats,
-                count: currentMonthPRsCount,
-              },
-              {
-                key: "velocity",
-                label: "Velocity",
-                icon: IconChartBar,
-                count: undefined,
-              },
-              {
-                key: "notes",
-                label: "Notes",
-                icon: IconNotes,
-                count: unresolvedNotes.length,
-              },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                className={`sidebar-tab${effectiveTab === tab.key ? " active" : ""}`}
-                onClick={() => setActiveTab(tab.key)}
-                title={tab.label}
-              >
-                <tab.icon size={18} />
-                <span className="sidebar-tab-label">{tab.label}</span>
-                {tab.count !== undefined && tab.count > 0 && (
-                  <Badge bg="secondary" pill className="sidebar-badge">
-                    {tab.count}
-                  </Badge>
-                )}
-              </button>
-            ))}
+              { key: "summary", label: "Overview", icon: IconLayoutDashboard },
+              { group: "separator" },
+              { group: "label", label: "GitHub" },
+              { key: "activity", label: "Activity", icon: IconHistory },
+              { key: "prs", label: "Pull Requests", icon: IconGitPullRequest },
+              { key: "reviews", label: "Review Requests", icon: IconEye },
+              { key: "pr-history", label: "Statistics", icon: IconCalendarStats },
+              { group: "separator" },
+              { group: "label", label: "JIRA" },
+              { key: "mentions", label: "Notifications", icon: IconAt },
+              { key: "jira", label: "Tasks", icon: IconSubtask },
+              { key: "velocity", label: "Velocity", icon: IconChartBar },
+              { group: "separator" },
+              { key: "notes", label: "Notes", icon: IconNotes },
+            ].map((item, idx) => {
+              if (item.group === "separator") {
+                return <div key={`sep-${idx}`} className="sidebar-separator" />;
+              }
+              if (item.group === "label") {
+                return (
+                  <div key={item.label} className="sidebar-group-label">
+                    {item.label}
+                  </div>
+                );
+              }
+              const count =
+                item.key === "prs"
+                  ? openPRs.length
+                  : item.key === "reviews"
+                    ? reviewRequests.length
+                    : item.key === "jira"
+                      ? jiraIssues.length
+                      : item.key === "mentions"
+                        ? jiraComments.length
+                        : item.key === "activity"
+                          ? activities.length
+                          : item.key === "pr-history"
+                            ? currentMonthPRsCount
+                            : item.key === "notes"
+                              ? unresolvedNotes.length
+                              : undefined;
+
+              if (!item.icon) return null;
+              return (
+                <button
+                  key={item.key}
+                  className={`sidebar-tab${effectiveTab === item.key ? " active" : ""}`}
+                  onClick={() => setActiveTab(item.key!)}
+                  title={item.label}
+                >
+                  <item.icon size={18} />
+                  <span className="sidebar-tab-label">{item.label}</span>
+                  {count !== undefined && count > 0 && (
+                    <Badge bg="secondary" pill className="sidebar-badge">
+                      {count}
+                    </Badge>
+                  )}
+                </button>
+              );
+            })}
             <button
               className="sidebar-toggle"
               onClick={toggleSidebar}

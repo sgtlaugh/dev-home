@@ -206,6 +206,23 @@ a:hover {
   color: #ffffff;
 }
 
+.sidebar-separator {
+  height: 1px;
+  background-color: #30363d;
+  margin: 6px 0;
+  flex-shrink: 0;
+}
+
+.sidebar-group-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #8b949e;
+  padding: 8px 12px 4px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
 /* --- Sidebar Toggle Button --- */
 .sidebar-toggle {
   display: flex;
