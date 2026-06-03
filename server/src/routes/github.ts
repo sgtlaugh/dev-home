@@ -4,6 +4,7 @@ import { createGitHubClient } from "../clients/githubApiClient";
 import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
 import { logger } from "../utils/logger";
+import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
 
 const router = Router();
 
@@ -680,7 +681,7 @@ function extractOwnPRComments(prNodes: any[], username: string): any[] {
  */
 router.get("/mentions", async (_req: Request, res: Response) => {
   const github = createGitHubClient();
-  const since = `${monthsAgo(3)}T00:00:00Z`;
+  const since = `${monthsAgo(Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30))}T00:00:00Z`;
 
   const allNotifications = await fetchAllNotifications(github, since);
   const mentions = await fetchCommentsInBatches(allNotifications, github);
@@ -1067,11 +1068,11 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
     // Fetch PRs authored by user AND PRs user is involved with (reviewed/commented)
     const [myPRsResult, involvedPRsResult] = await Promise.all([
       graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
-        query: `author:${username} type:pr updated:>=${monthsAgo(3)}`,
+        query: `author:${username} type:pr updated:>=${monthsAgo(Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30))}`,
         first: 100,
       }),
       graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
-        query: `involves:${username} -author:${username} type:pr updated:>=${monthsAgo(3)}`,
+        query: `involves:${username} -author:${username} type:pr updated:>=${monthsAgo(Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30))}`,
         first: 100,
       }),
     ]);

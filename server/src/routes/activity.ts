@@ -6,6 +6,7 @@ import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
 import { logError } from "../utils/errors";
 import { logger } from "../utils/logger";
+import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
 
 const router = Router();
 
@@ -90,7 +91,7 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
   try {
     // Fetch issues created by user in last 24h
     const { data: createdData } = await jira.post("/search/jql", {
-      jql: `creator = currentUser() AND created >= -30d ORDER BY created DESC`,
+      jql: `creator = currentUser() AND created >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY created DESC`,
       fields: ["summary", "created"],
       maxResults: 20,
     });
@@ -107,17 +108,17 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
       });
     }
   } catch (err) {
-    logError("Activity/JIRA created", err, { query: `creator = currentUser() AND created >= -30d` });
+    logError("Activity/JIRA created", err, { query: `creator = currentUser() AND created >= -${ACTIVITY_LOOKBACK_DAYS}d` });
   }
 
   try {
     // Fetch all issues updated in last 24h, extract your comments
     const { data: userData } = await jira.get("/myself");
     const userAccountId = userData.accountId;
-    const twoDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const twoDaysAgo = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
 
     const { data: allIssues } = await jira.post("/search/jql", {
-      jql: `updated >= -30d ORDER BY updated DESC`,
+      jql: `updated >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
       fields: ["summary", "comment"],
       maxResults: 250,
     });
@@ -125,7 +126,7 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
     const userComments = await extractUserComments(jira, allIssues.issues || [], userAccountId, twoDaysAgo);
     activities.push(...userComments);
   } catch (err) {
-    logError("Activity/JIRA comments", err, { query: `updated >= -30d` });
+    logError("Activity/JIRA comments", err, { query: `updated >= -${ACTIVITY_LOOKBACK_DAYS}d` });
   }
 
   return activities;
@@ -135,7 +136,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
   const config = getConfig();
   const github = createGitHubClient();
   const activities: ActivityItem[] = [];
-  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const thirtyDaysAgo = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
 
   try {
     // Fetch user avatar and events in parallel

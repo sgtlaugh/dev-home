@@ -1,0 +1,1 @@
+export const ACTIVITY_LOOKBACK_DAYS = 30;
