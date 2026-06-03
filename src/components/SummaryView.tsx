@@ -137,15 +137,19 @@ function ItemRow({
           {subtitle}
         </div>
       </div>
-      <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
-        {badge && (
-          <Badge bg="" className={badgeClass || "badge-status-neutral"}>
-            {badge}
-          </Badge>
-        )}
-        <ChecksStatusIcon status={checksStatus ?? null} />
+      <div style={{ minWidth: "60px", flexShrink: 0 }}>
         <Timestamp timestamp={time} />
       </div>
+      {(badge || checksStatus) && (
+        <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
+          {badge && (
+            <Badge bg="" className={badgeClass || "badge-status-neutral"}>
+              {badge}
+            </Badge>
+          )}
+          <ChecksStatusIcon status={checksStatus ?? null} />
+        </div>
+      )}
     </div>
   );
 }
@@ -360,65 +364,16 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             }
           >
             {topNotes.length > 0 ? (
-              topNotes.map((note) => {
-                const noteUrl = getReferenceUrl(note, jiraBase);
-                const noteTitle = getNoteDisplayTitle(note);
-                return (
-                  <div
-                    key={note.id}
-                    className="summary-item d-flex align-items-center gap-3 px-3 py-2"
-                    style={{ cursor: "pointer" }}
-                    onClick={() => onOpenNote(note)}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="d-flex align-items-center gap-2">
-                        {noteUrl ? (
-                          <a
-                            href={noteUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-truncate-custom"
-                            style={{ fontWeight: 500, fontSize: "0.8125rem" }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {noteTitle}
-                          </a>
-                        ) : (
-                          <span
-                            className="text-truncate-custom"
-                            style={{ fontWeight: 500, fontSize: "0.8125rem" }}
-                          >
-                            {noteTitle}
-                          </span>
-                        )}
-                        <Timestamp timestamp={note.created_at} />
-                      </div>
-                      {note.content && (
-                        <div
-                          className="text-secondary-custom note-content-truncate"
-                          style={{ fontSize: "0.75rem", marginTop: 1 }}
-                        >
-                          {note.content}
-                        </div>
-                      )}
-                    </div>
-                    <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        style={{ padding: "2px 6px" }}
-                        title="Resolve"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onResolveNote(note.id);
-                        }}
-                      >
-                        <IconCheck size={12} />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })
+              topNotes.map((note) => (
+                <ItemRow
+                  key={note.id}
+                  url={getReferenceUrl(note, jiraBase) || "#"}
+                  title={getNoteDisplayTitle(note)}
+                  subtitle=""
+                  time={note.created_at}
+                  onClick={() => onOpenNote(note)}
+                />
+              ))
             ) : (
               <EmptyRow text="No notes" />
             )}
