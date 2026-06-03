@@ -266,13 +266,32 @@ router.get("/velocity", async (req: Request, res: Response) => {
 // Helper: Get week key for grouping (Monday-Sunday, returned as "YYYY-MM-DD")
 function getWeekKey(date: Date): string {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(d.setDate(diff));
-  return monday.toISOString().split("T")[0];
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  d.setUTCDate(diff);
+  return d.toISOString().split("T")[0];
 }
 
-// Helper: Format date range for display (e.g., "Jun 04 - Jun 10")
+function generateWeekKeysInRange(startDateStr: string, endDateStr: string): string[] {
+  const weeks: string[] = [];
+  const [startY, startM, startD] = startDateStr.split("-").map(Number);
+  const [endY, endM, endD] = endDateStr.split("-").map(Number);
+
+  let current = new Date(Date.UTC(startY, startM - 1, startD));
+  const end = new Date(Date.UTC(endY, endM - 1, endD));
+
+  const day = current.getUTCDay();
+  const diff = current.getUTCDate() - day + (day === 0 ? -6 : 1);
+  current.setUTCDate(diff);
+
+  while (current <= end) {
+    weeks.push(current.toISOString().split("T")[0]);
+    current.setUTCDate(current.getUTCDate() + 7);
+  }
+
+  return weeks;
+}
+
 function formatWeekRange(startDateStr: string): string {
   const [year, month, day] = startDateStr.split("-").map(Number);
   const start = new Date(year, month - 1, day);
@@ -324,21 +343,16 @@ function calculateTrend(completionsByWeek: Array<{ week: string; count: number }
   return { trend: "stable", percentage: change };
 }
 
-// Helper: Format time as "Xd Yh" or just "Xh" if < 1 day
+// Helper: Format time as "Xd" (rounded up) or "Xh" if < 1 day
 function formatCompletionTime(days: number): { value: string; days: number } {
-  const wholeDays = Math.floor(days);
-  const fractionalDays = days - wholeDays;
-  const hours = Math.ceil(fractionalDays * 24);
-
-  if (wholeDays === 0) {
+  if (days < 1) {
     // Less than 1 day: show hours, minimum 1h
-    const displayHours = Math.max(1, hours);
-    return { value: `${displayHours}h`, days };
+    const hours = Math.max(1, Math.ceil(days * 24));
+    return { value: `${hours}h`, days };
   }
-  if (hours === 0) {
-    return { value: `${wholeDays}d`, days };
-  }
-  return { value: `${wholeDays}d ${hours}h`, days };
+  // 1+ days: show as days (rounded up)
+  const roundedDays = Math.ceil(days);
+  return { value: `${roundedDays}d`, days };
 }
 
 // Helper: Calculate velocity metrics
@@ -361,16 +375,18 @@ function calculateVelocityMetrics(
     completionsByWeekMap.set(weekKey, entry);
   }
 
-  // Sort weeks chronologically
-  const completionsByWeek = Array.from(completionsByWeekMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([weekKey, data]) => ({
-      weekRange: formatWeekRange(weekKey),
-      count: data.count,
-      issues: data.issues,
-    }));
+  const allWeeks = generateWeekKeysInRange(startDate, endDate);
+  const completionsByWeek = allWeeks
+    .sort((a, b) => b.localeCompare(a))
+    .map((weekKey) => {
+      const data = completionsByWeekMap.get(weekKey);
+      return {
+        weekRange: formatWeekRange(weekKey),
+        count: data?.count || 0,
+        issues: data?.issues || [],
+      };
+    });
 
-  // Calculate statistics
   const sortedTimes = [...completionTimes].sort((a, b) => a - b);
   const mean = completionTimes.length > 0 ? completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length : 0;
   const median =
@@ -386,7 +402,6 @@ function calculateVelocityMetrics(
   const currentWeekCount = completionsByWeek.length > 0 ? completionsByWeek[completionsByWeek.length - 1].count : 0;
   const previousWeekCount = completionsByWeek.length > 1 ? completionsByWeek[completionsByWeek.length - 2].count : 0;
 
-  // Calculate trend: compare last half of range vs first half
   let trend: "improving" | "stable" | "declining" = "stable";
   let trendPercentage = 0;
   if (completionsByWeek.length >= 2) {
