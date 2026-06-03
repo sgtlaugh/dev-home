@@ -36,6 +36,7 @@ import { Activity } from "./components/Activity";
 import { JiraVelocity } from "./components/JiraVelocity";
 import { PeerActivity } from "./components/PeerActivity";
 import { useActivity } from "./hooks/useActivity";
+import { usePeerActivity } from "./hooks/usePeerActivity";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("summary");
@@ -103,6 +104,7 @@ export default function App() {
     loading: activityLoading,
     refresh: refreshActivity,
   } = useActivity(configured);
+  const { activities: peerActivities } = usePeerActivity(configured);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
 
@@ -123,9 +125,9 @@ export default function App() {
               { group: "separator" },
               { group: "label", label: "GitHub" },
               { key: "activity", label: "Activity", icon: IconHistory },
+              { key: "peers", label: "Peer Activity", icon: IconUsers },
               { key: "prs", label: "Pull Requests", icon: IconGitPullRequest },
               { key: "reviews", label: "Review Requests", icon: IconEye },
-              { key: "peers", label: "Collaborators", icon: IconUsers },
               { key: "pr-history", label: "Statistics", icon: IconCalendarStats },
               { group: "separator" },
               { group: "label", label: "JIRA" },
@@ -145,22 +147,18 @@ export default function App() {
                   </div>
                 );
               }
-              const count =
-                item.key === "prs"
-                  ? openPRs.length
-                  : item.key === "reviews"
-                    ? reviewRequests.length
-                    : item.key === "jira"
-                      ? jiraIssues.length
-                      : item.key === "mentions"
-                        ? jiraComments.length
-                        : item.key === "activity"
-                          ? activities.length
-                          : item.key === "pr-history"
-                            ? currentMonthPRsCount
-                            : item.key === "notes"
-                              ? unresolvedNotes.length
-                              : undefined;
+
+              const countMap: Record<string, number | undefined> = {
+                prs: openPRs.length,
+                reviews: reviewRequests.length,
+                peers: peerActivities.length,
+                jira: jiraIssues.length,
+                mentions: jiraComments.length,
+                activity: activities.length,
+                "pr-history": currentMonthPRsCount,
+                notes: unresolvedNotes.length,
+              };
+              const count = item.key ? countMap[item.key] : undefined;
 
               if (!item.icon) return null;
               return (
