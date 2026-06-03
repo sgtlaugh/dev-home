@@ -224,20 +224,30 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           const pr = event.payload?.pull_request;
           if (!pr) break;
 
-          let action = "Reviewed PR";
-          if (review?.state === "approved") action = "Approved PR";
-          else if (review?.state === "changes_requested") action = "Requested changes";
-
-          activities.push({
-            id: `github-review-${event.id}`,
-            type: "github",
-            action,
-            title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
-            url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
-            timestamp: event.created_at,
-            entityKey: `${repo}#${pr.number}`,
-            metadata: { state: review?.state },
-          });
+          // Only show approval/changes_requested, skip generic "reviewed" (always paired with a comment)
+          if (review?.state === "approved") {
+            activities.push({
+              id: `github-review-${event.id}`,
+              type: "github",
+              action: "Approved PR",
+              title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
+              url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
+              timestamp: event.created_at,
+              entityKey: `${repo}#${pr.number}`,
+              metadata: { state: review?.state },
+            });
+          } else if (review?.state === "changes_requested") {
+            activities.push({
+              id: `github-review-${event.id}`,
+              type: "github",
+              action: "Requested changes",
+              title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
+              url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
+              timestamp: event.created_at,
+              entityKey: `${repo}#${pr.number}`,
+              metadata: { state: review?.state },
+            });
+          }
           break;
         }
         case "IssueCommentEvent": {

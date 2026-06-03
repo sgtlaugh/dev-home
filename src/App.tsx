@@ -17,6 +17,7 @@ import {
   IconCalendarStats,
   IconHistory,
   IconChartBar,
+  IconUsers,
 } from "@tabler/icons-react";
 import { useConfig } from "./hooks/useConfig";
 import { useDashboard } from "./hooks/useDashboard";
@@ -33,6 +34,7 @@ import { FindInPage } from "./components/FindInPage";
 import { PRHistory } from "./components/PRHistory";
 import { Activity } from "./components/Activity";
 import { JiraVelocity } from "./components/JiraVelocity";
+import { PeerActivity } from "./components/PeerActivity";
 import { useActivity } from "./hooks/useActivity";
 
 export default function App() {
@@ -123,6 +125,7 @@ export default function App() {
               { key: "activity", label: "Activity", icon: IconHistory },
               { key: "prs", label: "Pull Requests", icon: IconGitPullRequest },
               { key: "reviews", label: "Review Requests", icon: IconEye },
+              { key: "peers", label: "Collaborators", icon: IconUsers },
               { key: "pr-history", label: "Statistics", icon: IconCalendarStats },
               { group: "separator" },
               { group: "label", label: "JIRA" },
@@ -307,6 +310,7 @@ export default function App() {
                   {effectiveTab === "activity" && (
                     <Activity activities={activities} loading={activityLoading} />
                   )}
+                  {effectiveTab === "peers" && <PeerActivity active={effectiveTab === "peers"} />}
                 </div>
               </>
             )}

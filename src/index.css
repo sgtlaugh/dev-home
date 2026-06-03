@@ -2219,3 +2219,25 @@ a,
   background-color: #0969da;
   color: #ffffff;
 }
+
+.activity-expanded-section {
+  margin-left: 2rem;
+  padding-top: 0.5rem;
+}
+
+.activity-sublist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activity-sublist li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  padding-left: 1rem;
+}

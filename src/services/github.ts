@@ -1,4 +1,5 @@
 import { GitHubPR, GitHubComment, GitHubReviewRequest } from "../types";
+import { ActivityItem } from "./activity";
 import { apiClient } from "./config";
 import { apiCache } from "../utils/cache";
 import { withRetry } from "../utils/retry";
@@ -93,4 +94,15 @@ export async function fetchCommitCount(
   const count = data.commitCount || 0;
   apiCache.set(cacheKey, { commitCount: count });
   return count;
+}
+
+export async function fetchPeerActivity(signal?: AbortSignal): Promise<ActivityItem[]> {
+  const cacheKey = "github:peer-activity";
+  const cached = apiCache.get<ActivityItem[]>(cacheKey);
+  if (cached) return cached;
+
+  const { data } = await withRetry(() => apiClient.get("/github/peer-activity", { signal }));
+  const activities = data.activities || [];
+  apiCache.set(cacheKey, activities);
+  return activities;
 }

@@ -1062,114 +1062,110 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
 
   try {
     const config = getConfig();
-    const client = createGitHubClient();
     const username = config.githubUsername;
 
-    const myPRsQuery = `
-      query {
-        search(query: "is:pr author:${username} is:merged,is:open,is:closed", type: ISSUE, first: 100) {
-          nodes {
-            ... on PullRequest {
-              number
-              author { login }
-              reviews(last: 100) {
-                nodes {
-                  state
-                  author { login avatarUrl }
-                  submittedAt
-                }
-              }
-              comments(last: 100) {
-                nodes {
-                  author { login avatarUrl }
-                  createdAt
-                  body
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    const reviewingQuery = `
-      query {
-        search(query: "is:pr reviewed-by:${username}", type: ISSUE, first: 100) {
-          nodes {
-            ... on PullRequest {
-              author { login avatarUrl }
-            }
-          }
-        }
-      }
-    `;
-
-    const [myPRsData, reviewingData] = await Promise.all([
-      graphql(myPRsQuery),
-      graphql(reviewingQuery),
+    // Fetch PRs authored by user AND PRs user is involved with (reviewed/commented)
+    const [myPRsResult, involvedPRsResult] = await Promise.all([
+      graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
+        query: `author:${username} type:pr updated:>=${monthsAgo(3)}`,
+        first: 100,
+      }),
+      graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
+        query: `involves:${username} -author:${username} type:pr updated:>=${monthsAgo(3)}`,
+        first: 100,
+      }),
     ]);
 
-    const peerMap = new Map<string, any>();
+    const myPRNodes = myPRsResult.search.nodes || [];
+    const involvedPRNodes = involvedPRsResult.search.nodes || [];
+    logger.info("PeerActivity", `myPRs: ${myPRNodes.length}, involvedPRs: ${involvedPRNodes.length}`);
 
-    for (const pr of myPRsData.search.nodes || []) {
+    // Deduplicate by URL
+    const seen = new Set<string>();
+    const allPRNodes: any[] = [];
+    for (const pr of [...myPRNodes, ...involvedPRNodes]) {
+      if (seen.has(pr.url)) continue;
+      seen.add(pr.url);
+      allPRNodes.push(pr);
+    }
+
+    const activities: any[] = [];
+
+    for (const pr of allPRNodes) {
+      const repoName = pr.repository?.nameWithOwner || "";
+      const prTitle = `${repoName}#${pr.number}: ${pr.title}`;
+      const entityKey = `${repoName}#${pr.number}`;
+
+      // Extract peer reviews (only approval/changes_requested, skip generic "reviewed" — always paired with comment)
       for (const review of pr.reviews?.nodes || []) {
-        if (review.author.login === username) continue;
-        const peer = peerMap.get(review.author.login) || {
-          login: review.author.login,
-          avatarUrl: review.author.avatarUrl,
-          reviewsOnMyPRs: 0,
-          approvalsOnMyPRs: 0,
-          changesRequestedOnMyPRs: 0,
-          commentsOnMyPRs: 0,
-          prsIReviewed: 0,
-          latestActivity: review.submittedAt || new Date().toISOString(),
-        };
-        peer.reviewsOnMyPRs++;
-        if (review.state === "APPROVED") peer.approvalsOnMyPRs++;
-        if (review.state === "CHANGES_REQUESTED") peer.changesRequestedOnMyPRs++;
-        peer.latestActivity = review.submittedAt || peer.latestActivity;
-        peerMap.set(review.author.login, peer);
+        const login = review.author?.login;
+        if (!login || login === username || isBot(login)) continue;
+        if (review.state !== "APPROVED" && review.state !== "CHANGES_REQUESTED") continue;
+
+        const action = review.state === "APPROVED" ? "Approved PR" : "Requested changes";
+
+        activities.push({
+          id: `peer-review-${pr.number}-${login}-${review.submittedAt}`,
+          type: "github",
+          action,
+          title: prTitle,
+          url: pr.url,
+          timestamp: review.submittedAt,
+          entityKey,
+          metadata: {
+            actor: { login, avatar_url: review.author.avatarUrl },
+            repo: repoName,
+          },
+        });
       }
 
+      // Extract peer issue-level comments
       for (const comment of pr.comments?.nodes || []) {
-        if (comment.author.login === username) continue;
-        const peer = peerMap.get(comment.author.login) || {
-          login: comment.author.login,
-          avatarUrl: comment.author.avatarUrl,
-          reviewsOnMyPRs: 0,
-          approvalsOnMyPRs: 0,
-          changesRequestedOnMyPRs: 0,
-          commentsOnMyPRs: 0,
-          prsIReviewed: 0,
-          latestActivity: comment.createdAt,
-        };
-        peer.commentsOnMyPRs++;
-        peer.latestActivity = comment.createdAt || peer.latestActivity;
-        peerMap.set(comment.author.login, peer);
+        const login = comment.author?.login;
+        if (!login || login === username || isBot(login)) continue;
+
+        activities.push({
+          id: `peer-comment-${pr.number}-${login}-${comment.createdAt}`,
+          type: "github",
+          action: "Commented on PR",
+          title: prTitle,
+          url: comment.url || pr.url,
+          timestamp: comment.createdAt,
+          entityKey,
+          metadata: {
+            actor: { login, avatar_url: comment.author.avatarUrl },
+            repo: repoName,
+          },
+        });
+      }
+
+      // Extract peer review thread comments (inline code comments)
+      for (const thread of pr.reviewThreads?.nodes || []) {
+        for (const comment of thread.comments?.nodes || []) {
+          const login = comment.author?.login;
+          if (!login || login === username || isBot(login)) continue;
+
+          activities.push({
+            id: `peer-thread-${pr.number}-${login}-${comment.createdAt}`,
+            type: "github",
+            action: "Commented on PR",
+            title: prTitle,
+            url: comment.url || pr.url,
+            timestamp: comment.createdAt,
+            entityKey,
+            metadata: {
+              actor: { login, avatar_url: comment.author.avatarUrl },
+              repo: repoName,
+            },
+          });
+        }
       }
     }
 
-    for (const pr of reviewingData.search.nodes || []) {
-      if (!pr.author || pr.author.login === username) continue;
-      const peer = peerMap.get(pr.author.login) || {
-        login: pr.author.login,
-        avatarUrl: pr.author.avatarUrl,
-        reviewsOnMyPRs: 0,
-        approvalsOnMyPRs: 0,
-        changesRequestedOnMyPRs: 0,
-        commentsOnMyPRs: 0,
-        prsIReviewed: 0,
-        latestActivity: new Date().toISOString(),
-      };
-      peer.prsIReviewed++;
-      peerMap.set(pr.author.login, peer);
-    }
+    activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    logger.info("PeerActivity", `found ${activities.length} peer activities from ${allPRNodes.length} PRs`);
 
-    const peers = Array.from(peerMap.values())
-      .map((p) => ({ ...p, totalInteractions: p.reviewsOnMyPRs + p.commentsOnMyPRs + p.prsIReviewed }))
-      .sort((a, b) => b.totalInteractions - a.totalInteractions);
-
-    const result = { peers };
+    const result = { activities };
     apiCache.set(cacheKey, result);
     res.json(result);
   } catch (err: any) {

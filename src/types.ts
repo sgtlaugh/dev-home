@@ -150,15 +150,3 @@ export interface JiraVelocityMetrics {
     trendPercentage: number;
   };
 }
-
-export interface PeerActivity {
-  login: string;
-  avatarUrl: string;
-  reviewsOnMyPRs: number;
-  approvalsOnMyPRs: number;
-  changesRequestedOnMyPRs: number;
-  commentsOnMyPRs: number;
-  prsIReviewed: number;
-  totalInteractions: number;
-  latestActivity: string;
-}
