@@ -469,13 +469,25 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                     )}
                                   </div>
                                 )}
-                                <Badge
-                                  bg=""
-                                  className={getActivityBadgeClass(action)}
-                                  style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                                <a
+                                  href={action.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{ textDecoration: "none" }}
                                 >
-                                  {action.action}
-                                </Badge>
+                                  <Badge
+                                    bg=""
+                                    className={getActivityBadgeClass(action)}
+                                    style={{
+                                      fontSize: "0.65rem",
+                                      flexShrink: 0,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {action.action}
+                                  </Badge>
+                                </a>
                                 <Timestamp timestamp={action.timestamp} />
                               </div>
                               {action.metadata?.commentBody && (

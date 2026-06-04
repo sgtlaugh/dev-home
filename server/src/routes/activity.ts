@@ -486,31 +486,32 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
   }
 
   // Supplement with GraphQL to catch PRs missed by events API (limited to 300 events)
-  try {
-    const sinceDate = new Date(thirtyDaysAgo).toISOString().slice(0, 10);
-    const seenEntityKeys = new Set(activities.filter((a) => a.action.includes("PR")).map((a) => a.entityKey));
+  const sinceDate = new Date(thirtyDaysAgo).toISOString().slice(0, 10);
+  const seenEntityKeys = new Set(activities.filter((a) => a.action.includes("PR")).map((a) => a.entityKey));
 
-    const PR_ACTIVITY_QUERY = `
-      query($query: String!, $first: Int!) {
-        search(query: $query, type: ISSUE, first: $first) {
-          nodes {
-            ... on PullRequest {
-              number
-              title
-              url
-              state
-              merged
-              createdAt
-              mergedAt
-              closedAt
-              author { login avatarUrl }
-              mergedBy { login avatarUrl }
-              repository { nameWithOwner }
-            }
+  const PR_ACTIVITY_QUERY = `
+    query($query: String!, $first: Int!) {
+      search(query: $query, type: ISSUE, first: $first) {
+        nodes {
+          ... on PullRequest {
+            number
+            title
+            url
+            state
+            merged
+            createdAt
+            mergedAt
+            closedAt
+            author { login avatarUrl }
+            mergedBy { login avatarUrl }
+            repository { nameWithOwner }
           }
         }
       }
-    `;
+    }
+  `;
+
+  try {
 
     const result = await graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
       query: `author:${config.githubUsername} type:pr created:>=${sinceDate}`,
@@ -552,6 +553,40 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
     logger.info("Activity", `GraphQL PR supplement: ${result.search.nodes?.length || 0} PRs checked`);
   } catch (err) {
     logError("Activity/GitHub GraphQL PRs", err);
+  }
+
+  // Fetch PRs user merged (including org repos) via involves: search + mergedBy filter
+  try {
+    const mergedResult = await graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
+      query: `involves:${config.githubUsername} type:pr is:merged merged:>=${sinceDate}`,
+      first: 100,
+    });
+
+    let mergedCount = 0;
+    for (const pr of mergedResult.search.nodes || []) {
+      if (pr.mergedBy?.login !== config.githubUsername) continue;
+
+      const repoName = pr.repository?.nameWithOwner || "";
+      const entityKey = `${repoName}#${pr.number}`;
+
+      if (!seenEntityKeys.has(`${entityKey}-merged`)) {
+        activities.push({
+          id: `github-pr-gql-merged-by-${pr.number}-${repoName}`,
+          type: "github",
+          action: "Merged PR",
+          title: `${repoName}#${pr.number}: ${pr.title}`,
+          url: pr.url,
+          timestamp: pr.mergedAt,
+          entityKey,
+          metadata: { actor: userActor },
+        });
+        seenEntityKeys.add(`${entityKey}-merged`);
+        mergedCount++;
+      }
+    }
+    logger.info("Activity", `GraphQL merged PRs: ${mergedResult.search.nodes?.length || 0} checked, ${mergedCount} by user`);
+  } catch (err) {
+    logError("Activity/GitHub merged PRs", err);
   }
 
   logger.info("Activity", `GitHub: ${activities.length} activities`);
