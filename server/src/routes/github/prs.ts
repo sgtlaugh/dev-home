@@ -13,9 +13,9 @@ import {
   gateStartDate,
 } from "./helpers";
 import { SEARCH_MY_PRS_QUERY } from "./queries";
+import { LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
-const LONG_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 /**
  * GET /api/github/prs

@@ -130,3 +130,8 @@ export function saveProfiles(profiles: CachedProfile[]): void {
   });
   insertMany(profiles);
 }
+
+export function clearProfiles(): void {
+  const db = getDb();
+  db.exec("DELETE FROM github_profiles");
+}

@@ -12,11 +12,9 @@ import {
   saveProfiles,
 } from "../../services/contributionCache";
 import { startPrefetch, isPrefetchRunning } from "../../services/contributionPrefetch";
-import { MAX_REPOS_PER_CONTRIBUTION } from "../../utils/constants";
+import { MAX_REPOS_PER_CONTRIBUTION, SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
-const LONG_CACHE_TTL = 24 * 60 * 60 * 1000;
-const CURRENT_MONTH_CACHE_TTL = 10 * 60 * 1000;
 const MAX_BATCH_SIZE = 5;
 const MAX_FIELDS_PER_QUERY = 50;
 const MAX_CONCURRENT_BATCHES = 3;
@@ -288,7 +286,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
           const chunks = [{ from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: "p0" }];
           const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY)));
           const results = await fetchBatchFromApi(members, chunks, batchSize, `leaderboard/current`, `${org}/`);
-          apiCache.set(cmKey, results, CURRENT_MONTH_CACHE_TTL);
+          apiCache.set(cmKey, results, SHORT_CACHE_TTL);
           addToTotals(totals, results);
         }
       }

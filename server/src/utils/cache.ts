@@ -1,10 +1,11 @@
 import Database from "better-sqlite3";
 import path from "path";
 import { logger } from "./logger";
+import { SHORT_CACHE_TTL } from "./constants";
 
 class ApiCache {
   private db: Database.Database;
-  private ttl = 5 * 60 * 1000;
+  private ttl = SHORT_CACHE_TTL;
 
   constructor() {
     const dbDir = path.join(process.cwd(), "server");

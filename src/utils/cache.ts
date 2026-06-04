@@ -5,7 +5,7 @@ interface CacheEntry<T> {
 
 class ApiCache {
   private cache = new Map<string, CacheEntry<any>>();
-  private ttl = 5 * 60 * 1000; // 5 minutes
+  private ttl = 15 * 60 * 1000;
 
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
@@ -28,7 +28,7 @@ class ApiCache {
   }
 
   set<T>(key: string, data: T): void {
-    console.log(`[Cache] SET ${key}`);
+    if (import.meta.env.DEV) console.log(`[Cache] SET ${key}`);
     this.cache.set(key, { data, timestamp: Date.now() });
   }
 

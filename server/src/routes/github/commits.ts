@@ -4,6 +4,7 @@ import { createGitHubClient } from "../../clients/githubApiClient";
 import { graphql } from "../../clients/githubGraphqlClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
+import { LONG_CACHE_TTL } from "../../utils/constants";
 import {
   buildYearChunks,
   fetchUserRepos,
@@ -12,7 +13,6 @@ import {
 } from "./helpers";
 
 const router = Router();
-const LONG_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 /**
  * GET /api/github/user-info

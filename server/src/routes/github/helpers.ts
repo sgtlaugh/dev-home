@@ -2,10 +2,8 @@ import { graphql } from "../../clients/githubGraphqlClient";
 import { createGitHubClient } from "../../clients/githubApiClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
-import { ACTIVITY_LOOKBACK_DAYS } from "../../utils/constants";
+import { ACTIVITY_LOOKBACK_DAYS, LONG_CACHE_TTL } from "../../utils/constants";
 import { SEARCH_MY_PRS_QUERY } from "./queries";
-
-const LONG_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h for immutable past data
 
 /**
  * Get an ISO date string for months ago (YYYY-MM-DD).

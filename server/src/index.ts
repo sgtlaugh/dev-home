@@ -11,6 +11,7 @@ import notesRoutes from "./routes/notes";
 import { errorHandler } from "./utils/errors";
 import { apiCache } from "./utils/cache";
 import { logger } from "./utils/logger";
+import { clearProfiles } from "./services/contributionCache";
 
 export function createServer() {
   const app = express();
@@ -54,6 +55,7 @@ export function createServer() {
   // Cache purge — clear all cached data
   app.post("/api/cache/purge", (_req: Request, res: Response) => {
     apiCache.clear();
+    clearProfiles();
     res.json({ status: "cache cleared" });
   });
 
