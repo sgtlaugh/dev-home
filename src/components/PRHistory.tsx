@@ -403,17 +403,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
     closed: closedCount,
   };
 
-  const avgMergeTime = useMemo(() => {
-    const merged = prs.filter((pr) => pr.merged && pr.merged_at);
-    if (merged.length === 0) return null;
-    const totalDays = merged.reduce((sum, pr) => {
-      const created = new Date(pr.created_at).getTime();
-      const mergedAt = new Date(pr.merged_at!).getTime();
-      return sum + (mergedAt - created) / (1000 * 60 * 60 * 24);
-    }, 0);
-    return totalDays / merged.length;
-  }, [prs]);
-
   const filteredPrs = useMemo(() => {
     return prs.filter((pr) => {
       if (stateFilter === "all") return true;
@@ -531,16 +520,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
           </div>
           <div className="stat-label">Commits</div>
         </div>
-        {avgMergeTime !== null && (
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: "#d2a8ff" }}>
-              {avgMergeTime < 1
-                ? `${Math.round(avgMergeTime * 24)}h`
-                : `${avgMergeTime.toFixed(1)}d`}
-            </div>
-            <div className="stat-label">Avg Merge</div>
-          </div>
-        )}
       </div>
 
       {/* Repo Breakdown */}
