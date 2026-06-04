@@ -8,6 +8,8 @@ import {
   getCachedContributions,
   saveContributions,
   MonthlyContribution,
+  getCachedProfiles,
+  saveProfiles,
 } from "../../services/contributionCache";
 import { startPrefetch, isPrefetchRunning } from "../../services/contributionPrefetch";
 import { MAX_REPOS_PER_CONTRIBUTION } from "../../utils/constants";
@@ -198,18 +200,36 @@ async function fetchBatchFromApi(
 }
 
 async function fetchProfiles(members: string[]): Promise<Map<string, { avatarUrl: string; name: string | null }>> {
+  const cached = getCachedProfiles(members);
+  const missing = members.filter((l) => !cached.has(l));
   const profiles = new Map<string, { avatarUrl: string; name: string | null }>();
-  for (let i = 0; i < members.length; i += MAX_BATCH_SIZE) {
-    const batch = members.slice(i, i + MAX_BATCH_SIZE);
-    const users = batch.map((login, j) => `u${j}: user(login: "${login}") { login name avatarUrl }`);
-    try {
-      const data = await graphql<Record<string, any>>(`query { ${users.join("\n")} }`, {}, "leaderboard/profiles");
-      for (let j = 0; j < batch.length; j++) {
-        const u = data[`u${j}`];
-        if (u) profiles.set(u.login, { avatarUrl: u.avatarUrl, name: u.name });
-      }
-    } catch { /* best-effort */ }
+
+  for (const [login, p] of cached) {
+    profiles.set(login, { avatarUrl: p.avatarUrl, name: p.name });
   }
+
+  if (missing.length > 0) {
+    logger.info("Leaderboard", `Fetching ${missing.length} profiles (${cached.size} cached)`);
+    const fetched: { login: string; name: string | null; avatarUrl: string }[] = [];
+    for (let i = 0; i < missing.length; i += MAX_BATCH_SIZE) {
+      const batch = missing.slice(i, i + MAX_BATCH_SIZE);
+      const users = batch.map((login, j) => `u${j}: user(login: "${login}") { login name avatarUrl }`);
+      try {
+        const data = await graphql<Record<string, any>>(`query { ${users.join("\n")} }`, {}, "leaderboard/profiles");
+        for (let j = 0; j < batch.length; j++) {
+          const u = data[`u${j}`];
+          if (u) {
+            profiles.set(u.login, { avatarUrl: u.avatarUrl, name: u.name });
+            fetched.push({ login: u.login, name: u.name, avatarUrl: u.avatarUrl });
+          }
+        }
+      } catch { /* best-effort */ }
+    }
+    saveProfiles(fetched);
+  } else {
+    logger.info("Leaderboard", `All ${cached.size} profiles from cache`);
+  }
+
   return profiles;
 }
 

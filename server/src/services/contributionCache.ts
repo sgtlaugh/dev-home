@@ -94,3 +94,39 @@ export function getMemberCountForMonth(org: string, yearMonth: string): number {
     .get(org, yearMonth) as { cnt: number } | undefined;
   return row?.cnt ?? 0;
 }
+
+export interface CachedProfile {
+  login: string;
+  name: string | null;
+  avatarUrl: string;
+}
+
+export function getCachedProfiles(logins: string[]): Map<string, CachedProfile> {
+  if (logins.length === 0) return new Map();
+  const db = getDb();
+  const placeholders = logins.map(() => "?").join(",");
+  const rows = db
+    .prepare(`SELECT login, name, avatar_url FROM github_profiles WHERE login IN (${placeholders})`)
+    .all(...logins) as { login: string; name: string | null; avatar_url: string }[];
+
+  const result = new Map<string, CachedProfile>();
+  for (const row of rows) {
+    result.set(row.login, { login: row.login, name: row.name, avatarUrl: row.avatar_url });
+  }
+  return result;
+}
+
+export function saveProfiles(profiles: CachedProfile[]): void {
+  if (profiles.length === 0) return;
+  const db = getDb();
+  const stmt = db.prepare(
+    `INSERT OR REPLACE INTO github_profiles (login, name, avatar_url, fetched_at)
+     VALUES (?, ?, ?, datetime('now'))`,
+  );
+  const insertMany = db.transaction((items: CachedProfile[]) => {
+    for (const p of items) {
+      stmt.run(p.login, p.name, p.avatarUrl);
+    }
+  });
+  insertMany(profiles);
+}

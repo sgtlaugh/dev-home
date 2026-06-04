@@ -5,6 +5,7 @@ import {
   getMonthsBetween,
   getMemberCountForMonth,
   saveContributions,
+  saveProfiles,
   MonthlyContribution,
 } from "./contributionCache";
 
@@ -74,12 +75,22 @@ export async function startPrefetch(
     const allMonths = getMonthsBetween(`${startYearMonth}-01`, `${currentMonth}-28`);
     const monthsToProcess = allMonths.filter((m) => m !== currentMonth).reverse();
 
-    const missingMonths = monthsToProcess.filter(
-      (month) => getMemberCountForMonth(org, month) < members.length,
-    );
+    const missingMonths: string[] = [];
+    const cachedMonthsList: string[] = [];
+    for (const month of monthsToProcess) {
+      if (getMemberCountForMonth(org, month) < members.length) {
+        missingMonths.push(month);
+      } else {
+        cachedMonthsList.push(month);
+      }
+    }
+
+    if (cachedMonthsList.length > 0) {
+      logger.info("Prefetch", `${cachedMonthsList.length} months already cached for ${org}, skipping`);
+    }
 
     if (missingMonths.length === 0) {
-      logger.info("Prefetch", `All ${allMonths.length} months cached for ${org}, nothing to do`);
+      logger.info("Prefetch", `All ${monthsToProcess.length} months cached for ${org}, nothing to do`);
       return;
     }
 
@@ -88,7 +99,7 @@ export async function startPrefetch(
 
     logger.info(
       "Prefetch",
-      `Starting for ${org}: ${missingMonths.length} months, ${members.length} members, ~${totalQueries} queries, ETA ${formatEta(etaSeconds)}`,
+      `Starting for ${org}: ${missingMonths.length} months to fetch, ${cachedMonthsList.length} cached, ${members.length} members, ~${totalQueries} queries, ETA ${formatEta(etaSeconds)}`,
     );
 
     let queriesDone = 0;
@@ -111,9 +122,12 @@ export async function startPrefetch(
 
           const orgPrefix = `${org}/`;
           const entries: MonthlyContribution[] = [];
+          const profiles: { login: string; name: string | null; avatarUrl: string }[] = [];
           for (let j = 0; j < batch.length; j++) {
             const u = data[`u${j}`];
             if (!u?.c) continue;
+
+            profiles.push({ login: u.login, name: u.name, avatarUrl: u.avatarUrl });
 
             const commitRepos = u.c.commitContributionsByRepository || [];
             if (commitRepos.length >= MAX_REPOS_PER_CONTRIBUTION) {
@@ -145,6 +159,7 @@ export async function startPrefetch(
           }
 
           saveContributions(org, entries);
+          saveProfiles(profiles);
         } catch (err: any) {
           const status = err?.response?.status;
           if (status === 403) {

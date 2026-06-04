@@ -129,6 +129,18 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_org_contributions_month ON org_contributions(org, year_month);
     `);
   },
+
+  // 7 – create github_profiles table for caching user avatars/names
+  (d) => {
+    d.exec(`
+      CREATE TABLE IF NOT EXISTS github_profiles (
+        login TEXT PRIMARY KEY,
+        name TEXT,
+        avatar_url TEXT NOT NULL,
+        fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+  },
 ];
 
 function runMigrations(d: Database.Database): void {
