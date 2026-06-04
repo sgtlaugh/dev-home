@@ -315,21 +315,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
         </Card.Body>
       </Card>
 
-      {/* Search */}
-      {members.length > 0 && (
-        <div className="mb-3">
-          <input
-            type="text"
-            placeholder="Filter by name or login..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="filter-input"
-            style={{ fontSize: "0.8rem", padding: "6px 10px", width: "100%", maxWidth: 300 }}
-          />
-        </div>
-      )}
-
-      {/* Stats */}
+      {/* Stats + Search */}
       {members.length > 0 && (
         <div className="d-flex gap-2 mb-3">
           <div className="stat-card">
@@ -354,6 +340,18 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
             <div className="stat-value">{members.length}</div>
             <div className="stat-label">Members</div>
           </div>
+        </div>
+      )}
+      {members.length > 0 && (
+        <div className="mb-3">
+          <input
+            type="text"
+            placeholder="Filter by name or login..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="filter-input"
+            style={{ fontSize: "0.8rem", padding: "6px 10px", width: "100%" }}
+          />
         </div>
       )}
 
