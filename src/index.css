@@ -2257,7 +2257,7 @@ a,
   min-width: 100px;
   text-align: center;
   flex: 0 1 auto;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
 .stat-card.clickable {
@@ -2268,6 +2268,7 @@ a,
 .stat-card.clickable:hover {
   border-color: #58a6ff;
   box-shadow: 0 2px 8px rgba(88, 166, 255, 0.1);
+  transform: scale(1.02);
 }
 
 .stat-card.active {
@@ -2639,6 +2640,7 @@ a,
 [data-theme="light"] .stat-card.clickable:hover {
   border-color: #0969da;
   box-shadow: 0 2px 8px rgba(9, 105, 218, 0.1);
+  transform: scale(1.02);
 }
 
 [data-theme="light"] .month-nav-arrow {
