@@ -22,8 +22,10 @@ export function adfToPlainText(node: any): string {
       return node.text || "";
     case "hardBreak":
       return "\n";
-    case "mention":
-      return `@${node.attrs?.text || node.attrs?.id || ""}`;
+    case "mention": {
+      const mentionText = node.attrs?.text || node.attrs?.id || "";
+      return mentionText.startsWith("@") ? mentionText : `@${mentionText}`;
+    }
     case "inlineCard":
       return node.attrs?.url || "";
     case "table":
