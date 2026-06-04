@@ -20,6 +20,12 @@ type StateFilter = "all" | "open" | "merged" | "closed";
 
 const MIN_YEAR = 2000;
 
+function isValidDate(dateStr: string): boolean {
+  if (dateStr.length !== 10) return false;
+  const date = new Date(dateStr);
+  return !isNaN(date.getTime());
+}
+
 const REPO_COLORS = [
   "#58a6ff",
   "#3fb950",
@@ -366,7 +372,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
         return;
       }
 
-      if (mode === "custom" && (start.length !== 10 || end.length !== 10)) {
+      if (mode === "custom" && (!isValidDate(start) || !isValidDate(end))) {
         return;
       }
 
