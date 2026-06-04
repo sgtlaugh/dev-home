@@ -24,12 +24,14 @@ import {
   groupActivitiesByDate,
   CollapsedActivity,
 } from "../utils/activityUtils";
+import { ActivityBarChart } from "./ActivityBarChart";
 
 interface ActivityTimelineProps {
   activities: ActivityItem[];
   loading: boolean;
   emptyMessage: string;
   currentUsername?: string;
+  dailyCounts?: { date: string; count: number }[];
 }
 
 function getActivityIcon(item: ActivityItem) {
@@ -116,6 +118,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   loading,
   emptyMessage,
   currentUsername,
+  dailyCounts,
 }) => {
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
@@ -251,6 +254,9 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
           ))}
         </div>
       )}
+
+      {/* Bar chart */}
+      {dailyCounts && dailyCounts.length > 0 && <ActivityBarChart dailyCounts={dailyCounts} />}
 
       {/* Timeline */}
       {Array.from(groupedActivities.entries()).map(
