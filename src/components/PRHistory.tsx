@@ -337,32 +337,36 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       .catch(() => setJoinDate(`${MIN_YEAR}-01-01`));
   }, []);
 
-  const getDateRange = (): { start: string; end: string } => {
-    if (mode === "month") {
-      const monthStr = month.toString().padStart(2, "0");
-      const start = `${year}-${monthStr}-01`;
-      const lastDay = new Date(year, month, 0).getDate();
-      const end = `${year}-${monthStr}-${lastDay.toString().padStart(2, "0")}`;
-      return { start, end };
-    } else if (mode === "year") {
-      return { start: `${year}-01-01`, end: `${year}-12-31` };
-    }
-    return { start: startDate, end: endDate };
-  };
-
   useEffect(() => {
     abortRef.current?.abort();
     abortRef.current = new AbortController();
     const signal = abortRef.current.signal;
 
     const loadPRs = async () => {
-      const range = getDateRange();
-      if (!range.start || !range.end) {
+      let start: string, end: string;
+      if (mode === "month") {
+        const monthStr = month.toString().padStart(2, "0");
+        start = `${year}-${monthStr}-01`;
+        const lastDay = new Date(year, month, 0).getDate();
+        end = `${year}-${monthStr}-${lastDay.toString().padStart(2, "0")}`;
+      } else if (mode === "year") {
+        start = `${year}-01-01`;
+        end = `${year}-12-31`;
+      } else {
+        start = startDate;
+        end = endDate;
+      }
+
+      if (!start || !end) {
         if (!signal.aborted) {
           setPrs([]);
           setCommitCount(0);
           setLoading(false);
         }
+        return;
+      }
+
+      if (mode === "custom" && (start.length !== 10 || end.length !== 10)) {
         return;
       }
 
@@ -372,8 +376,8 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       setError(null);
       try {
         const [prsResult, commits] = await Promise.all([
-          fetchPRsByDateRange(range.start, range.end, signal),
-          fetchCommitCount(range.start, range.end, signal),
+          fetchPRsByDateRange(start, end, signal),
+          fetchCommitCount(start, end, signal),
         ]);
         if (signal.aborted) return;
         setPrs(prsResult);
@@ -480,6 +484,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
     }
     setStartDate(start);
     setEndDate(end);
+    setMode("custom");
   };
 
   const monthLabel = new Date(year, month - 1).toLocaleString("default", {
@@ -589,19 +594,21 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                 ))}
                 <span style={{ color: "#30363d", fontSize: "0.75rem" }}>|</span>
                 <input
-                  type="date"
+                  type="text"
+                  placeholder="YYYY-MM-DD"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="filter-input"
-                  style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                  style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
                 />
                 <span style={{ color: "#8b949e", fontSize: "0.75rem" }}>→</span>
                 <input
-                  type="date"
+                  type="text"
+                  placeholder="YYYY-MM-DD"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="filter-input"
-                  style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                  style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
                 />
               </div>
             )}
