@@ -296,6 +296,23 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
 
     const seenShas = new Set<string>();
 
+    // Cache for PR merger info fetched via REST
+    const prMergerCache = new Map<string, string | null>();
+    const getPRMerger = async (repo: string, prNumber: number): Promise<string | null> => {
+      const key = `${repo}#${prNumber}`;
+      if (prMergerCache.has(key)) return prMergerCache.get(key) || null;
+      try {
+        const [owner, repoName] = repo.split("/");
+        const { data: prData } = await github.get(`/repos/${owner}/${repoName}/pulls/${prNumber}`);
+        const merger = prData.merged_by?.login || null;
+        prMergerCache.set(key, merger);
+        return merger;
+      } catch (err) {
+        prMergerCache.set(key, null);
+        return null;
+      }
+    };
+
     for (const event of recentEvents) {
       const repo = event.repo?.name || "";
 
@@ -311,8 +328,12 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           // Only show meaningful PR actions, skip synchronize/edited/reopened noise
           let action = "";
           if (prAction === "opened") action = "Created PR";
-          else if (prAction === "closed" && pr.merged) action = "Merged PR";
-          else if (prAction === "closed") action = "Closed PR";
+          else if (prAction === "closed" && pr.merged) {
+            // Verify user merged it, not someone else
+            const merger = await getPRMerger(repo, pr.number);
+            if (merger === config.githubUsername) action = "Merged PR";
+            else continue; // Skip if someone else merged
+          } else if (prAction === "closed") action = "Closed PR";
           if (!action) break;
 
           activities.push({
@@ -483,6 +504,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
               mergedAt
               closedAt
               author { login avatarUrl }
+              mergedBy { login avatarUrl }
               repository { nameWithOwner }
             }
           }
@@ -513,7 +535,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
         seenEntityKeys.add(entityKey);
       }
 
-      if (pr.merged && pr.mergedAt && !seenEntityKeys.has(`${entityKey}-merged`)) {
+      if (pr.merged && pr.mergedAt && pr.mergedBy?.login === config.githubUsername && !seenEntityKeys.has(`${entityKey}-merged`)) {
         activities.push({
           id: `github-pr-gql-merged-${pr.number}`,
           type: "github",

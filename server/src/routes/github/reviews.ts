@@ -98,6 +98,24 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
       const entityKey = `${repoName}#${pr.number}`;
       const prState = pr.merged ? "merged" : pr.state === "CLOSED" ? "closed" : "open";
 
+      // Track if a peer merged this PR
+      if (pr.merged && pr.mergedBy?.login && pr.mergedBy.login !== username && !isBot(pr.mergedBy.login)) {
+        activities.push({
+          id: `peer-merge-${pr.number}-${pr.mergedBy.login}-${pr.mergedAt}`,
+          type: "github",
+          action: "Merged PR",
+          title: prTitle,
+          url: pr.url,
+          timestamp: pr.mergedAt,
+          entityKey,
+          metadata: {
+            actor: { login: pr.mergedBy.login, avatar_url: pr.mergedBy.avatarUrl },
+            repo: repoName,
+            prState,
+          },
+        });
+      }
+
       for (const review of pr.reviews?.nodes || []) {
         const login = review.author?.login;
         if (!login || login === username || isBot(login)) continue;

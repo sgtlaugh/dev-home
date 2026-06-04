@@ -15,6 +15,7 @@ export const SEARCH_PRS_QUERY = `
           isDraft
           merged
           mergedAt
+          mergedBy { login avatarUrl }
           closedAt
           createdAt
           updatedAt
@@ -70,6 +71,7 @@ export const SEARCH_MY_PRS_QUERY = `
           isDraft
           merged
           mergedAt
+          mergedBy { login avatarUrl }
           closedAt
           createdAt
           updatedAt
@@ -152,6 +154,7 @@ export const COMBINED_DASHBOARD_QUERY = `
           isDraft
           merged
           mergedAt
+          mergedBy { login avatarUrl }
           closedAt
           createdAt
           updatedAt
@@ -229,6 +232,7 @@ export const COMBINED_DASHBOARD_QUERY = `
           isDraft
           merged
           mergedAt
+          mergedBy { login avatarUrl }
           closedAt
           createdAt
           updatedAt
