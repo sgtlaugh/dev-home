@@ -167,14 +167,22 @@ function EmptyRow({ text }: { text: string }) {
   );
 }
 
-const STATUS_BADGE_CLASSES: Record<string, string> = {
+const STATUS_CATEGORY_CLASSES: Record<string, string> = {
   green: "badge-status-green",
-  yellow: "badge-status-yellow",
+  yellow: "badge-status-neutral",
   blue: "badge-status-blue",
 };
 
-function statusBadgeClass(colorName: string): string {
-  return STATUS_BADGE_CLASSES[colorName] || "badge-status-neutral";
+const STATUS_NAME_OVERRIDES: Record<string, string> = {
+  "Code Review": "badge-status-blue",
+  "In Review": "badge-status-blue",
+};
+
+function statusBadgeClass(colorName: string, statusName?: string): string {
+  if (statusName && STATUS_NAME_OVERRIDES[statusName]) {
+    return STATUS_NAME_OVERRIDES[statusName];
+  }
+  return STATUS_CATEGORY_CLASSES[colorName] || "badge-status-neutral";
 }
 
 export const SummaryView: React.FC<SummaryViewProps> = ({
@@ -337,7 +345,10 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                       subtitle={issue.project.name}
                       time={issue.updated}
                       badge={issue.status.name}
-                      badgeClass={statusBadgeClass(issue.status.statusCategory.colorName)}
+                      badgeClass={statusBadgeClass(
+                        issue.status.statusCategory.colorName,
+                        issue.status.name,
+                      )}
                       onClick={() => setSelectedIssue(issue)}
                     />
                   ))

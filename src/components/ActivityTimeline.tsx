@@ -71,7 +71,8 @@ const ACTION_CATEGORIES: ActionCategory[] = [
   { label: "Commits", color: "#3fb950", match: (a) => a.includes("Committed") },
   { label: "Created", color: "#3fb950", match: (a) => a === "Created PR" },
   { label: "Merged", color: "#bc8ef9", match: (a) => a === "Merged PR" },
-  { label: "Created ticket", color: "#58a6ff", match: (a) => a.includes("Created ticket") },
+  { label: "Created ticket", color: "#3fb950", match: (a) => a.includes("Created ticket") },
+  { label: "Changed status", color: "#bc8ef9", match: (a) => a.includes("Changed status") },
 ];
 
 function categorizeAction(action: string): string {

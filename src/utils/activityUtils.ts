@@ -20,9 +20,9 @@ export function getActivityBadgeClass(item: ActivityItem): string {
     return "badge-status-neutral";
   }
 
-  if (item.action.includes("Created")) return "badge-status-blue-dark";
+  if (item.action.includes("Created")) return "badge-status-green-dark";
   if (item.action.includes("Comment")) return "badge-status-blue";
-  if (item.action.includes("status")) return "badge-status-yellow";
+  if (item.action.includes("status")) return "badge-status-purple";
   return "badge-status-neutral";
 }
 
