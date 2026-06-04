@@ -1,7 +1,7 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
-import { IconChevronDown } from "@tabler/icons-react";
+import { IconChevronDown, IconChevronsDown, IconChevronsUp } from "@tabler/icons-react";
 import {
   IconBrandGithub,
   IconTicket,
@@ -58,6 +58,29 @@ function getPrState(collapsed: CollapsedActivity): string | undefined {
   return undefined;
 }
 
+interface ActionCategory {
+  label: string;
+  color: string;
+  match: (action: string) => boolean;
+}
+
+const ACTION_CATEGORIES: ActionCategory[] = [
+  { label: "Approved", color: "#bc8ef9", match: (a) => a.includes("Approved") },
+  { label: "Changes Requested", color: "#d29922", match: (a) => a.includes("Requested changes") },
+  { label: "Comments", color: "#58a6ff", match: (a) => a.includes("Comment") },
+  { label: "Commits", color: "#3fb950", match: (a) => a.includes("Committed") },
+  { label: "Created", color: "#3fb950", match: (a) => a === "Created PR" },
+  { label: "Merged", color: "#bc8ef9", match: (a) => a === "Merged PR" },
+  { label: "Created ticket", color: "#58a6ff", match: (a) => a.includes("Created ticket") },
+];
+
+function categorizeAction(action: string): string {
+  for (const cat of ACTION_CATEGORIES) {
+    if (cat.match(action)) return cat.label;
+  }
+  return "Other";
+}
+
 function ExpandableSection({
   expanded,
   children,
@@ -94,7 +117,49 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   currentUsername,
 }) => {
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
-  const groupedActivities = useMemo(() => groupActivitiesByDate(activities), [activities]);
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const [activeActor, setActiveActor] = useState<string | null>(null);
+
+  const stats = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const a of activities) {
+      const cat = categorizeAction(a.action);
+      counts.set(cat, (counts.get(cat) || 0) + 1);
+    }
+    return ACTION_CATEGORIES.filter((c) => counts.has(c.label)).map((c) => ({
+      label: c.label,
+      color: c.color,
+      count: counts.get(c.label)!,
+    }));
+  }, [activities]);
+
+  const uniqueActors = useMemo(() => {
+    if (!currentUsername) return [];
+    const map = new Map<string, { login: string; avatar_url: string }>();
+    for (const a of activities) {
+      const actor = a.metadata?.actor;
+      if (actor && actor.login !== currentUsername && !map.has(actor.login)) {
+        map.set(actor.login, actor);
+      }
+    }
+    return Array.from(map.values());
+  }, [activities, currentUsername]);
+
+  const filteredActivities = useMemo(() => {
+    let result = activities;
+    if (activeFilters.size > 0) {
+      result = result.filter((a) => activeFilters.has(categorizeAction(a.action)));
+    }
+    if (activeActor) {
+      result = result.filter((a) => a.metadata?.actor?.login === activeActor);
+    }
+    return result;
+  }, [activities, activeFilters, activeActor]);
+
+  const groupedActivities = useMemo(
+    () => groupActivitiesByDate(filteredActivities),
+    [filteredActivities],
+  );
 
   const toggleExpanded = (entityKey: string) => {
     const newSet = new Set(expandedEntities);
@@ -105,6 +170,33 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
     }
     setExpandedEntities(newSet);
   };
+
+  const toggleFilter = (label: string) => {
+    const newSet = new Set(activeFilters);
+    if (newSet.has(label)) {
+      newSet.delete(label);
+    } else {
+      newSet.add(label);
+    }
+    setActiveFilters(newSet);
+  };
+
+  const toggleDateGroup = useCallback(
+    (items: CollapsedActivity[]) => {
+      const keys = items.map((i) => i.entityKey);
+      const allExpanded = keys.every((k) => expandedEntities.has(k));
+      const newSet = new Set(expandedEntities);
+      for (const k of keys) {
+        if (allExpanded) {
+          newSet.delete(k);
+        } else {
+          newSet.add(k);
+        }
+      }
+      setExpandedEntities(newSet);
+    },
+    [expandedEntities],
+  );
 
   if (loading && activities.length === 0) {
     return (
@@ -124,237 +216,290 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
 
   return (
     <div className="activity-timeline">
+      {/* Action type filters with counts */}
+      {stats.length > 1 && (
+        <div className="activity-filters">
+          {stats.map((s) => (
+            <button
+              key={s.label}
+              className={`activity-filter-chip${activeFilters.has(s.label) ? " active" : ""}`}
+              onClick={() => toggleFilter(s.label)}
+            >
+              <div
+                className="activity-stat-dot"
+                style={{ backgroundColor: s.color, width: 6, height: 6 }}
+              />
+              {s.label}
+              <span className="activity-filter-count">{s.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Actor filters (peer activity only) */}
+      {uniqueActors.length > 0 && (
+        <div className="activity-actor-filters">
+          {uniqueActors.map((actor) => (
+            <button
+              key={actor.login}
+              className={`activity-actor-chip${activeActor === actor.login ? " active" : ""}`}
+              onClick={() => setActiveActor(activeActor === actor.login ? null : actor.login)}
+            >
+              <img src={actor.avatar_url} alt={actor.login} />@{actor.login}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Timeline */}
       {Array.from(groupedActivities.entries()).map(
-        ([dateLabel, { collapsed: items, actionCount }]) => (
-          <div key={dateLabel} className="activity-section">
-            <div className="activity-date-label">
-              {dateLabel}
-              <Badge
-                bg="secondary"
-                pill
-                style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
-              >
-                {actionCount}
-              </Badge>
-            </div>
-            <div className="activity-list">
-              {items.map((collapsed) => {
-                const latestAction = collapsed.actions[0];
-                const entityActionCount = collapsed.actions.length;
-                const reviewBadge = getReviewBadgeLabel(collapsed.reviewState);
-                const isExpanded = expandedEntities.has(collapsed.entityKey);
-                const hasCommentPreview = collapsed.actions.some((a) => a.metadata?.commentBody);
-                const showExpand = entityActionCount > 1 || hasCommentPreview;
-                const accentColor = getAccentColor(latestAction);
-                const prState = getPrState(collapsed);
+        ([dateLabel, { collapsed: items, actionCount }]) => {
+          const allExpanded = items.every((i) => expandedEntities.has(i.entityKey));
 
-                let lastActor: { login: string; avatar_url: string } | undefined;
-                for (const action of collapsed.actions) {
-                  const actor = action.metadata?.actor;
-                  if (actor && actor.login !== currentUsername) {
-                    lastActor = actor;
-                    break;
+          return (
+            <div key={dateLabel} className="activity-section">
+              <div className="activity-date-label">
+                {dateLabel}
+                <Badge
+                  bg="secondary"
+                  pill
+                  style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
+                >
+                  {actionCount}
+                </Badge>
+                {items.length > 1 && (
+                  <button
+                    className="activity-date-toggle"
+                    onClick={() => toggleDateGroup(items)}
+                    title={allExpanded ? "Collapse all" : "Expand all"}
+                  >
+                    {allExpanded ? <IconChevronsUp size={14} /> : <IconChevronsDown size={14} />}
+                  </button>
+                )}
+              </div>
+              <div className="activity-list">
+                {items.map((collapsed) => {
+                  const latestAction = collapsed.actions[0];
+                  const entityActionCount = collapsed.actions.length;
+                  const reviewBadge = getReviewBadgeLabel(collapsed.reviewState);
+                  const isExpanded = expandedEntities.has(collapsed.entityKey);
+                  const hasCommentPreview = collapsed.actions.some((a) => a.metadata?.commentBody);
+                  const showExpand = entityActionCount > 1 || hasCommentPreview;
+                  const accentColor = getAccentColor(latestAction);
+                  const prState = getPrState(collapsed);
+
+                  let lastActor: { login: string; avatar_url: string } | undefined;
+                  for (const action of collapsed.actions) {
+                    const actor = action.metadata?.actor;
+                    if (actor && actor.login !== currentUsername) {
+                      lastActor = actor;
+                      break;
+                    }
                   }
-                }
 
-                return (
-                  <div key={collapsed.entityKey}>
-                    <div
-                      className="activity-item"
-                      style={{
-                        cursor: showExpand ? "pointer" : "default",
-                        borderLeftColor: accentColor,
-                      }}
-                      onClick={() => showExpand && toggleExpanded(collapsed.entityKey)}
-                    >
-                      <div className="activity-icon" style={{ color: accentColor }}>
-                        {getActivityIcon(latestAction)}
-                      </div>
-                      <div className="activity-content">
-                        <div className="activity-header">
-                          <div
-                            style={{
-                              width: "18px",
-                              height: "16px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
-                          >
-                            {showExpand ? (
-                              <IconChevronDown
-                                size={14}
-                                style={{
-                                  transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
-                                  transition: "transform 200ms ease",
-                                }}
-                              />
-                            ) : (
-                              <div
-                                style={{
-                                  width: "6px",
-                                  height: "6px",
-                                  borderRadius: "50%",
-                                  backgroundColor: accentColor,
-                                  opacity: 0.7,
-                                }}
-                              />
-                            )}
-                          </div>
-                          {lastActor && (
+                  return (
+                    <div key={collapsed.entityKey}>
+                      <div
+                        className="activity-item"
+                        style={{
+                          cursor: showExpand ? "pointer" : "default",
+                          borderLeftColor: accentColor,
+                        }}
+                        onClick={() => showExpand && toggleExpanded(collapsed.entityKey)}
+                      >
+                        <div className="activity-icon" style={{ color: accentColor }}>
+                          {getActivityIcon(latestAction)}
+                        </div>
+                        <div className="activity-content">
+                          <div className="activity-header">
                             <div
                               style={{
+                                width: "18px",
+                                height: "16px",
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "6px",
+                                justifyContent: "center",
                                 flexShrink: 0,
                               }}
                             >
-                              <img
-                                src={lastActor.avatar_url}
-                                alt={lastActor.login}
-                                title={lastActor.login}
+                              {showExpand ? (
+                                <IconChevronDown
+                                  size={14}
+                                  style={{
+                                    transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                                    transition: "transform 200ms ease",
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: "6px",
+                                    height: "6px",
+                                    borderRadius: "50%",
+                                    backgroundColor: accentColor,
+                                    opacity: 0.7,
+                                  }}
+                                />
+                              )}
+                            </div>
+                            {lastActor && (
+                              <div
                                 style={{
-                                  width: "24px",
-                                  height: "24px",
-                                  borderRadius: "50%",
-                                  border: "2px solid #21262d",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  flexShrink: 0,
                                 }}
-                              />
-                              {currentUsername && (
-                                <span
-                                  style={{ fontSize: "0.75rem", color: "#8b949e", fontWeight: 500 }}
+                              >
+                                <img
+                                  src={lastActor.avatar_url}
+                                  alt={lastActor.login}
+                                  title={lastActor.login}
+                                  style={{
+                                    width: "24px",
+                                    height: "24px",
+                                    borderRadius: "50%",
+                                    border: "2px solid #21262d",
+                                  }}
+                                />
+                                {currentUsername && (
+                                  <span
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      color: "#8b949e",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    @{lastActor.login}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                              {reviewBadge && (
+                                <Badge
+                                  bg=""
+                                  className={getReviewBadgeClass(collapsed.reviewState)}
+                                  style={{ fontSize: "0.7rem", fontWeight: 600 }}
                                 >
-                                  @{lastActor.login}
+                                  {reviewBadge}
+                                </Badge>
+                              )}
+                              {!reviewBadge && (
+                                <Badge
+                                  bg=""
+                                  className={getActivityBadgeClass(latestAction)}
+                                  style={{ fontSize: "0.7rem", fontWeight: 600 }}
+                                >
+                                  {getActionSummary(collapsed.actions)}
+                                </Badge>
+                              )}
+                              {prState && prState !== "open" && (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "3px",
+                                    fontSize: "0.65rem",
+                                    fontWeight: 600,
+                                    color: prState === "merged" ? "#bc8ef9" : "#f85149",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.5px",
+                                  }}
+                                >
+                                  {prState === "merged" && <IconGitMerge size={12} />}
+                                  {prState}
+                                </span>
+                              )}
+                              {entityActionCount > 1 && (
+                                <span
+                                  style={{
+                                    fontSize: "0.75rem",
+                                    color: "var(--text-secondary)",
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  ({entityActionCount})
                                 </span>
                               )}
                             </div>
-                          )}
-                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                            {reviewBadge && (
-                              <Badge
-                                bg=""
-                                className={getReviewBadgeClass(collapsed.reviewState)}
-                                style={{ fontSize: "0.7rem", fontWeight: 600 }}
-                              >
-                                {reviewBadge}
-                              </Badge>
-                            )}
-                            {!reviewBadge && (
-                              <Badge
-                                bg=""
-                                className={getActivityBadgeClass(latestAction)}
-                                style={{ fontSize: "0.7rem", fontWeight: 600 }}
-                              >
-                                {getActionSummary(collapsed.actions)}
-                              </Badge>
-                            )}
-                            {prState && prState !== "open" && (
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "3px",
-                                  fontSize: "0.65rem",
-                                  fontWeight: 600,
-                                  color: prState === "merged" ? "#bc8ef9" : "#f85149",
-                                  textTransform: "uppercase",
-                                  letterSpacing: "0.5px",
-                                }}
-                              >
-                                {prState === "merged" && <IconGitMerge size={12} />}
-                                {prState}
-                              </span>
-                            )}
-                            {entityActionCount > 1 && (
-                              <span
-                                style={{
-                                  fontSize: "0.75rem",
-                                  color: "var(--text-secondary)",
-                                  fontWeight: 500,
-                                }}
-                              >
-                                ({entityActionCount})
-                              </span>
-                            )}
+                            <Timestamp timestamp={collapsed.lastTimestamp} />
                           </div>
-                          <Timestamp timestamp={collapsed.lastTimestamp} />
+                          <a
+                            href={collapsed.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="activity-title"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {collapsed.title}
+                          </a>
                         </div>
-                        <a
-                          href={collapsed.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="activity-title"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {collapsed.title}
-                        </a>
                       </div>
-                    </div>
-                    <ExpandableSection expanded={isExpanded}>
-                      <div className="activity-expanded">
-                        {collapsed.actions.map((action) => (
-                          <div key={action.id}>
-                            <div className="activity-expanded-action">
-                              {action.metadata?.actor && (
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "5px",
-                                    flexShrink: 0,
-                                  }}
-                                >
-                                  <img
-                                    src={action.metadata.actor.avatar_url}
-                                    alt={action.metadata.actor.login}
-                                    title={action.metadata.actor.login}
+                      <ExpandableSection expanded={isExpanded}>
+                        <div className="activity-expanded">
+                          {collapsed.actions.map((action) => (
+                            <div key={action.id}>
+                              <div className="activity-expanded-action">
+                                {action.metadata?.actor && (
+                                  <div
                                     style={{
-                                      width: "20px",
-                                      height: "20px",
-                                      borderRadius: "50%",
-                                      border: "1px solid #21262d",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "5px",
+                                      flexShrink: 0,
                                     }}
-                                  />
-                                  {currentUsername && (
-                                    <span style={{ fontSize: "0.7rem", color: "#8b949e" }}>
-                                      @{action.metadata.actor.login}
-                                    </span>
-                                  )}
-                                </div>
+                                  >
+                                    <img
+                                      src={action.metadata.actor.avatar_url}
+                                      alt={action.metadata.actor.login}
+                                      title={action.metadata.actor.login}
+                                      style={{
+                                        width: "20px",
+                                        height: "20px",
+                                        borderRadius: "50%",
+                                        border: "1px solid #21262d",
+                                      }}
+                                    />
+                                    {currentUsername && (
+                                      <span style={{ fontSize: "0.7rem", color: "#8b949e" }}>
+                                        @{action.metadata.actor.login}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                <Badge
+                                  bg=""
+                                  className={getActivityBadgeClass(action)}
+                                  style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                                >
+                                  {action.action}
+                                </Badge>
+                                <Timestamp timestamp={action.timestamp} />
+                              </div>
+                              {action.metadata?.commentBody && (
+                                <a
+                                  href={action.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="activity-comment-preview"
+                                  title="View on GitHub"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {action.metadata.commentBody}
+                                </a>
                               )}
-                              <Badge
-                                bg=""
-                                className={getActivityBadgeClass(action)}
-                                style={{ fontSize: "0.65rem", flexShrink: 0 }}
-                              >
-                                {action.action}
-                              </Badge>
-                              <Timestamp timestamp={action.timestamp} />
                             </div>
-                            {action.metadata?.commentBody && (
-                              <a
-                                href={action.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="activity-comment-preview"
-                                title="View on GitHub"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {action.metadata.commentBody}
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </ExpandableSection>
-                  </div>
-                );
-              })}
+                          ))}
+                        </div>
+                      </ExpandableSection>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ),
+          );
+        },
       )}
     </div>
   );
