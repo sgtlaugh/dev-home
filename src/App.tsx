@@ -356,7 +356,10 @@ export default function App() {
                     <PRHistory onCountChange={setCurrentMonthPRsCount} />
                   )}
                   {effectiveTab === "leaderboard" && (
-                    <OrgLeaderboard active={effectiveTab === "leaderboard"} />
+                    <OrgLeaderboard
+                      active={effectiveTab === "leaderboard"}
+                      githubUsername={githubUsername}
+                    />
                   )}
                   {effectiveTab === "velocity" && (
                     <JiraVelocity active={effectiveTab === "velocity"} />

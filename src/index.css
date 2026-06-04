@@ -2024,3 +2024,20 @@ a,
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* --- Leaderboard --- */
+.leaderboard-bar-track {
+  flex: 1;
+  height: 6px;
+  background: #eaeef2;
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 40px;
+  max-width: 120px;
+}
+
+.leaderboard-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}

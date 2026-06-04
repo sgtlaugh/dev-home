@@ -55,7 +55,10 @@ function SortHeader({
   );
 }
 
-export const OrgLeaderboard: React.FC<{ active: boolean }> = ({ active }) => {
+export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string }> = ({
+  active,
+  githubUsername,
+}) => {
   const { orgs, loading: orgsLoading } = useUserOrgs(active);
   const stored = loadState();
   const now = new Date();
@@ -71,6 +74,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean }> = ({ active }) => {
   );
   const [sortKey, setSortKey] = useState<SortKey>("commits");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (orgs.length > 0 && !org) setOrg(orgs[0].login);
@@ -120,6 +124,19 @@ export const OrgLeaderboard: React.FC<{ active: boolean }> = ({ active }) => {
     });
     return copy;
   }, [members, sortKey, sortDir]);
+
+  const rankedAndFiltered = useMemo(() => {
+    const ranked = sorted.map((m, i) => ({ ...m, rank: i + 1 }));
+    if (!search) return ranked;
+    const q = search.toLowerCase();
+    return ranked.filter(
+      (m) => m.login.toLowerCase().includes(q) || (m.name && m.name.toLowerCase().includes(q)),
+    );
+  }, [sorted, search]);
+
+  const maxCommits = useMemo(() => Math.max(1, ...members.map((m) => m.commits)), [members]);
+  const maxPRs = useMemo(() => Math.max(1, ...members.map((m) => m.prs)), [members]);
+  const maxReviews = useMemo(() => Math.max(1, ...members.map((m) => m.reviews)), [members]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -298,6 +315,20 @@ export const OrgLeaderboard: React.FC<{ active: boolean }> = ({ active }) => {
         </Card.Body>
       </Card>
 
+      {/* Search */}
+      {members.length > 0 && (
+        <div className="mb-3">
+          <input
+            type="text"
+            placeholder="Filter by name or login..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="filter-input"
+            style={{ fontSize: "0.8rem", padding: "6px 10px", width: "100%", maxWidth: 300 }}
+          />
+        </div>
+      )}
+
       {/* Stats */}
       {members.length > 0 && (
         <div className="d-flex gap-2 mb-3">
@@ -341,7 +372,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean }> = ({ active }) => {
       )}
 
       {/* Table */}
-      {!loading && members.length > 0 && (
+      {!loading && rankedAndFiltered.length > 0 && (
         <Card>
           <div style={{ overflowX: "auto" }}>
             <table className="table">
@@ -373,42 +404,94 @@ export const OrgLeaderboard: React.FC<{ active: boolean }> = ({ active }) => {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((m, i) => (
-                  <tr key={m.login}>
-                    <td style={{ color: "#656d76" }}>{i + 1}</td>
-                    <td>
-                      <div className="d-flex align-items-center gap-2">
-                        <img
-                          src={m.avatarUrl}
-                          alt={m.login}
-                          style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: "50%",
-                            border: "1px solid #d1d9e0",
-                          }}
-                        />
-                        <div>
-                          <div style={{ fontWeight: 500 }}>
-                            <a
-                              href={`https://github.com/${m.login}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {m.login}
-                            </a>
+                {rankedAndFiltered.map((m) => {
+                  const isMe = githubUsername && m.login === githubUsername;
+                  return (
+                    <tr
+                      key={m.login}
+                      style={
+                        isMe
+                          ? {
+                              backgroundColor: "rgba(9, 105, 218, 0.12)",
+                              borderLeft: "3px solid #0969da",
+                            }
+                          : undefined
+                      }
+                    >
+                      <td style={{ color: "#656d76" }}>{m.rank}</td>
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <img
+                            src={m.avatarUrl}
+                            alt={m.login}
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: "50%",
+                              border: isMe ? "2px solid #0969da" : "1px solid #d1d9e0",
+                            }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: isMe ? 600 : 500 }}>
+                              <a
+                                href={`https://github.com/${m.login}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {m.login}
+                              </a>
+                            </div>
+                            {m.name && (
+                              <div style={{ fontSize: "0.7rem", color: "#656d76" }}>{m.name}</div>
+                            )}
                           </div>
-                          {m.name && (
-                            <div style={{ fontSize: "0.7rem", color: "#656d76" }}>{m.name}</div>
-                          )}
                         </div>
-                      </div>
-                    </td>
-                    <td>{m.commits.toLocaleString()}</td>
-                    <td>{m.prs.toLocaleString()}</td>
-                    <td>{m.reviews.toLocaleString()}</td>
-                  </tr>
-                ))}
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <span style={{ minWidth: 36 }}>{m.commits.toLocaleString()}</span>
+                          <div className="leaderboard-bar-track">
+                            <div
+                              className="leaderboard-bar-fill"
+                              style={{
+                                width: `${(m.commits / maxCommits) * 100}%`,
+                                backgroundColor: "#1a7f37",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <span style={{ minWidth: 36 }}>{m.prs.toLocaleString()}</span>
+                          <div className="leaderboard-bar-track">
+                            <div
+                              className="leaderboard-bar-fill"
+                              style={{
+                                width: `${(m.prs / maxPRs) * 100}%`,
+                                backgroundColor: "#0969da",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <span style={{ minWidth: 36 }}>{m.reviews.toLocaleString()}</span>
+                          <div className="leaderboard-bar-track">
+                            <div
+                              className="leaderboard-bar-fill"
+                              style={{
+                                width: `${(m.reviews / maxReviews) * 100}%`,
+                                backgroundColor: "#8250df",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
