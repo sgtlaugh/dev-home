@@ -577,7 +577,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                   { key: "90d", label: "90 days" },
                   { key: "6mo", label: "6 months" },
                   { key: "1y", label: "1 year" },
-                  { key: "bigbang", label: "Big Bang 💥" },
+                  { key: "alltime", label: "All Time" },
                 ].map((p) => (
                   <button
                     key={p.key}

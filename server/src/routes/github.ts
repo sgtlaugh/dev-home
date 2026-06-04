@@ -912,7 +912,7 @@ async function gateStartDate(
 }
 
 
-/** GET /api/github/user-info — user's join date for Big Bang range. */
+/** GET /api/github/user-info — user's join date for All Time range. */
 router.get("/user-info", async (_req: Request, res: Response) => {
   try {
     const config = getConfig();
