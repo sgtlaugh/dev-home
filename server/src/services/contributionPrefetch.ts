@@ -1,5 +1,7 @@
 import { graphql } from "../clients/githubGraphqlClient";
-import { MAX_REPOS_PER_CONTRIBUTION } from "../utils/constants";
+import { createGitHubClient } from "../clients/githubApiClient";
+import { apiCache } from "../utils/cache";
+import { MAX_REPOS_PER_CONTRIBUTION, LONG_CACHE_TTL } from "../utils/constants";
 import { logger } from "../utils/logger";
 import {
   getMonthsBetween,
@@ -54,6 +56,24 @@ function getCurrentYearMonth(): string {
   return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`;
 }
 
+async function getOrgCreatedMonth(org: string): Promise<string> {
+  const cacheKey = `github:org-created:${org}`;
+  const cached = apiCache.get<string>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const github = createGitHubClient();
+    const { data } = await github.get(`/orgs/${org}`);
+    const created = new Date(data.created_at);
+    const month = `${created.getFullYear()}-${(created.getMonth() + 1).toString().padStart(2, "0")}`;
+    apiCache.set(cacheKey, month, LONG_CACHE_TTL);
+    logger.info("Prefetch", `${org} created ${month}`);
+    return month;
+  } catch {
+    return "2008-01";
+  }
+}
+
 export function isPrefetchRunning(): boolean {
   return prefetchRunning;
 }
@@ -61,7 +81,6 @@ export function isPrefetchRunning(): boolean {
 export async function startPrefetch(
   org: string,
   members: string[],
-  startYearMonth = "2008-01",
 ): Promise<void> {
   if (prefetchRunning) {
     logger.info("Prefetch", "Already running, skipping");
@@ -72,6 +91,7 @@ export async function startPrefetch(
   const currentMonth = getCurrentYearMonth();
 
   try {
+    const startYearMonth = await getOrgCreatedMonth(org);
     const allMonths = getMonthsBetween(`${startYearMonth}-01`, `${currentMonth}-28`);
     const monthsToProcess = allMonths.filter((m) => m !== currentMonth).reverse();
 
