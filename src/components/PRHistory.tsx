@@ -26,12 +26,13 @@ function isValidDate(dateStr: string): boolean {
   return !isNaN(date.getTime());
 }
 
-function getHeatmapLevel(count: number): number {
-  if (count === 0) return 0;
-  if (count <= 1) return 1;
-  if (count <= 2) return 2;
-  if (count <= 4) return 3;
-  return 4;
+function getHeatmapLevel(count: number, inRange: boolean): number {
+  if (!inRange) return 0;
+  if (count === 0) return 1;
+  if (count <= 1) return 2;
+  if (count <= 2) return 3;
+  if (count <= 4) return 4;
+  return 5;
 }
 
 function getHeatmapDisplayRange(
@@ -62,7 +63,7 @@ function getHeatmapDisplayRange(
 
 function getMonthLabels(
   mode: DateMode,
-  cells: { date: string; count: number; dayOfWeek: number }[],
+  cells: { date: string; count: number; dayOfWeek: number; inRange: boolean }[],
 ): { label: string; col: number }[] {
   if (mode === "month") return [];
   const monthNames = [
@@ -200,15 +201,16 @@ function ContributionHeatmap({
     const aligned = new Date(displayStartDate);
     aligned.setDate(aligned.getDate() - aligned.getDay());
 
-    const gridCells: { date: string; count: number; dayOfWeek: number }[] = [];
+    const gridCells: { date: string; count: number; dayOfWeek: number; inRange: boolean }[] = [];
     const d = new Date(aligned);
     while (d <= displayEndDate || d.getDay() !== 0) {
       const key = toLocalDateStr(d);
-      const inSelection = d >= selectedStartDate && d <= selectedEndDate;
+      const inRange = d >= selectedStartDate && d <= selectedEndDate;
       gridCells.push({
         date: key,
-        count: inSelection ? countByDate.get(key) || 0 : 0,
+        count: inRange ? countByDate.get(key) || 0 : 0,
         dayOfWeek: d.getDay(),
+        inRange,
       });
       d.setDate(d.getDate() + 1);
     }
@@ -250,12 +252,16 @@ function ContributionHeatmap({
         </div>
         <div className="heatmap-grid">
           {cells.map((cell, i) => {
-            const level = getHeatmapLevel(cell.count);
+            const level = getHeatmapLevel(cell.count, cell.inRange);
             return (
               <div
                 key={i}
                 className={`heatmap-cell heatmap-cell-${level}`}
-                title={`${cell.date}: ${cell.count} PR${cell.count !== 1 ? "s" : ""}`}
+                title={
+                  cell.inRange
+                    ? `${cell.date}: ${cell.count} PR${cell.count !== 1 ? "s" : ""}`
+                    : `${cell.date}: outside range`
+                }
               />
             );
           })}
@@ -263,7 +269,7 @@ function ContributionHeatmap({
       </div>
       <div className="heatmap-legend">
         <span>Less</span>
-        {[0, 1, 2, 3, 4].map((l) => (
+        {[1, 2, 3, 4, 5].map((l) => (
           <div key={l} className={`heatmap-legend-cell heatmap-cell-${l}`} />
         ))}
         <span>More</span>

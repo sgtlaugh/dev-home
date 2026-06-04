@@ -2578,11 +2578,12 @@ a,
   outline-offset: -1px;
 }
 
-.heatmap-cell-0 { background: #161b22; }
-.heatmap-cell-1 { background: #0e4429; }
-.heatmap-cell-2 { background: #006d32; }
-.heatmap-cell-3 { background: #26a641; }
-.heatmap-cell-4 { background: #39d353; }
+.heatmap-cell-0 { background: #30363d; }
+.heatmap-cell-1 { background: #161b22; }
+.heatmap-cell-2 { background: #0e4429; }
+.heatmap-cell-3 { background: #006d32; }
+.heatmap-cell-4 { background: #26a641; }
+.heatmap-cell-5 { background: #39d353; }
 
 .heatmap-labels {
   display: flex;
@@ -2663,11 +2664,12 @@ a,
   color: #656d76;
 }
 
-[data-theme="light"] .heatmap-cell-0 { background: #ebedf0; }
-[data-theme="light"] .heatmap-cell-1 { background: #9be9a8; }
-[data-theme="light"] .heatmap-cell-2 { background: #40c463; }
-[data-theme="light"] .heatmap-cell-3 { background: #30a14e; }
-[data-theme="light"] .heatmap-cell-4 { background: #216e39; }
+[data-theme="light"] .heatmap-cell-0 { background: #d0d7de; }
+[data-theme="light"] .heatmap-cell-1 { background: #ebedf0; }
+[data-theme="light"] .heatmap-cell-2 { background: #9be9a8; }
+[data-theme="light"] .heatmap-cell-3 { background: #40c463; }
+[data-theme="light"] .heatmap-cell-4 { background: #30a14e; }
+[data-theme="light"] .heatmap-cell-5 { background: #216e39; }
 
 [data-theme="light"] .heatmap-cell:hover {
   outline-color: #1f2328;
