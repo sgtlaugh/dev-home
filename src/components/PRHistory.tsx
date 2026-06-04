@@ -26,6 +26,75 @@ function isValidDate(dateStr: string): boolean {
   return !isNaN(date.getTime());
 }
 
+function getHeatmapLevel(count: number): number {
+  if (count === 0) return 0;
+  if (count <= 1) return 1;
+  if (count <= 2) return 2;
+  if (count <= 4) return 3;
+  return 4;
+}
+
+function getHeatmapDisplayRange(
+  mode: DateMode,
+  year: number,
+  month: number,
+  prDates: number[],
+): { start: Date; end: Date } {
+  if (mode === "year") {
+    return { start: new Date(year, 0, 1), end: new Date(year, 11, 31) };
+  }
+  if (mode === "month") {
+    const start = new Date(year, month - 1, 1);
+    const yearBack = new Date(start);
+    yearBack.setFullYear(yearBack.getFullYear() - 1);
+    return { start: yearBack, end: new Date(year, month, 0) };
+  }
+  if (prDates.length === 0) return { start: new Date(), end: new Date() };
+  const minDate = new Date(Math.min(...prDates));
+  const maxDate = new Date(Math.max(...prDates));
+  const rangeMs = maxDate.getTime() - minDate.getTime();
+  const oneYearMs = 365.25 * 24 * 60 * 60 * 1000;
+  const displayStart = new Date(
+    Math.min(minDate.getTime(), maxDate.getTime() - Math.max(rangeMs, oneYearMs)),
+  );
+  return { start: displayStart, end: maxDate };
+}
+
+function getMonthLabels(
+  mode: DateMode,
+  cells: { date: string; count: number; dayOfWeek: number }[],
+): { label: string; col: number }[] {
+  if (mode === "month") return [];
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const labels: { label: string; col: number }[] = [];
+  let lastMonth = -1;
+  let lastCol = -1;
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i].dayOfWeek !== 0) continue;
+    const [, m] = cells[i].date.split("-").map(Number);
+    const col = Math.floor(i / 7);
+    if (m !== lastMonth && col - lastCol >= 2) {
+      labels.push({ label: monthNames[m - 1], col });
+      lastMonth = m;
+      lastCol = col;
+    }
+  }
+  return labels;
+}
+
 const REPO_COLORS = [
   "#58a6ff",
   "#3fb950",
@@ -95,11 +164,15 @@ function ContributionHeatmap({
   mode,
   year,
   month,
+  selectedStart,
+  selectedEnd,
 }: {
   prs: GitHubPR[];
   mode: DateMode;
   year: number;
   month: number;
+  selectedStart: string;
+  selectedEnd: string;
 }) {
   const { cells, monthLabels } = useMemo(() => {
     const toLocalDateStr = (d: Date) =>
@@ -111,70 +184,38 @@ function ContributionHeatmap({
       countByDate.set(d, (countByDate.get(d) || 0) + 1);
     }
 
-    let startDate: Date;
-    let endDate: Date;
+    if (prs.length === 0 && mode === "custom") return { cells: [], monthLabels: [] };
 
-    if (mode === "year") {
-      startDate = new Date(year, 0, 1);
-      endDate = new Date(year, 11, 31);
-    } else if (mode === "month") {
-      startDate = new Date(year, month - 1, 1);
-      endDate = new Date(year, month, 0);
-    } else {
-      if (prs.length === 0) return { cells: [], monthLabels: [] };
-      const dates = prs.map((p) => new Date(p.created_at).getTime());
-      startDate = new Date(Math.min(...dates));
-      endDate = new Date(Math.max(...dates));
-    }
+    const prDates = prs.map((p) => new Date(p.created_at).getTime());
+    const { start: displayStartDate, end: displayEndDate } = getHeatmapDisplayRange(
+      mode,
+      year,
+      month,
+      prDates,
+    );
+    const selectedStartDate = new Date(selectedStart);
+    const selectedEndDate = new Date(selectedEnd);
 
     // Align to start of week (Sunday)
-    const aligned = new Date(startDate);
+    const aligned = new Date(displayStartDate);
     aligned.setDate(aligned.getDate() - aligned.getDay());
 
     const gridCells: { date: string; count: number; dayOfWeek: number }[] = [];
     const d = new Date(aligned);
-    while (d <= endDate || d.getDay() !== 0) {
+    while (d <= displayEndDate || d.getDay() !== 0) {
       const key = toLocalDateStr(d);
-      const inRange = d >= startDate && d <= endDate;
+      const inSelection = d >= selectedStartDate && d <= selectedEndDate;
       gridCells.push({
         date: key,
-        count: inRange ? countByDate.get(key) || 0 : -1,
+        count: inSelection ? countByDate.get(key) || 0 : 0,
         dayOfWeek: d.getDay(),
       });
       d.setDate(d.getDate() + 1);
-      if (gridCells.length > 600) break;
     }
 
-    // Month labels for year and custom views (skip for single-month)
-    const labels: { label: string; col: number }[] = [];
-    if (mode !== "month") {
-      const monthNames = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-      let lastMonth = -1;
-      for (let i = 0; i < gridCells.length; i++) {
-        if (gridCells[i].dayOfWeek !== 0) continue;
-        const [, m] = gridCells[i].date.split("-").map(Number);
-        if (m !== lastMonth) {
-          labels.push({ label: monthNames[m - 1], col: Math.floor(i / 7) });
-          lastMonth = m;
-        }
-      }
-    }
-
-    return { cells: gridCells, monthLabels: labels };
-  }, [prs, mode, year, month]);
+    const monthLabels = getMonthLabels(mode, gridCells);
+    return { cells: gridCells, monthLabels };
+  }, [prs, mode, year, month, selectedStart, selectedEnd]);
 
   if (cells.length === 0) return null;
 
@@ -209,28 +250,12 @@ function ContributionHeatmap({
         </div>
         <div className="heatmap-grid">
           {cells.map((cell, i) => {
-            const level =
-              cell.count < 0
-                ? -1
-                : cell.count === 0
-                  ? 0
-                  : cell.count <= 1
-                    ? 1
-                    : cell.count <= 2
-                      ? 2
-                      : cell.count <= 4
-                        ? 3
-                        : 4;
+            const level = getHeatmapLevel(cell.count);
             return (
               <div
                 key={i}
-                className={`heatmap-cell ${level < 0 ? "" : `heatmap-cell-${level}`}`}
-                style={level < 0 ? { background: "transparent" } : undefined}
-                title={
-                  level >= 0
-                    ? `${cell.date}: ${cell.count} PR${cell.count !== 1 ? "s" : ""}`
-                    : undefined
-                }
+                className={`heatmap-cell heatmap-cell-${level}`}
+                title={`${cell.date}: ${cell.count} PR${cell.count !== 1 ? "s" : ""}`}
               />
             );
           })}
@@ -537,7 +562,28 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       {prs.length > 0 && <RepoBreakdown prs={filteredPrs.length > 0 ? filteredPrs : prs} />}
 
       {/* Heatmap */}
-      {prs.length > 0 && <ContributionHeatmap prs={prs} mode={mode} year={year} month={month} />}
+      {prs.length > 0 && (
+        <ContributionHeatmap
+          prs={prs}
+          mode={mode}
+          year={year}
+          month={month}
+          selectedStart={
+            mode === "month"
+              ? `${year}-${String(month).padStart(2, "0")}-01`
+              : mode === "year"
+                ? `${year}-01-01`
+                : startDate
+          }
+          selectedEnd={
+            mode === "month"
+              ? `${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate().toString().padStart(2, "0")}`
+              : mode === "year"
+                ? `${year}-12-31`
+                : endDate
+          }
+        />
+      )}
 
       {/* Controls */}
       <Card className="controls-card mb-4">
