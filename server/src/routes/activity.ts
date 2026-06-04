@@ -42,11 +42,6 @@ router.get("/", async (_req: Request, res: Response) => {
 
   logger.info("Activity", `Found ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub = ${allActivities.length} total`);
 
-  const activitySummary = allActivities.map((a, i) =>
-    `${i + 1}. [${a.action}] ${a.title} (${a.timestamp})`
-  ).join("\n");
-  logger.info("Activity", `\n${activitySummary}`);
-
   const result = { activities: allActivities };
   apiCache.set(cacheKey, result);
   res.json(result);
