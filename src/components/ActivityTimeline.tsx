@@ -27,6 +27,7 @@ interface ActivityTimelineProps {
   activities: ActivityItem[];
   loading: boolean;
   emptyMessage: string;
+  currentUsername?: string;
 }
 
 function getActivityIcon(item: ActivityItem) {
@@ -48,6 +49,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   activities,
   loading,
   emptyMessage,
+  currentUsername,
 }) => {
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
   const groupedActivities = useMemo(() => groupActivitiesByDate(activities), [activities]);
@@ -94,15 +96,16 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 const isExpanded = expandedEntities.has(collapsed.entityKey);
                 const showExpand = entityActionCount > 1;
 
-                // Collect unique actors across all actions in this entity
-                const actorMap = new Map<string, { login: string; avatar_url: string }>();
+                // Get last actor (most recent action) excluding currentUsername
+                let lastActor: { login: string; avatar_url: string } | undefined;
                 for (const action of collapsed.actions) {
                   const actor = action.metadata?.actor;
-                  if (actor && !actorMap.has(actor.login)) {
-                    actorMap.set(actor.login, actor);
+                  if (actor && actor.login !== currentUsername) {
+                    lastActor = actor;
+                    break;
                   }
                 }
-                const actors = Array.from(actorMap.values());
+                const actors = lastActor ? [lastActor] : [];
 
                 return (
                   <div key={collapsed.entityKey}>
@@ -148,35 +151,18 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                             )}
                           </div>
                           {actors.length > 0 && (
-                            <div
+                            <img
+                              src={actors[0].avatar_url}
+                              alt={actors[0].login}
+                              title={actors[0].login}
                               style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "2px",
+                                width: "18px",
+                                height: "18px",
+                                borderRadius: "50%",
                                 marginRight: "4px",
+                                flexShrink: 0,
                               }}
-                            >
-                              {actors.slice(0, 3).map((actor) => (
-                                <img
-                                  key={actor.login}
-                                  src={actor.avatar_url}
-                                  alt={actor.login}
-                                  title={actor.login}
-                                  style={{
-                                    width: "18px",
-                                    height: "18px",
-                                    borderRadius: "50%",
-                                  }}
-                                />
-                              ))}
-                              {actors.length > 3 && (
-                                <span
-                                  style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}
-                                >
-                                  +{actors.length - 3}
-                                </span>
-                              )}
-                            </div>
+                            />
                           )}
                           {reviewBadge && (
                             <Badge
