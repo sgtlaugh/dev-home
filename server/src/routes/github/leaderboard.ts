@@ -196,40 +196,17 @@ async function fetchBatchFromApi(
     entries.push(...results.flat());
     if (i + MAX_CONCURRENT_BATCHES < indices.length) await new Promise((r) => setTimeout(r, 500));
   }
+  saveProfiles(entries.map((e) => ({ login: e.login, name: e.name, avatarUrl: e.avatarUrl })));
   return entries;
 }
 
-async function fetchProfiles(members: string[]): Promise<Map<string, { avatarUrl: string; name: string | null }>> {
+function loadProfiles(members: string[]): Map<string, { avatarUrl: string; name: string | null }> {
   const cached = getCachedProfiles(members);
-  const missing = members.filter((l) => !cached.has(l));
   const profiles = new Map<string, { avatarUrl: string; name: string | null }>();
-
   for (const [login, p] of cached) {
     profiles.set(login, { avatarUrl: p.avatarUrl, name: p.name });
   }
-
-  if (missing.length > 0) {
-    logger.info("Leaderboard", `Fetching ${missing.length} profiles (${cached.size} cached)`);
-    const fetched: { login: string; name: string | null; avatarUrl: string }[] = [];
-    for (let i = 0; i < missing.length; i += MAX_BATCH_SIZE) {
-      const batch = missing.slice(i, i + MAX_BATCH_SIZE);
-      const users = batch.map((login, j) => `u${j}: user(login: "${login}") { login name avatarUrl }`);
-      try {
-        const data = await graphql<Record<string, any>>(`query { ${users.join("\n")} }`, {}, "leaderboard/profiles");
-        for (let j = 0; j < batch.length; j++) {
-          const u = data[`u${j}`];
-          if (u) {
-            profiles.set(u.login, { avatarUrl: u.avatarUrl, name: u.name });
-            fetched.push({ login: u.login, name: u.name, avatarUrl: u.avatarUrl });
-          }
-        }
-      } catch { /* best-effort */ }
-    }
-    saveProfiles(fetched);
-  } else {
-    logger.info("Leaderboard", `All ${cached.size} profiles from cache`);
-  }
-
+  logger.info("Leaderboard", `Profiles: ${cached.size}/${members.length} from cache`);
   return profiles;
 }
 
@@ -304,7 +281,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
       addToTotals(totals, await fetchBatchFromApi(members, chunks, batchSize, "leaderboard/partial", `${org}/`));
     }
 
-    const profiles = await fetchProfiles(members);
+    const profiles = loadProfiles(members);
     const entries: LeaderboardEntry[] = members.map((login) => {
       const t = totals.get(login) || { commits: 0, prs: 0, reviews: 0 };
       const p = profiles.get(login) || { avatarUrl: `https://github.com/${login}.png`, name: null };
