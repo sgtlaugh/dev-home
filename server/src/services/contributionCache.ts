@@ -87,12 +87,12 @@ export function saveContributions(
   insertMany(entries);
 }
 
-export function getMemberCountForMonth(org: string, yearMonth: string): number {
+export function getCachedLoginsForMonth(org: string, yearMonth: string): Set<string> {
   const db = getDb();
-  const row = db
-    .prepare("SELECT COUNT(DISTINCT login) as cnt FROM org_contributions WHERE org = ? AND year_month = ?")
-    .get(org, yearMonth) as { cnt: number } | undefined;
-  return row?.cnt ?? 0;
+  const rows = db
+    .prepare("SELECT DISTINCT login FROM org_contributions WHERE org = ? AND year_month = ?")
+    .all(org, yearMonth) as { login: string }[];
+  return new Set(rows.map((r) => r.login));
 }
 
 export interface CachedProfile {

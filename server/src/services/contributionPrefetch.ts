@@ -3,7 +3,7 @@ import { MAX_REPOS_PER_CONTRIBUTION } from "../utils/constants";
 import { logger } from "../utils/logger";
 import {
   getMonthsBetween,
-  getMemberCountForMonth,
+  getCachedLoginsForMonth,
   saveContributions,
   saveProfiles,
   MonthlyContribution,
@@ -75,46 +75,53 @@ export async function startPrefetch(
     const allMonths = getMonthsBetween(`${startYearMonth}-01`, `${currentMonth}-28`);
     const monthsToProcess = allMonths.filter((m) => m !== currentMonth).reverse();
 
-    const missingMonths: string[] = [];
+    const monthWork: { month: string; missing: string[] }[] = [];
     const cachedMonthsList: string[] = [];
+
     for (const month of monthsToProcess) {
-      if (getMemberCountForMonth(org, month) < members.length) {
-        missingMonths.push(month);
+      const cachedLogins = getCachedLoginsForMonth(org, month);
+      const missing = members.filter((l) => !cachedLogins.has(l));
+      if (missing.length > 0) {
+        monthWork.push({ month, missing });
       } else {
         cachedMonthsList.push(month);
       }
     }
 
     if (cachedMonthsList.length > 0) {
-      logger.info("Prefetch", `${cachedMonthsList.length} months already cached for ${org}, skipping`);
+      const recent = cachedMonthsList.slice(0, 5).join(", ");
+      const suffix = cachedMonthsList.length > 5 ? ` +${cachedMonthsList.length - 5} more` : "";
+      logger.info("Prefetch", `${cachedMonthsList.length} months cached for ${org}: ${recent}${suffix}`);
     }
 
-    if (missingMonths.length === 0) {
+    if (monthWork.length === 0) {
       logger.info("Prefetch", `All ${monthsToProcess.length} months cached for ${org}, nothing to do`);
       return;
     }
 
-    const totalQueries = Math.ceil(members.length / BATCH_SIZE) * missingMonths.length;
+    const totalQueries = monthWork.reduce((s, w) => s + Math.ceil(w.missing.length / BATCH_SIZE), 0);
     const etaSeconds = (totalQueries * DELAY_BETWEEN_QUERIES_MS) / 1000;
 
     logger.info(
       "Prefetch",
-      `Starting for ${org}: ${missingMonths.length} months to fetch, ${cachedMonthsList.length} cached, ${members.length} members, ~${totalQueries} queries, ETA ${formatEta(etaSeconds)}`,
+      `Starting for ${org}: ${monthWork.length} months to fetch, ${cachedMonthsList.length} cached, ~${totalQueries} queries, ETA ${formatEta(etaSeconds)}`,
     );
 
     let queriesDone = 0;
     const startTime = Date.now();
 
-    for (const month of missingMonths) {
+    for (const { month, missing } of monthWork) {
       if (!prefetchRunning) {
         logger.info("Prefetch", "Stopped");
         return;
       }
 
-      for (let i = 0; i < members.length; i += BATCH_SIZE) {
+      logger.info("Prefetch", `${org}/${month}: ${missing.length} members to fetch`);
+
+      for (let i = 0; i < missing.length; i += BATCH_SIZE) {
         if (!prefetchRunning) return;
 
-        const batch = members.slice(i, i + BATCH_SIZE);
+        const batch = missing.slice(i, i + BATCH_SIZE);
         const query = buildMonthQuery(batch, month);
 
         try {
@@ -165,7 +172,7 @@ export async function startPrefetch(
           if (status === 403) {
             logger.warn("Prefetch", `Got 403, pausing 30s`);
             await new Promise((r) => setTimeout(r, 30000));
-            i -= BATCH_SIZE; // retry this batch
+            i -= BATCH_SIZE;
             continue;
           }
           logger.error("Prefetch", `${month} batch failed: ${err}`);

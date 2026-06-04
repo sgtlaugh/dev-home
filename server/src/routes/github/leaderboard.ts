@@ -233,6 +233,13 @@ async function fetchProfiles(members: string[]): Promise<Map<string, { avatarUrl
   return profiles;
 }
 
+function triggerPrefetch(org: string): void {
+  if (isPrefetchRunning()) return;
+  fetchOrgMembers(org)
+    .then((members) => startPrefetch(org, members))
+    .catch((err) => logger.error("Prefetch", `Failed: ${err}`));
+}
+
 router.get("/org-leaderboard", async (req: Request, res: Response) => {
   const { org, startDate, endDate } = req.query as Record<string, string | undefined>;
   if (!org || !startDate || !endDate) {
@@ -241,7 +248,10 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
 
   const cacheKey = `github:org-leaderboard:${org}:${startDate}:${endDate}`;
   const cached = apiCache.get(cacheKey);
-  if (cached) return res.json(cached);
+  if (cached) {
+    triggerPrefetch(org);
+    return res.json(cached);
+  }
 
   try {
     const members = await fetchOrgMembers(org);
@@ -304,9 +314,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     logger.info("Leaderboard", `${entries.length} members for ${org} (${startDate} to ${endDate})`);
     res.json(responseData);
 
-    if (!isPrefetchRunning()) {
-      startPrefetch(org, members).catch((err) => logger.error("Prefetch", `Failed: ${err}`));
-    }
+    triggerPrefetch(org);
   } catch (err) {
     logger.error("Leaderboard", `Failed: ${err}`);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
