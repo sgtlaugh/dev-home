@@ -23,7 +23,7 @@ class ApiCache {
       return null;
     }
 
-    console.log(`[Cache] HIT ${key} (${Math.round(age / 1000)}s old)`);
+    if (import.meta.env.DEV) console.log(`[Cache] HIT ${key} (${Math.round(age / 1000)}s old)`);
     return entry.data;
   }
 
