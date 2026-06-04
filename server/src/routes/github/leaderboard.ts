@@ -255,9 +255,11 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
 
   try {
     const members = await fetchOrgMembers(org);
+    const today = new Date().toISOString().split("T")[0];
+    const effectiveEnd = endDate > today ? today : endDate;
     const currentMonth = getCurrentYearMonth();
-    const allMonths = getMonthsBetween(startDate, endDate);
-    const fullMonths = allMonths.filter((m) => m !== currentMonth && isFullMonth(startDate, endDate, m));
+    const allMonths = getMonthsBetween(startDate, effectiveEnd);
+    const fullMonths = allMonths.filter((m) => m !== currentMonth && isFullMonth(startDate, effectiveEnd, m));
     const partialMonths = allMonths.filter((m) => !fullMonths.includes(m));
 
     const dbCache = getCachedContributions(org, members, fullMonths);
@@ -295,7 +297,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
       const chunks = partialMonths.map((month, i) => {
         const [y, m] = month.split("-").map(Number);
         const first = month === allMonths[0] ? startDate : `${month}-01`;
-        const last = month === allMonths[allMonths.length - 1] ? endDate : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
+        const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
         return { from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: `p${i}` };
       });
       const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY / chunks.length)));
@@ -310,8 +312,8 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     });
 
     const responseData = { members: entries };
-    apiCache.set(cacheKey, responseData, new Date(endDate) < new Date() ? LONG_CACHE_TTL : undefined);
-    logger.info("Leaderboard", `${entries.length} members for ${org} (${startDate} to ${endDate})`);
+    apiCache.set(cacheKey, responseData, new Date(effectiveEnd) < new Date() ? LONG_CACHE_TTL : undefined);
+    logger.info("Leaderboard", `${entries.length} members for ${org} (${startDate} to ${effectiveEnd})`);
     res.json(responseData);
 
     triggerPrefetch(org);
