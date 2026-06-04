@@ -233,17 +233,38 @@ export default function App() {
                       (() => {
                         const pct = rateLimit.remaining / rateLimit.limit;
                         const color = pct > 0.8 ? "#3fb950" : pct > 0.5 ? "#d29922" : "#da3633";
+                        const size = 16;
+                        const stroke = 2.5;
+                        const r = (size - stroke) / 2;
+                        const circ = 2 * Math.PI * r;
+                        const offset = circ * (1 - pct);
                         return (
                           <span
                             className="rate-limit-indicator"
                             title={`GitHub API: ${rateLimit.remaining}/${rateLimit.limit} remaining\nResets ${new Date(rateLimit.resetAt).toLocaleTimeString()}`}
                           >
-                            <span className="rate-limit-bar-track">
-                              <span
-                                className="rate-limit-bar-fill"
-                                style={{ width: `${pct * 100}%`, backgroundColor: color }}
+                            <svg width={size} height={size} className="rate-limit-ring">
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={r}
+                                fill="none"
+                                stroke="var(--bs-border-color)"
+                                strokeWidth={stroke}
                               />
-                            </span>
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={r}
+                                fill="none"
+                                stroke={color}
+                                strokeWidth={stroke}
+                                strokeDasharray={circ}
+                                strokeDashoffset={offset}
+                                strokeLinecap="round"
+                                transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                              />
+                            </svg>
                           </span>
                         );
                       })()}

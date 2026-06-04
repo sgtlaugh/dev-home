@@ -168,20 +168,8 @@ a:hover {
   cursor: default;
 }
 
-.rate-limit-bar-track {
-  display: inline-block;
-  width: 36px;
-  height: 5px;
-  background: var(--bs-border-color);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.rate-limit-bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease, background-color 0.3s ease;
+.rate-limit-ring circle:last-child {
+  transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;
 }
 
 .sidebar-tab {
