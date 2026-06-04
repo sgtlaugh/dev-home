@@ -369,7 +369,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             activities.push({
               id: `github-review-${event.id}`,
               type: "github",
-              action: "Requested changes",
+              action: "Changes Requested",
               title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
               url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
               timestamp: event.created_at,

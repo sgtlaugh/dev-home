@@ -16,7 +16,7 @@ export function getActivityBadgeClass(item: ActivityItem): string {
     if (item.action.includes("Created PR")) return "badge-status-green-dark";
     if (item.action.includes("Merged")) return "badge-status-purple-dark";
     if (item.action.includes("Comment")) return "badge-status-blue";
-    if (item.action.includes("Requested changes")) return "badge-status-yellow";
+    if (item.action.includes("Changes Requested")) return "badge-status-yellow";
     return "badge-status-neutral";
   }
 
@@ -30,7 +30,7 @@ export function getReviewState(items: ActivityItem[]): string | undefined {
   let state: string | undefined;
   for (const item of items) {
     if (item.action === "Merged PR") return "merged";
-    if (item.action.includes("Requested changes") && !state) state = "changes_requested";
+    if (item.action.includes("Changes Requested") && !state) state = "changes_requested";
     if (item.action === "Approved PR" && !state) state = "approved";
   }
   return state;
@@ -108,7 +108,7 @@ export function groupActivitiesByDate(
 export function getReviewBadgeClass(reviewState?: string): string {
   if (reviewState === "merged") return "badge-status-purple-dark";
   if (reviewState === "approved") return "badge-status-purple-light";
-  if (reviewState === "changes_requested") return "badge-status-red-dark";
+  if (reviewState === "changes_requested") return "badge-status-yellow";
   return "";
 }
 

@@ -121,7 +121,7 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
         if (!login || login === username || isBot(login)) continue;
         if (review.state !== "APPROVED" && review.state !== "CHANGES_REQUESTED") continue;
 
-        const action = review.state === "APPROVED" ? "Approved PR" : "Requested changes";
+        const action = review.state === "APPROVED" ? "Approved PR" : "Changes Requested";
 
         activities.push({
           id: `peer-review-${pr.number}-${login}-${review.submittedAt}`,

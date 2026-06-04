@@ -66,7 +66,7 @@ interface ActionCategory {
 
 const ACTION_CATEGORIES: ActionCategory[] = [
   { label: "Approved", color: "#bc8ef9", match: (a) => a.includes("Approved") },
-  { label: "Changes Requested", color: "#d29922", match: (a) => a.includes("Requested changes") },
+  { label: "Changes Requested", color: "#d29922", match: (a) => a.includes("Changes Requested") },
   { label: "Comments", color: "#58a6ff", match: (a) => a.includes("Comment") },
   { label: "Commits", color: "#3fb950", match: (a) => a.includes("Committed") },
   { label: "Created", color: "#3fb950", match: (a) => a === "Created PR" },
