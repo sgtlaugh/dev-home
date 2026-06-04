@@ -33,6 +33,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FindInPage } from "./components/FindInPage";
 import { PRHistory } from "./components/PRHistory";
 import { Activity } from "./components/Activity";
+import { JiraActivity } from "./components/JiraActivity";
 import { JiraVelocity } from "./components/JiraVelocity";
 import { PeerActivity } from "./components/PeerActivity";
 import { useActivity } from "./hooks/useActivity";
@@ -131,6 +132,7 @@ export default function App() {
               { key: "pr-history", label: "Statistics", icon: IconCalendarStats },
               { group: "separator" },
               { group: "label", label: "JIRA" },
+              { key: "jira-activity", label: "Activity", icon: IconHistory },
               { key: "mentions", label: "Notifications", icon: IconAt },
               { key: "jira", label: "Tasks", icon: IconSubtask },
               { key: "velocity", label: "Velocity", icon: IconChartBar },
@@ -154,7 +156,8 @@ export default function App() {
                 peers: peerActivities.length,
                 jira: jiraIssues.length,
                 mentions: jiraComments.length,
-                activity: activities.length,
+                activity: activities.filter((a) => a.type === "github").length,
+                "jira-activity": activities.filter((a) => a.type === "jira").length,
                 "pr-history": currentMonthPRsCount,
                 notes: unresolvedNotes.length,
               };
@@ -309,6 +312,9 @@ export default function App() {
                     <Activity activities={activities} loading={activityLoading} />
                   )}
                   {effectiveTab === "peers" && <PeerActivity active={effectiveTab === "peers"} />}
+                  {effectiveTab === "jira-activity" && (
+                    <JiraActivity activities={activities} loading={activityLoading} />
+                  )}
                 </div>
               </>
             )}

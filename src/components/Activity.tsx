@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { ActivityItem } from "../services/activity";
 import { ActivityTimeline } from "./ActivityTimeline";
+import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
 
 interface ActivityProps {
   activities: ActivityItem[];
@@ -8,11 +9,16 @@ interface ActivityProps {
 }
 
 export const Activity: React.FC<ActivityProps> = ({ activities, loading }) => {
+  const githubActivities = useMemo(
+    () => activities.filter((a) => a.type === "github"),
+    [activities],
+  );
+
   return (
     <ActivityTimeline
-      activities={activities}
+      activities={githubActivities}
       loading={loading}
-      emptyMessage="No activity in the last 24 hours"
+      emptyMessage={`No GitHub activity in the last ${ACTIVITY_LOOKBACK_DAYS} days`}
     />
   );
 };

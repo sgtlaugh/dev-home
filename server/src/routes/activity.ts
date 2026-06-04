@@ -68,6 +68,9 @@ async function extractUserComments(
       const commentTime = new Date(comment.created).getTime();
       if (commentTime < twoDaysAgo) continue;
 
+      const body = comment.body || "";
+      const trimmed = typeof body === "string" ? body.slice(0, COMMENT_PREVIEW_LENGTH) : "";
+      const commentPreview = trimmed + (body.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
       activities.push({
         id: `jira-comment-${comment.id}`,
         type: "jira",
@@ -76,6 +79,7 @@ async function extractUserComments(
         url: `${config.jiraBaseUrl}/browse/${issue.key}?focusedCommentId=${comment.id}`,
         timestamp: comment.created,
         entityKey: issue.key,
+        metadata: { commentBody: commentPreview },
       });
     }
   }
