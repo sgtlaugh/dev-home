@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { GitHubPR } from "../types";
 import { DateMode } from "./PRHistory";
 
@@ -87,6 +87,13 @@ export function ContributionHeatmap({
   selectedStart,
   selectedEnd,
 }: ContributionHeatmapProps) {
+  const [tooltip, setTooltip] = useState<{
+    text: string;
+    x: number;
+    y: number;
+    below: boolean;
+  } | null>(null);
+
   const { cells, monthLabels } = useMemo(() => {
     const toLocalDateStr = (d: Date) =>
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -164,15 +171,36 @@ export function ContributionHeatmap({
         <div className="heatmap-grid">
           {cells.map((cell, i) => {
             const level = getHeatmapLevel(cell.count, cell.inRange);
+            const formatDate = (dateStr: string) => {
+              const [year, month, day] = dateStr.split("-");
+              const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+              return date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              });
+            };
+
+            const tooltipText = cell.inRange
+              ? cell.count === 0
+                ? `No activity on ${formatDate(cell.date)}`
+                : `${cell.count} PR${cell.count !== 1 ? "s" : ""} on ${formatDate(cell.date)}`
+              : `Outside range on ${formatDate(cell.date)}`;
             return (
               <div
                 key={i}
                 className={`heatmap-cell heatmap-cell-${level}`}
-                title={
-                  cell.inRange
-                    ? `${cell.date}: ${cell.count} PR${cell.count !== 1 ? "s" : ""}`
-                    : `${cell.date}: outside range`
-                }
+                onMouseEnter={(e) => {
+                  const rect = (e.target as HTMLElement).getBoundingClientRect();
+                  const below = rect.top > 60;
+                  setTooltip({
+                    text: tooltipText,
+                    x: rect.left + rect.width / 2,
+                    y: below ? rect.bottom + 8 : rect.top - 8,
+                    below,
+                  });
+                }}
+                onMouseLeave={() => setTooltip(null)}
               />
             );
           })}
@@ -185,6 +213,20 @@ export function ContributionHeatmap({
         ))}
         <span>More</span>
       </div>
+      {tooltip && (
+        <div
+          className="heatmap-tooltip"
+          data-below={tooltip.below}
+          style={{
+            position: "fixed",
+            left: `${tooltip.x}px`,
+            top: `${tooltip.y}px`,
+            transform: tooltip.below ? "translate(-50%, 0)" : "translate(-50%, -100%)",
+          }}
+        >
+          {tooltip.text}
+        </div>
+      )}
     </div>
   );
 }

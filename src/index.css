@@ -2634,6 +2634,68 @@ a,
   border-radius: 2px;
 }
 
+.heatmap-tooltip {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  border: 1px solid #30363d;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  animation: tooltipFade 120ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tooltipFade {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.heatmap-tooltip::before {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 1px;
+  transform: rotate(45deg);
+  left: 50%;
+  margin-left: -3px;
+}
+
+.heatmap-tooltip[data-below="true"] {
+  animation: tooltipFadeDown 120ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.heatmap-tooltip[data-below="true"]::before {
+  top: -4px;
+}
+
+.heatmap-tooltip[data-below="false"]::before {
+  bottom: -4px;
+}
+
+@keyframes tooltipFadeDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 /* ============================================
    Light Theme — Statistics Enhancements
    ============================================ */
@@ -2681,4 +2743,16 @@ a,
 [data-theme="light"] .heatmap-month-labels,
 [data-theme="light"] .heatmap-legend {
   color: #656d76;
+}
+
+[data-theme="light"] .heatmap-tooltip {
+  background-color: #ffffff;
+  color: #24292f;
+  border-color: #d0d7de;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .heatmap-tooltip::before {
+  background-color: #ffffff;
+  border-color: #d0d7de;
 }
