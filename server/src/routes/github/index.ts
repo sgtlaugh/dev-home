@@ -13,6 +13,7 @@ import prsRouter from "./prs";
 import reviewsRouter from "./reviews";
 import commitsRouter from "./commits";
 import mentionsRouter from "./mentions";
+import leaderboardRouter from "./leaderboard";
 
 const router = Router();
 
@@ -95,5 +96,6 @@ router.use(prsRouter);
 router.use(reviewsRouter);
 router.use(commitsRouter);
 router.use(mentionsRouter);
+router.use(leaderboardRouter);
 
 export default router;

@@ -18,6 +18,7 @@ import {
   IconHistory,
   IconChartBar,
   IconUsers,
+  IconTrophy,
 } from "@tabler/icons-react";
 import { useConfig } from "./hooks/useConfig";
 import { useDashboard } from "./hooks/useDashboard";
@@ -36,6 +37,7 @@ import { Activity } from "./components/Activity";
 import { JiraActivity } from "./components/JiraActivity";
 import { JiraVelocity } from "./components/JiraVelocity";
 import { PeerActivity } from "./components/PeerActivity";
+import { OrgLeaderboard } from "./components/OrgLeaderboard";
 import { useActivity } from "./hooks/useActivity";
 import { usePeerActivity } from "./hooks/usePeerActivity";
 import { useGitHubRateLimit } from "./hooks/useGitHubRateLimit";
@@ -119,6 +121,7 @@ export default function App() {
               { key: "prs", label: "Pull Requests", icon: IconGitPullRequest },
               { key: "reviews", label: "Review Requests", icon: IconEye },
               { key: "pr-history", label: "Statistics", icon: IconCalendarStats },
+              { key: "leaderboard", label: "Leaderboard", icon: IconTrophy },
               { group: "separator" },
               { group: "label", label: "JIRA" },
               { key: "jira-activity", label: "Activity", icon: IconHistory },
@@ -351,6 +354,9 @@ export default function App() {
                   )}
                   {effectiveTab === "pr-history" && (
                     <PRHistory onCountChange={setCurrentMonthPRsCount} />
+                  )}
+                  {effectiveTab === "leaderboard" && (
+                    <OrgLeaderboard active={effectiveTab === "leaderboard"} />
                   )}
                   {effectiveTab === "velocity" && (
                     <JiraVelocity active={effectiveTab === "velocity"} />
