@@ -450,6 +450,42 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
     }
   };
 
+  const stepYear = (delta: number) => {
+    const newYear = year + delta;
+    if (newYear >= MIN_YEAR && newYear <= now.getFullYear() + 1) {
+      setYear(newYear);
+    }
+  };
+
+  const applyPreset = (preset: string) => {
+    const today = new Date();
+    const toStr = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const end = toStr(today);
+    let start: string;
+    if (preset === "30d") {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 30);
+      start = toStr(d);
+    } else if (preset === "90d") {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 90);
+      start = toStr(d);
+    } else if (preset === "6mo") {
+      const d = new Date(today);
+      d.setMonth(d.getMonth() - 6);
+      start = toStr(d);
+    } else if (preset === "1y") {
+      const d = new Date(today);
+      d.setFullYear(d.getFullYear() - 1);
+      start = toStr(d);
+    } else {
+      start = `${MIN_YEAR}-01-01`;
+    }
+    setStartDate(start);
+    setEndDate(end);
+  };
+
   const monthLabel = new Date(year, month - 1).toLocaleString("default", {
     month: "long",
     year: "numeric",
@@ -535,52 +571,53 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
             )}
 
             {mode === "year" && (
-              <label style={{ marginBottom: 0 }}>
-                <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
-                  Year:
+              <div className="month-nav">
+                <button className="month-nav-arrow" onClick={() => stepYear(-1)}>
+                  <IconChevronLeft size={14} />
+                </button>
+                <span className="month-nav-label" style={{ minWidth: "60px" }}>
+                  {year}
                 </span>
-                <select
-                  value={year}
-                  onChange={(e) => setYear(parseInt(e.target.value, 10))}
-                  className="filter-select"
-                >
-                  {Array.from(
-                    { length: now.getFullYear() - MIN_YEAR + 1 },
-                    (_, i) => MIN_YEAR + i,
-                  ).map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <button className="month-nav-arrow" onClick={() => stepYear(1)}>
+                  <IconChevronRight size={14} />
+                </button>
+              </div>
             )}
 
             {mode === "custom" && (
-              <>
-                <label style={{ marginBottom: 0 }}>
-                  <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
-                    From:
-                  </span>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="filter-input"
-                  />
-                </label>
-                <label style={{ marginBottom: 0 }}>
-                  <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
-                    To:
-                  </span>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="filter-input"
-                  />
-                </label>
-              </>
+              <div className="d-flex gap-2 align-items-center flex-wrap">
+                {[
+                  { key: "30d", label: "30 days" },
+                  { key: "90d", label: "90 days" },
+                  { key: "6mo", label: "6 months" },
+                  { key: "1y", label: "1 year" },
+                  { key: "bigbang", label: "Big Bang 💥" },
+                ].map((p) => (
+                  <button
+                    key={p.key}
+                    className="activity-filter-chip"
+                    onClick={() => applyPreset(p.key)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+                <span style={{ color: "#30363d", fontSize: "0.75rem" }}>|</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="filter-input"
+                  style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                />
+                <span style={{ color: "#8b949e", fontSize: "0.75rem" }}>→</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="filter-input"
+                  style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                />
+              </div>
             )}
           </div>
         </Card.Body>
