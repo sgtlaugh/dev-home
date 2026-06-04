@@ -1821,12 +1821,13 @@ a,
 }
 
 .activity-date-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #8b949e;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #58a6ff;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  margin-top: 8px;
   padding-left: 28px;
 }
 
@@ -1850,7 +1851,7 @@ a,
 .activity-item {
   display: flex;
   gap: 16px;
-  padding: 8px 0 8px 40px;
+  padding: 12px 0 12px 40px;
   position: relative;
   transition: opacity 150ms ease;
 }
@@ -1895,28 +1896,31 @@ a,
 }
 
 .activity-time {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: #8b949e;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .activity-title {
   display: block;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #e6edf3;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: #58a6ff;
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-top: 2px;
 }
 
 .activity-title:hover {
-  color: #58a6ff;
+  color: #79b8ff;
   text-decoration: underline;
 }
 
 [data-theme="light"] .activity-date-label {
-  color: #656d76;
+  color: #0969da;
 }
 
 [data-theme="light"] .activity-list::before {
@@ -1938,11 +1942,11 @@ a,
 }
 
 [data-theme="light"] .activity-title {
-  color: #1f2328;
+  color: #0969da;
 }
 
 [data-theme="light"] .activity-title:hover {
-  color: #0969da;
+  color: #0860ca;
 }
 
 /* ── Find-in-page bar ── */

@@ -165,35 +165,38 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                               }}
                             />
                           )}
-                          {reviewBadge && (
-                            <Badge
-                              bg=""
-                              className={getReviewBadgeClass(collapsed.reviewState)}
-                              style={{ fontSize: "0.625rem", marginRight: "4px" }}
-                            >
-                              {reviewBadge}
-                            </Badge>
-                          )}
-                          {!reviewBadge && (
-                            <Badge
-                              bg=""
-                              className={getActivityBadgeClass(latestAction)}
-                              style={{ fontSize: "0.625rem", marginRight: "4px" }}
-                            >
-                              {getActionSummary(collapsed.actions)}
-                            </Badge>
-                          )}
-                          {entityActionCount > 1 && (
-                            <span
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "var(--text-secondary)",
-                                cursor: "pointer",
-                              }}
-                            >
-                              ({entityActionCount})
-                            </span>
-                          )}
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            {reviewBadge && (
+                              <Badge
+                                bg=""
+                                className={getReviewBadgeClass(collapsed.reviewState)}
+                                style={{ fontSize: "0.7rem", fontWeight: 600 }}
+                              >
+                                {reviewBadge}
+                              </Badge>
+                            )}
+                            {!reviewBadge && (
+                              <Badge
+                                bg=""
+                                className={getActivityBadgeClass(latestAction)}
+                                style={{ fontSize: "0.7rem", fontWeight: 600 }}
+                              >
+                                {getActionSummary(collapsed.actions)}
+                              </Badge>
+                            )}
+                            {entityActionCount > 1 && (
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "var(--text-secondary)",
+                                  cursor: "pointer",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                ({entityActionCount})
+                              </span>
+                            )}
+                          </div>
                           <Timestamp timestamp={collapsed.lastTimestamp} />
                         </div>
                         <a
