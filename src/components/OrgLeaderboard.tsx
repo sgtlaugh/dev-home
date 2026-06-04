@@ -37,18 +37,21 @@ function SortHeader({
   currentKey,
   currentDir,
   onSort,
+  tooltip,
 }: {
   label: string;
   sortKey: SortKey;
   currentKey: SortKey;
   currentDir: SortDir;
   onSort: (key: SortKey) => void;
+  tooltip?: string;
 }) {
   const active = currentKey === sortKey;
   return (
     <th
       style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
       onClick={() => onSort(sortKey)}
+      title={tooltip}
     >
       {label} {active ? (currentDir === "desc" ? "↓" : "↑") : ""}
     </th>
@@ -379,25 +382,28 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                   <th style={{ width: 50 }}>#</th>
                   <th>Member</th>
                   <SortHeader
-                    label="Commits"
+                    label="Commits ⓘ"
                     sortKey="commits"
                     currentKey={sortKey}
                     currentDir={sortDir}
                     onSort={handleSort}
+                    tooltip="Commits merged to default branch, not individual PR commits"
                   />
                   <SortHeader
-                    label="PRs"
+                    label="PRs ⓘ"
                     sortKey="prs"
                     currentKey={sortKey}
                     currentDir={sortDir}
                     onSort={handleSort}
+                    tooltip="Number of PRs opened, not commits within PRs"
                   />
                   <SortHeader
-                    label="Reviews"
+                    label="Reviews ⓘ"
                     sortKey="reviews"
                     currentKey={sortKey}
                     currentDir={sortDir}
                     onSort={handleSort}
+                    tooltip="Reviews counted across all orgs (GitHub API limitation)"
                   />
                 </tr>
               </thead>

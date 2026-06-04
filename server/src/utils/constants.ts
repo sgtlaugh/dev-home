@@ -1,2 +1,3 @@
 export const ACTIVITY_LOOKBACK_DAYS = 30;
 export const COMMENT_PREVIEW_LENGTH = 500;
+export const MAX_REPOS_PER_CONTRIBUTION = 100;

@@ -111,6 +111,24 @@ const MIGRATIONS: Migration[] = [
       ALTER TABLE _kanban_tmp RENAME TO kanban_items;
     `);
   },
+
+  // 6 – create org_contributions table for leaderboard cache
+  (d) => {
+    d.exec(`
+      CREATE TABLE IF NOT EXISTS org_contributions (
+        org TEXT NOT NULL,
+        login TEXT NOT NULL,
+        year_month TEXT NOT NULL,
+        commits INTEGER NOT NULL DEFAULT 0,
+        prs INTEGER NOT NULL DEFAULT 0,
+        reviews INTEGER NOT NULL DEFAULT 0,
+        fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (org, login, year_month)
+      );
+      CREATE INDEX IF NOT EXISTS idx_org_contributions_org ON org_contributions(org);
+      CREATE INDEX IF NOT EXISTS idx_org_contributions_month ON org_contributions(org, year_month);
+    `);
+  },
 ];
 
 function runMigrations(d: Database.Database): void {

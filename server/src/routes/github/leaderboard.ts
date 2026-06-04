@@ -3,7 +3,14 @@ import { createGitHubClient } from "../../clients/githubApiClient";
 import { graphql } from "../../clients/githubGraphqlClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
-import { buildYearChunks } from "./helpers";
+import {
+  getMonthsBetween,
+  getCachedContributions,
+  saveContributions,
+  MonthlyContribution,
+} from "../../services/contributionCache";
+import { startPrefetch, isPrefetchRunning } from "../../services/contributionPrefetch";
+import { MAX_REPOS_PER_CONTRIBUTION } from "../../utils/constants";
 
 const router = Router();
 const LONG_CACHE_TTL = 24 * 60 * 60 * 1000;
@@ -22,6 +29,8 @@ interface LeaderboardEntry {
   reviews: number;
 }
 
+type Totals = Map<string, { commits: number; prs: number; reviews: number }>;
+
 function buildMemberContributionsQuery(
   logins: string[],
   chunks: { from: string; to: string; alias: string }[],
@@ -30,8 +39,14 @@ function buildMemberContributionsQuery(
     const contribs = chunks
       .map(
         (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
-        totalCommitContributions
-        totalPullRequestContributions
+        commitContributionsByRepository(maxRepositories: ${MAX_REPOS_PER_CONTRIBUTION}) {
+          repository { nameWithOwner }
+          contributions { totalCount }
+        }
+        pullRequestContributionsByRepository(maxRepositories: ${MAX_REPOS_PER_CONTRIBUTION}) {
+          repository { nameWithOwner }
+          contributions { totalCount }
+        }
         totalPullRequestReviewContributions
       }`,
       )
@@ -44,6 +59,7 @@ function buildMemberContributionsQuery(
 function parseUserData(
   userData: Record<string, any>,
   chunks: { alias: string }[],
+  orgPrefix?: string,
 ): LeaderboardEntry {
   let commits = 0,
     prs = 0,
@@ -51,18 +67,59 @@ function parseUserData(
   for (const chunk of chunks) {
     const c = userData[chunk.alias];
     if (!c) continue;
-    commits += c.totalCommitContributions || 0;
-    prs += c.totalPullRequestContributions || 0;
+
+    const commitRepos = c.commitContributionsByRepository || [];
+    if (commitRepos.length >= MAX_REPOS_PER_CONTRIBUTION) {
+      logger.warn("Leaderboard", `${userData.login} hit ${MAX_REPOS_PER_CONTRIBUTION} repo cap for commits in ${chunk.alias}, counts may be incomplete`);
+    }
+    for (const repo of commitRepos) {
+      if (orgPrefix && !repo.repository.nameWithOwner.startsWith(orgPrefix)) continue;
+      commits += repo.contributions.totalCount || 0;
+    }
+
+    const prRepos = c.pullRequestContributionsByRepository || [];
+    if (prRepos.length >= MAX_REPOS_PER_CONTRIBUTION) {
+      logger.warn("Leaderboard", `${userData.login} hit ${MAX_REPOS_PER_CONTRIBUTION} repo cap for PRs in ${chunk.alias}, counts may be incomplete`);
+    }
+    for (const repo of prRepos) {
+      if (orgPrefix && !repo.repository.nameWithOwner.startsWith(orgPrefix)) continue;
+      prs += repo.contributions.totalCount || 0;
+    }
+
     reviews += c.totalPullRequestReviewContributions || 0;
   }
+  return { login: userData.login, avatarUrl: userData.avatarUrl, name: userData.name, commits, prs, reviews };
+}
+
+function addToTotals(totals: Totals, results: LeaderboardEntry[]): void {
+  for (const r of results) {
+    const t = totals.get(r.login);
+    if (t) {
+      t.commits += r.commits;
+      t.prs += r.prs;
+      t.reviews += r.reviews;
+    }
+  }
+}
+
+function monthToChunk(month: string): { from: string; to: string; alias: string } {
+  const [y, m] = month.split("-").map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
   return {
-    login: userData.login,
-    avatarUrl: userData.avatarUrl,
-    name: userData.name,
-    commits,
-    prs,
-    reviews,
+    from: `${month}-01T00:00:00Z`,
+    to: `${month}-${lastDay.toString().padStart(2, "0")}T23:59:59Z`,
+    alias: "c0",
   };
+}
+
+function getCurrentYearMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`;
+}
+
+function isFullMonth(startDate: string, endDate: string, yearMonth: string): boolean {
+  const [y, m] = yearMonth.split("-").map(Number);
+  return startDate <= `${yearMonth}-01` && endDate >= `${yearMonth}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
 }
 
 async function fetchOrgMembers(org: string): Promise<string[]> {
@@ -75,9 +132,7 @@ async function fetchOrgMembers(org: string): Promise<string[]> {
   let page = 1;
 
   while (true) {
-    const { data } = await github.get(`/orgs/${org}/members`, {
-      params: { per_page: 100, page },
-    });
+    const { data } = await github.get(`/orgs/${org}/members`, { params: { per_page: 100, page } });
     members.push(...data.map((m: any) => m.login));
     if (data.length < 100) break;
     page++;
@@ -88,9 +143,78 @@ async function fetchOrgMembers(org: string): Promise<string[]> {
   return members;
 }
 
+async function fetchBatchFromApi(
+  members: string[],
+  chunks: { from: string; to: string; alias: string }[],
+  batchSize: number,
+  label: string,
+  orgPrefix?: string,
+): Promise<LeaderboardEntry[]> {
+  const totalBatches = Math.ceil(members.length / batchSize);
+
+  const fetchOne = async (index: number): Promise<LeaderboardEntry[]> => {
+    const logins = members.slice(index * batchSize, (index + 1) * batchSize);
+    const tag = `${label}/batch-${index + 1}-of-${totalBatches}`;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const data = await graphql<Record<string, any>>(buildMemberContributionsQuery(logins, chunks), {}, tag);
+        return logins.map((_, j) => data[`u${j}`]).filter(Boolean).map((u) => parseUserData(u, chunks, orgPrefix));
+      } catch (err: any) {
+        const status = err?.response?.status;
+        if ((status === 403 || status === 502) && attempt < MAX_RETRIES) {
+          const delay = RETRY_BASE_DELAY_MS * (attempt + 1);
+          logger.warn("Leaderboard", `${tag} got ${status}, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        if (err?.message?.includes("Resource limits") && logins.length > 1) {
+          logger.warn("Leaderboard", `${tag} resource limit, falling back to single-user`);
+          const results: LeaderboardEntry[] = [];
+          for (const login of logins) {
+            try {
+              const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks), {}, `${tag}-${login}`);
+              if (d.u0) results.push(parseUserData(d.u0, chunks));
+            } catch (e) {
+              logger.error("Leaderboard", `${tag}-${login} failed: ${e}`);
+            }
+          }
+          return results;
+        }
+        logger.error("Leaderboard", `${tag} failed: ${err}`);
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const entries: LeaderboardEntry[] = [];
+  const indices = Array.from({ length: totalBatches }, (_, i) => i);
+  for (let i = 0; i < indices.length; i += MAX_CONCURRENT_BATCHES) {
+    const results = await Promise.all(indices.slice(i, i + MAX_CONCURRENT_BATCHES).map(fetchOne));
+    entries.push(...results.flat());
+    if (i + MAX_CONCURRENT_BATCHES < indices.length) await new Promise((r) => setTimeout(r, 500));
+  }
+  return entries;
+}
+
+async function fetchProfiles(members: string[]): Promise<Map<string, { avatarUrl: string; name: string | null }>> {
+  const profiles = new Map<string, { avatarUrl: string; name: string | null }>();
+  for (let i = 0; i < members.length; i += MAX_BATCH_SIZE) {
+    const batch = members.slice(i, i + MAX_BATCH_SIZE);
+    const users = batch.map((login, j) => `u${j}: user(login: "${login}") { login name avatarUrl }`);
+    try {
+      const data = await graphql<Record<string, any>>(`query { ${users.join("\n")} }`, {}, "leaderboard/profiles");
+      for (let j = 0; j < batch.length; j++) {
+        const u = data[`u${j}`];
+        if (u) profiles.set(u.login, { avatarUrl: u.avatarUrl, name: u.name });
+      }
+    } catch { /* best-effort */ }
+  }
+  return profiles;
+}
+
 router.get("/org-leaderboard", async (req: Request, res: Response) => {
   const { org, startDate, endDate } = req.query as Record<string, string | undefined>;
-
   if (!org || !startDate || !endDate) {
     return res.status(400).json({ error: "org, startDate, endDate required" });
   }
@@ -101,78 +225,68 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
 
   try {
     const members = await fetchOrgMembers(org);
-    const chunks = buildYearChunks(startDate, endDate);
-    const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY / chunks.length)));
-    const totalBatches = Math.ceil(members.length / batchSize);
+    const currentMonth = getCurrentYearMonth();
+    const allMonths = getMonthsBetween(startDate, endDate);
+    const fullMonths = allMonths.filter((m) => m !== currentMonth && isFullMonth(startDate, endDate, m));
+    const partialMonths = allMonths.filter((m) => !fullMonths.includes(m));
 
+    const dbCache = getCachedContributions(org, members, fullMonths);
+
+    const missingByMonth = new Map<string, string[]>();
+    for (const month of fullMonths) {
+      const needing = members.filter((l) => !dbCache.get(l)?.has(month));
+      if (needing.length > 0) missingByMonth.set(month, needing);
+    }
+
+    const cachedPairs = members.length * fullMonths.length - Array.from(missingByMonth.values()).reduce((s, m) => s + m.length, 0);
     logger.info(
       "Leaderboard",
-      `${members.length} members, ${chunks.length} chunks, batch ${batchSize}, ${totalBatches} batches (×${MAX_CONCURRENT_BATCHES})`,
+      `${org}: ${members.length} members, ${allMonths.length} months (${fullMonths.length} full, ${partialMonths.length} partial), cache ${cachedPairs}/${members.length * fullMonths.length}`,
     );
 
-    const fetchBatch = async (index: number): Promise<LeaderboardEntry[]> => {
-      const logins = members.slice(index * batchSize, (index + 1) * batchSize);
-      const label = `leaderboard/batch-${index + 1}-of-${totalBatches}`;
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          const data = await graphql<Record<string, any>>(
-            buildMemberContributionsQuery(logins, chunks),
-            {},
-            label,
-          );
-          return logins.map((_, j) => data[`u${j}`]).filter(Boolean).map((u) => parseUserData(u, chunks));
-        } catch (err: any) {
-          const status = err?.response?.status;
-          const isRetryable = status === 403 || status === 502;
-          const isResourceLimit = err?.message?.includes("Resource limits");
-          if (isRetryable && attempt < MAX_RETRIES) {
-            const delay = RETRY_BASE_DELAY_MS * (attempt + 1);
-            logger.warn("Leaderboard", `${label} got ${status}, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
-            await new Promise((r) => setTimeout(r, delay));
-            continue;
-          }
-          if (isResourceLimit && logins.length > 1) {
-            logger.warn("Leaderboard", `${label} hit resource limit, falling back to single-user queries`);
-            const results: LeaderboardEntry[] = [];
-            for (const login of logins) {
-              try {
-                const data = await graphql<Record<string, any>>(
-                  buildMemberContributionsQuery([login], chunks),
-                  {},
-                  `leaderboard/${label}-${login}`,
-                );
-                const u = data.u0;
-                if (u) results.push(parseUserData(u, chunks));
-              } catch (e) {
-                logger.error("Leaderboard", `${label}-${login} failed: ${e}`);
-              }
-            }
-            return results;
-          }
-          logger.error("Leaderboard", `${label} failed: ${err}`);
-          return [];
-        }
-      }
-      return [];
-    };
+    const totals: Totals = new Map(members.map((l) => [l, { commits: 0, prs: 0, reviews: 0 }]));
 
-    const entries: LeaderboardEntry[] = [];
-    const indices = Array.from({ length: totalBatches }, (_, i) => i);
-
-    for (let i = 0; i < indices.length; i += MAX_CONCURRENT_BATCHES) {
-      const results = await Promise.all(
-        indices.slice(i, i + MAX_CONCURRENT_BATCHES).map(fetchBatch),
-      );
-      entries.push(...results.flat());
-      if (i + MAX_CONCURRENT_BATCHES < indices.length) {
-        await new Promise((r) => setTimeout(r, 500));
+    for (const [, monthMap] of dbCache) {
+      for (const contrib of monthMap.values()) {
+        const t = totals.get(contrib.login);
+        if (t) { t.commits += contrib.commits; t.prs += contrib.prs; t.reviews += contrib.reviews; }
       }
     }
+
+    for (const [month, logins] of missingByMonth) {
+      const chunk = monthToChunk(month);
+      const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY)));
+      const results = await fetchBatchFromApi(logins, [chunk], batchSize, `leaderboard/${month}`, `${org}/`);
+      saveContributions(org, results.map((r) => ({ login: r.login, yearMonth: month, commits: r.commits, prs: r.prs, reviews: r.reviews })));
+      addToTotals(totals, results);
+    }
+
+    if (partialMonths.length > 0) {
+      const chunks = partialMonths.map((month, i) => {
+        const [y, m] = month.split("-").map(Number);
+        const first = month === allMonths[0] ? startDate : `${month}-01`;
+        const last = month === allMonths[allMonths.length - 1] ? endDate : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
+        return { from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: `p${i}` };
+      });
+      const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY / chunks.length)));
+      addToTotals(totals, await fetchBatchFromApi(members, chunks, batchSize, "leaderboard/partial", `${org}/`));
+    }
+
+    const profiles = await fetchProfiles(members);
+    const entries: LeaderboardEntry[] = members.map((login) => {
+      const t = totals.get(login) || { commits: 0, prs: 0, reviews: 0 };
+      const p = profiles.get(login) || { avatarUrl: `https://github.com/${login}.png`, name: null };
+      return { login, avatarUrl: p.avatarUrl, name: p.name, ...t };
+    });
 
     const responseData = { members: entries };
     apiCache.set(cacheKey, responseData, new Date(endDate) < new Date() ? LONG_CACHE_TTL : undefined);
     logger.info("Leaderboard", `${entries.length} members for ${org} (${startDate} to ${endDate})`);
     res.json(responseData);
+
+    if (!isPrefetchRunning()) {
+      startPrefetch(org, members).catch((err) => logger.error("Prefetch", `Failed: ${err}`));
+    }
   } catch (err) {
     logger.error("Leaderboard", `Failed: ${err}`);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
