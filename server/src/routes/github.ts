@@ -1096,6 +1096,7 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
       const repoName = pr.repository?.nameWithOwner || "";
       const prTitle = `${repoName}#${pr.number}: ${pr.title}`;
       const entityKey = `${repoName}#${pr.number}`;
+      const prState = pr.merged ? "merged" : pr.state === "CLOSED" ? "closed" : "open";
 
       // Extract peer reviews (only approval/changes_requested, skip generic "reviewed" — always paired with comment)
       for (const review of pr.reviews?.nodes || []) {
@@ -1116,6 +1117,7 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
           metadata: {
             actor: { login, avatar_url: review.author.avatarUrl },
             repo: repoName,
+            prState,
           },
         });
       }
@@ -1140,6 +1142,7 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
             actor: { login, avatar_url: comment.author.avatarUrl },
             repo: repoName,
             commentBody: commentPreview,
+            prState,
           },
         });
       }
@@ -1165,6 +1168,7 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
               actor: { login, avatar_url: comment.author.avatarUrl },
               repo: repoName,
               commentBody: commentPreview,
+              prState,
             },
           });
         }

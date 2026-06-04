@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
 import { IconChevronDown } from "@tabler/icons-react";
@@ -11,6 +11,7 @@ import {
   IconCirclePlus,
   IconChecks,
   IconGitCommit,
+  IconGitMerge,
 } from "@tabler/icons-react";
 import { ActivityItem } from "../services/activity";
 import { Timestamp } from "./Timestamp";
@@ -21,6 +22,7 @@ import {
   getActionSummary,
   getBadgeColor,
   groupActivitiesByDate,
+  CollapsedActivity,
 } from "../utils/activityUtils";
 
 interface ActivityTimelineProps {
@@ -46,8 +48,43 @@ function getActivityIcon(item: ActivityItem) {
 }
 
 function getAccentColor(item: ActivityItem): string {
-  const badgeClass = getActivityBadgeClass(item);
-  return getBadgeColor(badgeClass);
+  return getBadgeColor(getActivityBadgeClass(item));
+}
+
+function getPrState(collapsed: CollapsedActivity): string | undefined {
+  for (const action of collapsed.actions) {
+    if (action.metadata?.prState) return action.metadata.prState;
+  }
+  return undefined;
+}
+
+function ExpandableSection({
+  expanded,
+  children,
+}: {
+  expanded: boolean;
+  children: React.ReactNode;
+}) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      setHeight(contentRef.current.scrollHeight);
+    }
+  }, [expanded, children]);
+
+  return (
+    <div
+      style={{
+        maxHeight: expanded ? height : 0,
+        overflow: "hidden",
+        transition: "max-height 250ms ease",
+      }}
+    >
+      <div ref={contentRef}>{children}</div>
+    </div>
+  );
 }
 
 export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
@@ -91,7 +128,14 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
         ([dateLabel, { collapsed: items, actionCount }]) => (
           <div key={dateLabel} className="activity-section">
             <div className="activity-date-label">
-              {dateLabel} ({actionCount})
+              {dateLabel}
+              <Badge
+                bg="secondary"
+                pill
+                style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
+              >
+                {actionCount}
+              </Badge>
             </div>
             <div className="activity-list">
               {items.map((collapsed) => {
@@ -102,6 +146,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 const hasCommentPreview = collapsed.actions.some((a) => a.metadata?.commentBody);
                 const showExpand = entityActionCount > 1 || hasCommentPreview;
                 const accentColor = getAccentColor(latestAction);
+                const prState = getPrState(collapsed);
 
                 let lastActor: { login: string; avatar_url: string } | undefined;
                 for (const action of collapsed.actions) {
@@ -122,7 +167,9 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                       }}
                       onClick={() => showExpand && toggleExpanded(collapsed.entityKey)}
                     >
-                      <div className="activity-icon">{getActivityIcon(latestAction)}</div>
+                      <div className="activity-icon" style={{ color: accentColor }}>
+                        {getActivityIcon(latestAction)}
+                      </div>
                       <div className="activity-content">
                         <div className="activity-header">
                           <div
@@ -156,20 +203,35 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                             )}
                           </div>
                           {lastActor && (
-                            <img
-                              src={lastActor.avatar_url}
-                              alt={lastActor.login}
-                              title={lastActor.login}
+                            <div
                               style={{
-                                width: "24px",
-                                height: "24px",
-                                borderRadius: "50%",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
                                 flexShrink: 0,
-                                border: "2px solid #21262d",
                               }}
-                            />
+                            >
+                              <img
+                                src={lastActor.avatar_url}
+                                alt={lastActor.login}
+                                title={lastActor.login}
+                                style={{
+                                  width: "24px",
+                                  height: "24px",
+                                  borderRadius: "50%",
+                                  border: "2px solid #21262d",
+                                }}
+                              />
+                              {currentUsername && (
+                                <span
+                                  style={{ fontSize: "0.75rem", color: "#8b949e", fontWeight: 500 }}
+                                >
+                                  @{lastActor.login}
+                                </span>
+                              )}
+                            </div>
                           )}
-                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                             {reviewBadge && (
                               <Badge
                                 bg=""
@@ -187,6 +249,23 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                               >
                                 {getActionSummary(collapsed.actions)}
                               </Badge>
+                            )}
+                            {prState && prState !== "open" && (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "3px",
+                                  fontSize: "0.65rem",
+                                  fontWeight: 600,
+                                  color: prState === "merged" ? "#bc8ef9" : "#f85149",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.5px",
+                                }}
+                              >
+                                {prState === "merged" && <IconGitMerge size={12} />}
+                                {prState}
+                              </span>
                             )}
                             {entityActionCount > 1 && (
                               <span
@@ -213,24 +292,37 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                         </a>
                       </div>
                     </div>
-                    {isExpanded && (
+                    <ExpandableSection expanded={isExpanded}>
                       <div className="activity-expanded">
                         {collapsed.actions.map((action) => (
                           <div key={action.id}>
                             <div className="activity-expanded-action">
                               {action.metadata?.actor && (
-                                <img
-                                  src={action.metadata.actor.avatar_url}
-                                  alt={action.metadata.actor.login}
-                                  title={action.metadata.actor.login}
+                                <div
                                   style={{
-                                    width: "20px",
-                                    height: "20px",
-                                    borderRadius: "50%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "5px",
                                     flexShrink: 0,
-                                    border: "1px solid #21262d",
                                   }}
-                                />
+                                >
+                                  <img
+                                    src={action.metadata.actor.avatar_url}
+                                    alt={action.metadata.actor.login}
+                                    title={action.metadata.actor.login}
+                                    style={{
+                                      width: "20px",
+                                      height: "20px",
+                                      borderRadius: "50%",
+                                      border: "1px solid #21262d",
+                                    }}
+                                  />
+                                  {currentUsername && (
+                                    <span style={{ fontSize: "0.7rem", color: "#8b949e" }}>
+                                      @{action.metadata.actor.login}
+                                    </span>
+                                  )}
+                                </div>
                               )}
                               <Badge
                                 bg=""
@@ -256,7 +348,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                           </div>
                         ))}
                       </div>
-                    )}
+                    </ExpandableSection>
                   </div>
                 );
               })}
