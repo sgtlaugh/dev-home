@@ -10,14 +10,15 @@ class ApiCache {
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
     if (!entry) {
-      console.log(`[Cache] MISS ${key}`);
+      if (import.meta.env.DEV) console.log(`[Cache] MISS ${key}`);
       return null;
     }
 
     const now = Date.now();
     const age = now - entry.timestamp;
     if (age > this.ttl) {
-      console.log(`[Cache] EXPIRED ${key} (${Math.round(age / 1000)}s old)`);
+      if (import.meta.env.DEV)
+        console.log(`[Cache] EXPIRED ${key} (${Math.round(age / 1000)}s old)`);
       this.cache.delete(key);
       return null;
     }
