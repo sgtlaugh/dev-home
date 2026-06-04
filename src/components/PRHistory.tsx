@@ -65,7 +65,6 @@ function getMonthLabels(
   mode: DateMode,
   cells: { date: string; count: number; dayOfWeek: number; inRange: boolean }[],
 ): { label: string; col: number }[] {
-  if (mode === "month") return [];
   const monthNames = [
     "Jan",
     "Feb",
@@ -352,13 +351,40 @@ const STAT_DEFS: { key: StateFilter; label: string; color: string }[] = [
   { key: "closed", label: "Closed", color: "#f85149" },
 ];
 
+const STORAGE_KEY = "prhistory:state";
+
+function loadState() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveState(state: {
+  mode: DateMode;
+  year: number;
+  month: number;
+  startDate: string;
+  endDate: string;
+  selectedPreset: string | null;
+}) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore
+  }
+}
+
 export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   const now = new Date();
-  const [mode, setMode] = useState<DateMode>("month");
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const stored = loadState();
+  const [mode, setMode] = useState<DateMode>(stored?.mode ?? "month");
+  const [year, setYear] = useState(stored?.year ?? now.getFullYear());
+  const [month, setMonth] = useState(stored?.month ?? now.getMonth() + 1);
+  const [startDate, setStartDate] = useState(stored?.startDate ?? "");
+  const [endDate, setEndDate] = useState(stored?.endDate ?? "");
   const [stateFilter, setStateFilter] = useState<StateFilter>("all");
   const [prs, setPrs] = useState<GitHubPR[]>([]);
   const [commitCount, setCommitCount] = useState(0);
@@ -366,6 +392,9 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
   const [joinDate, setJoinDate] = useState<string | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(
+    stored?.selectedPreset ?? null,
+  );
   const abortRef = React.useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -373,6 +402,10 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       .then(setJoinDate)
       .catch(() => setJoinDate(`${MIN_YEAR}-01-01`));
   }, []);
+
+  useEffect(() => {
+    saveState({ mode, year, month, startDate, endDate, selectedPreset });
+  }, [mode, year, month, startDate, endDate, selectedPreset]);
 
   useEffect(() => {
     abortRef.current?.abort();
@@ -522,6 +555,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
     setStartDate(start);
     setEndDate(end);
     setMode("custom");
+    setSelectedPreset(preset);
   };
 
   const monthLabel = new Date(year, month - 1).toLocaleString("default", {
@@ -645,6 +679,11 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                   <button
                     key={p.key}
                     className="activity-filter-chip"
+                    style={
+                      selectedPreset === p.key
+                        ? { borderColor: "#58a6ff", color: "#58a6ff" }
+                        : undefined
+                    }
                     onClick={() => applyPreset(p.key)}
                   >
                     {p.label}
@@ -655,7 +694,10 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                   type="text"
                   placeholder="YYYY-MM-DD"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setSelectedPreset(null);
+                  }}
                   className="filter-input"
                   style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
                 />
@@ -664,7 +706,10 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                   type="text"
                   placeholder="YYYY-MM-DD"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setSelectedPreset(null);
+                  }}
                   className="filter-input"
                   style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
                 />
