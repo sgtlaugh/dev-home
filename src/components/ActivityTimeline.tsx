@@ -33,16 +33,21 @@ interface ActivityTimelineProps {
 function getActivityIcon(item: ActivityItem) {
   if (item.type === "github") {
     if (item.action.includes("commit") || item.action.includes("Committed"))
-      return <IconGitCommit size={14} />;
-    if (item.action.includes("PR")) return <IconGitPullRequest size={14} />;
-    if (item.action.includes("Approved")) return <IconChecks size={14} />;
-    return <IconBrandGithub size={14} />;
+      return <IconGitCommit size={16} />;
+    if (item.action.includes("PR")) return <IconGitPullRequest size={16} />;
+    if (item.action.includes("Approved")) return <IconChecks size={16} />;
+    return <IconBrandGithub size={16} />;
   }
 
-  if (item.action.includes("Created")) return <IconCirclePlus size={14} />;
-  if (item.action.includes("Comment")) return <IconMessageCircle size={14} />;
-  if (item.action.includes("status")) return <IconStatusChange size={14} />;
-  return <IconTicket size={14} />;
+  if (item.action.includes("Created")) return <IconCirclePlus size={16} />;
+  if (item.action.includes("Comment")) return <IconMessageCircle size={16} />;
+  if (item.action.includes("status")) return <IconStatusChange size={16} />;
+  return <IconTicket size={16} />;
+}
+
+function getAccentColor(item: ActivityItem): string {
+  const badgeClass = getActivityBadgeClass(item);
+  return getBadgeColor(badgeClass);
 }
 
 export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
@@ -96,8 +101,8 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 const isExpanded = expandedEntities.has(collapsed.entityKey);
                 const hasCommentPreview = collapsed.actions.some((a) => a.metadata?.commentBody);
                 const showExpand = entityActionCount > 1 || hasCommentPreview;
+                const accentColor = getAccentColor(latestAction);
 
-                // Get last actor (most recent action) excluding currentUsername
                 let lastActor: { login: string; avatar_url: string } | undefined;
                 for (const action of collapsed.actions) {
                   const actor = action.metadata?.actor;
@@ -106,23 +111,24 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                     break;
                   }
                 }
-                const actors = lastActor ? [lastActor] : [];
 
                 return (
                   <div key={collapsed.entityKey}>
                     <div
                       className="activity-item"
-                      style={{ cursor: showExpand ? "pointer" : "default" }}
+                      style={{
+                        cursor: showExpand ? "pointer" : "default",
+                        borderLeftColor: accentColor,
+                      }}
                       onClick={() => showExpand && toggleExpanded(collapsed.entityKey)}
                     >
-                      <div className="activity-dot" />
                       <div className="activity-icon">{getActivityIcon(latestAction)}</div>
                       <div className="activity-content">
                         <div className="activity-header">
                           <div
                             style={{
                               width: "18px",
-                              height: "14px",
+                              height: "16px",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -143,25 +149,23 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                   width: "6px",
                                   height: "6px",
                                   borderRadius: "50%",
-                                  backgroundColor: getBadgeColor(
-                                    getActivityBadgeClass(latestAction),
-                                  ),
+                                  backgroundColor: accentColor,
                                   opacity: 0.7,
                                 }}
                               />
                             )}
                           </div>
-                          {actors.length > 0 && (
+                          {lastActor && (
                             <img
-                              src={actors[0].avatar_url}
-                              alt={actors[0].login}
-                              title={actors[0].login}
+                              src={lastActor.avatar_url}
+                              alt={lastActor.login}
+                              title={lastActor.login}
                               style={{
-                                width: "18px",
-                                height: "18px",
+                                width: "24px",
+                                height: "24px",
                                 borderRadius: "50%",
-                                marginRight: "4px",
                                 flexShrink: 0,
+                                border: "2px solid #21262d",
                               }}
                             />
                           )}
@@ -189,7 +193,6 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                 style={{
                                   fontSize: "0.75rem",
                                   color: "var(--text-secondary)",
-                                  cursor: "pointer",
                                   fontWeight: 500,
                                 }}
                               >
@@ -211,39 +214,28 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                       </div>
                     </div>
                     {isExpanded && (
-                      <div style={{ marginTop: "6px", marginLeft: "76px" }}>
+                      <div className="activity-expanded">
                         {collapsed.actions.map((action) => (
                           <div key={action.id}>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                                paddingTop: "3px",
-                                paddingBottom: "3px",
-                                fontSize: "0.8rem",
-                              }}
-                            >
-                              <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>
-                                •
-                              </span>
+                            <div className="activity-expanded-action">
                               {action.metadata?.actor && (
                                 <img
                                   src={action.metadata.actor.avatar_url}
                                   alt={action.metadata.actor.login}
                                   title={action.metadata.actor.login}
                                   style={{
-                                    width: "16px",
-                                    height: "16px",
+                                    width: "20px",
+                                    height: "20px",
                                     borderRadius: "50%",
                                     flexShrink: 0,
+                                    border: "1px solid #21262d",
                                   }}
                                 />
                               )}
                               <Badge
                                 bg=""
                                 className={getActivityBadgeClass(action)}
-                                style={{ fontSize: "0.625rem", flexShrink: 0 }}
+                                style={{ fontSize: "0.65rem", flexShrink: 0 }}
                               >
                                 {action.action}
                               </Badge>
@@ -254,19 +246,9 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                 href={action.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{
-                                  display: "block",
-                                  marginTop: "4px",
-                                  marginLeft: "24px",
-                                  fontSize: "0.75rem",
-                                  color: "var(--text-secondary)",
-                                  textDecoration: "none",
-                                  borderLeft: "2px solid var(--border-color)",
-                                  paddingLeft: "8px",
-                                  lineHeight: "1.3",
-                                  wordBreak: "break-word",
-                                }}
-                                title="Click to view comment on GitHub"
+                                className="activity-comment-preview"
+                                title="View on GitHub"
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 {action.metadata.commentBody}
                               </a>
