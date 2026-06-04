@@ -67,14 +67,14 @@ interface ActionCategory {
 }
 
 const ACTION_CATEGORIES: ActionCategory[] = [
-  { label: "Approved", color: "#bc8ef9", match: (a) => a.includes("Approved") },
-  { label: "Changes Requested", color: "#d29922", match: (a) => a.includes("Changes Requested") },
-  { label: "Comments", color: "#58a6ff", match: (a) => a.includes("Comment") },
-  { label: "Commits", color: "#3fb950", match: (a) => a.includes("Committed") },
-  { label: "Created", color: "#3fb950", match: (a) => a === "Created PR" },
-  { label: "Merged", color: "#bc8ef9", match: (a) => a === "Merged PR" },
-  { label: "Created ticket", color: "#3fb950", match: (a) => a.includes("Created ticket") },
-  { label: "Changed status", color: "#bc8ef9", match: (a) => a.includes("Changed status") },
+  { label: "Approved", color: "#8250df", match: (a) => a.includes("Approved") },
+  { label: "Changes Requested", color: "#9a6700", match: (a) => a.includes("Changes Requested") },
+  { label: "Comments", color: "#0969da", match: (a) => a.includes("Comment") },
+  { label: "Commits", color: "#1a7f37", match: (a) => a.includes("Committed") },
+  { label: "Created", color: "#1a7f37", match: (a) => a === "Created PR" },
+  { label: "Merged", color: "#8250df", match: (a) => a === "Merged PR" },
+  { label: "Created ticket", color: "#1a7f37", match: (a) => a.includes("Created ticket") },
+  { label: "Changed status", color: "#8250df", match: (a) => a.includes("Changed status") },
 ];
 
 function categorizeAction(action: string): string {
@@ -366,14 +366,14 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                     width: "24px",
                                     height: "24px",
                                     borderRadius: "50%",
-                                    border: "2px solid #21262d",
+                                    border: "2px solid #d1d9e0",
                                   }}
                                 />
                                 {currentUsername && (
                                   <span
                                     style={{
                                       fontSize: "0.75rem",
-                                      color: "#8b949e",
+                                      color: "#656d76",
                                       fontWeight: 500,
                                     }}
                                   >
@@ -409,7 +409,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                     gap: "3px",
                                     fontSize: "0.65rem",
                                     fontWeight: 600,
-                                    color: prState === "merged" ? "#bc8ef9" : "#f85149",
+                                    color: prState === "merged" ? "#8250df" : "#cf222e",
                                     textTransform: "uppercase",
                                     letterSpacing: "0.5px",
                                   }}
@@ -465,11 +465,11 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                         width: "20px",
                                         height: "20px",
                                         borderRadius: "50%",
-                                        border: "1px solid #21262d",
+                                        border: "1px solid #d1d9e0",
                                       }}
                                     />
                                     {currentUsername && (
-                                      <span style={{ fontSize: "0.7rem", color: "#8b949e" }}>
+                                      <span style={{ fontSize: "0.7rem", color: "#656d76" }}>
                                         @{action.metadata.actor.login}
                                       </span>
                                     )}

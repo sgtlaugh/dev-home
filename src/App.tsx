@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Badge from "react-bootstrap/Badge";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
@@ -53,23 +53,7 @@ export default function App() {
     localStorage.setItem("dev-home-sidebar-collapsed", String(next));
   };
 
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (localStorage.getItem("dev-home-theme") as "dark" | "light") || "light";
-  });
-
   const [currentMonthPRsCount, setCurrentMonthPRsCount] = useState(0);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("dev-home-theme", next);
-    document.documentElement.setAttribute("data-theme", next);
-  };
-
-  // Set theme on mount
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
   const {
     configured,
     loading: configLoading,
@@ -213,8 +197,6 @@ export default function App() {
                 githubUsername={githubUsername}
                 onBack={() => setActiveTab("summary")}
                 saveSettings={saveSettings}
-                theme={theme}
-                onToggleTheme={toggleTheme}
               />
             ) : (
               <>
@@ -232,7 +214,7 @@ export default function App() {
                     {rateLimit &&
                       (() => {
                         const pct = rateLimit.remaining / rateLimit.limit;
-                        const color = pct > 0.8 ? "#3fb950" : pct > 0.5 ? "#d29922" : "#da3633";
+                        const color = pct > 0.8 ? "#1a7f37" : pct > 0.5 ? "#9a6700" : "#cf222e";
                         const size = 16;
                         const stroke = 2.5;
                         const r = (size - stroke) / 2;

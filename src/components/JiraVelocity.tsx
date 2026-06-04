@@ -35,10 +35,10 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
 
   const trendColor =
     metrics?.velocity.trend === "improving"
-      ? "#3fb950"
+      ? "#1a7f37"
       : metrics?.velocity.trend === "declining"
-        ? "#f85149"
-        : "#d29922";
+        ? "#cf222e"
+        : "#9a6700";
 
   const trendArrow =
     metrics?.velocity.trendPercentage && metrics.velocity.trendPercentage > 0 ? "↑" : "↓";
@@ -48,19 +48,19 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
       {/* Summary Stats */}
       <div className="d-flex gap-2 mb-4 flex-wrap">
         <div className="stat-card">
-          <div className="stat-value" style={{ color: "#58a6ff" }}>
+          <div className="stat-value" style={{ color: "#0969da" }}>
             {metrics?.totalCompleted || 0}
           </div>
           <div className="stat-label">Completed</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value" style={{ color: "#3fb950" }}>
+          <div className="stat-value" style={{ color: "#1a7f37" }}>
             {metrics?.velocity.tasksPerWeek.toFixed(1) || "0.0"}
           </div>
           <div className="stat-label">Tasks/Week</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value" style={{ color: "#a371f7" }}>
+          <div className="stat-value" style={{ color: "#8250df" }}>
             {metrics?.averageCompletionTime.mean || "0h"}
           </div>
           <div className="stat-label">Avg Time</div>
@@ -144,8 +144,8 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
 
       {/* Error State */}
       {error && (
-        <Card className="mb-4" style={{ borderColor: "#f85149" }}>
-          <Card.Body style={{ color: "#f85149" }}>Error: {error}</Card.Body>
+        <Card className="mb-4" style={{ borderColor: "#cf222e" }}>
+          <Card.Body style={{ color: "#cf222e" }}>Error: {error}</Card.Body>
         </Card>
       )}
 
@@ -189,25 +189,25 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
               <h6 style={{ marginBottom: "1rem", fontWeight: 600 }}>Completion Time Stats</h6>
               <div className="d-flex gap-3 flex-wrap">
                 <div className="stat-card">
-                  <div className="stat-value" style={{ color: "#3fb950", fontSize: "1.5rem" }}>
+                  <div className="stat-value" style={{ color: "#1a7f37", fontSize: "1.5rem" }}>
                     {metrics.averageCompletionTime.mean}
                   </div>
                   <div className="stat-label">Mean</div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-value" style={{ color: "#58a6ff", fontSize: "1.5rem" }}>
+                  <div className="stat-value" style={{ color: "#0969da", fontSize: "1.5rem" }}>
                     {metrics.averageCompletionTime.median}
                   </div>
                   <div className="stat-label">Median</div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-value" style={{ color: "#a371f7", fontSize: "1.5rem" }}>
+                  <div className="stat-value" style={{ color: "#8250df", fontSize: "1.5rem" }}>
                     {metrics.averageCompletionTime.fastest}
                   </div>
                   <div className="stat-label">Fastest</div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-value" style={{ color: "#f85149", fontSize: "1.5rem" }}>
+                  <div className="stat-value" style={{ color: "#cf222e", fontSize: "1.5rem" }}>
                     {metrics.averageCompletionTime.slowest}
                   </div>
                   <div className="stat-label">Slowest</div>

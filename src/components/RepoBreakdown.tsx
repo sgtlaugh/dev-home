@@ -2,14 +2,14 @@ import React, { useMemo } from "react";
 import { GitHubPR } from "../types";
 
 const REPO_COLORS = [
-  "#58a6ff",
-  "#3fb950",
-  "#bc8ef9",
-  "#f0883e",
-  "#f85149",
-  "#d29922",
-  "#79c0ff",
-  "#56d364",
+  "#0969da",
+  "#1a7f37",
+  "#8250df",
+  "#bc4c00",
+  "#cf222e",
+  "#9a6700",
+  "#0550ae",
+  "#116329",
 ];
 
 export function RepoBreakdown({ prs }: { prs: GitHubPR[] }) {

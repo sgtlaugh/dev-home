@@ -25,7 +25,7 @@ const CHECK_SORT_ORDER: Record<string, number> = {
 function CheckRunRow({ check }: { check: CheckRunInfo }) {
   const config = STATUS_CONFIG[check.status];
   const Icon = config?.icon;
-  const color = config?.color || "#8b949e";
+  const color = config?.color || "#656d76";
   const label = config?.title || check.status;
 
   return (

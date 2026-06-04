@@ -15,11 +15,11 @@ const REVIEW_STATUS_CONFIG: Record<string, { label: string; badgeClass: string }
 };
 
 function getAccentColor(pr: GitHubPR, isReview: boolean): string {
-  if (pr.draft) return "#8b949e";
-  if (isReview) return "#58a6ff";
-  if (pr.review_status === "APPROVED") return "#3fb950";
-  if (pr.review_status === "CHANGES_REQUESTED") return "#f85149";
-  return "#3fb950";
+  if (pr.draft) return "#656d76";
+  if (isReview) return "#0969da";
+  if (pr.review_status === "APPROVED") return "#1a7f37";
+  if (pr.review_status === "CHANGES_REQUESTED") return "#cf222e";
+  return "#1a7f37";
 }
 
 function getBodyPreview(body: string): string {
@@ -64,10 +64,10 @@ const PRCard: React.FC<PRCardProps> = ({ pr, variant, onClick }) => {
                   width: "28px",
                   height: "28px",
                   borderRadius: "50%",
-                  border: "2px solid #21262d",
+                  border: "2px solid #d1d9e0",
                 }}
               />
-              <span style={{ fontSize: "0.75rem", color: "#8b949e", fontWeight: 500 }}>
+              <span style={{ fontSize: "0.75rem", color: "#656d76", fontWeight: 500 }}>
                 @{pr.user.login}
               </span>
             </div>
@@ -121,7 +121,7 @@ const PRCard: React.FC<PRCardProps> = ({ pr, variant, onClick }) => {
           <span className="branch-tag" style={{ fontSize: "0.65rem" }}>
             {pr.head.ref}
           </span>
-          <span style={{ fontSize: "0.65rem", color: "#8b949e" }}>{"→"}</span>
+          <span style={{ fontSize: "0.65rem", color: "#656d76" }}>{"→"}</span>
           <span className="branch-tag" style={{ fontSize: "0.65rem" }}>
             {pr.base.ref}
           </span>
@@ -131,7 +131,7 @@ const PRCard: React.FC<PRCardProps> = ({ pr, variant, onClick }) => {
             style={{
               marginTop: "6px",
               fontSize: "0.75rem",
-              color: "#8b949e",
+              color: "#656d76",
               fontStyle: "italic",
               overflow: "hidden",
               textOverflow: "ellipsis",

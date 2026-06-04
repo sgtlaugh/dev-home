@@ -35,7 +35,7 @@ function getDateKey(timestamp: string): string {
 }
 
 function PRCard({ pr, onClick }: { pr: GitHubPR; onClick: () => void }) {
-  const accentColor = pr.merged ? "#bc8ef9" : pr.state === "open" ? "#3fb950" : "#f85149";
+  const accentColor = pr.merged ? "#8250df" : pr.state === "open" ? "#1a7f37" : "#cf222e";
 
   return (
     <div
@@ -91,7 +91,7 @@ function PRCard({ pr, onClick }: { pr: GitHubPR; onClick: () => void }) {
           <span className="branch-tag" style={{ fontSize: "0.65rem" }}>
             {pr.head.ref}
           </span>
-          <span style={{ fontSize: "0.65rem", color: "#8b949e" }}>→</span>
+          <span style={{ fontSize: "0.65rem", color: "#656d76" }}>→</span>
           <span className="branch-tag" style={{ fontSize: "0.65rem" }}>
             {pr.base.ref}
           </span>
@@ -102,10 +102,10 @@ function PRCard({ pr, onClick }: { pr: GitHubPR; onClick: () => void }) {
 }
 
 const STAT_DEFS: { key: StateFilter; label: string; color: string }[] = [
-  { key: "all", label: "Total", color: "#3fb950" },
-  { key: "merged", label: "Merged", color: "#a371f7" },
-  { key: "open", label: "Open", color: "#58a6ff" },
-  { key: "closed", label: "Closed", color: "#f85149" },
+  { key: "all", label: "Total", color: "#1a7f37" },
+  { key: "merged", label: "Merged", color: "#8250df" },
+  { key: "open", label: "Open", color: "#0969da" },
+  { key: "closed", label: "Closed", color: "#cf222e" },
 ];
 
 const STORAGE_KEY = "prhistory:state";
@@ -325,7 +325,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
           </div>
         ))}
         <div className="stat-card">
-          <div className="stat-value" style={{ color: "#58a6ff" }}>
+          <div className="stat-value" style={{ color: "#0969da" }}>
             {commitCount}
           </div>
           <div className="stat-label">Commits</div>
@@ -436,7 +436,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                     className="activity-filter-chip"
                     style={
                       selectedPreset === p.key
-                        ? { borderColor: "#58a6ff", color: "#58a6ff" }
+                        ? { borderColor: "#0969da", color: "#0969da" }
                         : undefined
                     }
                     onClick={() => applyPreset(p.key)}
@@ -444,7 +444,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                     {p.label}
                   </button>
                 ))}
-                <span style={{ color: "#30363d", fontSize: "0.75rem" }}>|</span>
+                <span style={{ color: "#d1d9e0", fontSize: "0.75rem" }}>|</span>
                 <input
                   type="text"
                   placeholder="YYYY-MM-DD"
@@ -456,7 +456,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                   className="filter-input"
                   style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
                 />
-                <span style={{ color: "#8b949e", fontSize: "0.75rem" }}>→</span>
+                <span style={{ color: "#656d76", fontSize: "0.75rem" }}>→</span>
                 <input
                   type="text"
                   placeholder="YYYY-MM-DD"

@@ -11,7 +11,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, description
   return (
     <div className="empty-state">
       <div className="empty-icon">{icon}</div>
-      <div style={{ fontWeight: 600, fontSize: "1rem", color: "#8b949e" }}>{title}</div>
+      <div style={{ fontWeight: 600, fontSize: "1rem", color: "#656d76" }}>{title}</div>
       <div
         style={{
           fontSize: "0.8125rem",

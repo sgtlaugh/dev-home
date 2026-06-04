@@ -129,16 +129,16 @@ export function getActionSummary(actions: ActivityItem[]): string {
 
 export function getBadgeColor(badgeClass: string): string {
   const colorMap: Record<string, string> = {
-    "badge-status-green-light": "#3fb950",
-    "badge-status-green-dark": "#3fb950",
-    "badge-status-blue": "#58a6ff",
-    "badge-status-blue-dark": "#58a6ff",
-    "badge-status-purple-light": "#bc8ef9",
-    "badge-status-purple-dark": "#bc8ef9",
-    "badge-status-yellow": "#d29922",
-    "badge-status-red": "#f85149",
-    "badge-status-red-dark": "#f85149",
-    "badge-status-neutral": "#8b949e",
+    "badge-status-green-light": "#1a7f37",
+    "badge-status-green-dark": "#116329",
+    "badge-status-blue": "#0969da",
+    "badge-status-blue-dark": "#0550ae",
+    "badge-status-purple-light": "#8250df",
+    "badge-status-purple-dark": "#6639ba",
+    "badge-status-yellow": "#9a6700",
+    "badge-status-red": "#cf222e",
+    "badge-status-red-dark": "#a40e26",
+    "badge-status-neutral": "#656d76",
   };
-  return colorMap[badgeClass] || "#30363d";
+  return colorMap[badgeClass] || "#d1d9e0";
 }

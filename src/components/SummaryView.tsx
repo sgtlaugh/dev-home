@@ -42,7 +42,6 @@ interface SummaryViewProps {
 interface SectionProps {
   icon: React.ReactNode;
   title: string;
-  badgeClass: string;
   count: number;
   children: React.ReactNode;
   onSeeMore?: () => void;
@@ -50,16 +49,7 @@ interface SectionProps {
   loading?: boolean;
 }
 
-function Section({
-  icon,
-  title,
-  badgeClass,
-  count,
-  children,
-  onSeeMore,
-  headerAction,
-  loading,
-}: SectionProps) {
+function Section({ icon, title, count, children, onSeeMore, headerAction, loading }: SectionProps) {
   return (
     <Card className="h-100 summary-card">
       <Card.Body className="p-0">
@@ -67,7 +57,7 @@ function Section({
           {icon}
           <span>{title}</span>
           {count > 0 && (
-            <Badge className={badgeClass} style={{ fontSize: "0.625rem" }}>
+            <Badge bg="" className="badge-status-neutral" style={{ fontSize: "0.625rem" }}>
               {count}
             </Badge>
           )}
@@ -250,7 +240,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
               <Section
                 icon={<IconEye size={13} stroke={1.8} />}
                 title="Review Requests"
-                badgeClass="badge-status-yellow"
                 count={reviewRequests.length}
                 onSeeMore={reviewRequests.length > 5 ? () => onNavigate("reviews") : undefined}
                 loading={reviewRequestsLoading}
@@ -277,7 +266,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
               <Section
                 icon={<IconGitPullRequest size={13} stroke={1.8} />}
                 title="Open Pull Requests"
-                badgeClass="badge-status-green"
                 count={openPRs.length}
                 onSeeMore={openPRs.length > 5 ? () => onNavigate("prs") : undefined}
                 loading={openPRsLoading}
@@ -307,7 +295,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
               <Section
                 icon={<IconAt size={13} stroke={1.8} />}
                 title="JIRA Notifications"
-                badgeClass="badge-status-purple"
                 count={jiraComments.length}
                 onSeeMore={jiraComments.length > 5 ? () => onNavigate("mentions") : undefined}
                 loading={jiraCommentsLoading}
@@ -331,7 +318,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
               <Section
                 icon={<IconSubtask size={13} stroke={1.8} />}
                 title="JIRA Tasks"
-                badgeClass="badge-status-blue"
                 count={jiraIssues.length}
                 onSeeMore={jiraIssues.length > 5 ? () => onNavigate("jira") : undefined}
                 loading={jiraIssuesLoading}
@@ -363,7 +349,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
           <Section
             icon={<IconNote size={13} stroke={1.8} />}
             title="Notes"
-            badgeClass="badge-status-purple"
             count={notes.length}
             onSeeMore={notes.length > 10 ? () => onNavigate("notes") : undefined}
             loading={notesLoading}
