@@ -5,25 +5,46 @@ import { logger } from "../utils/logger";
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 
 interface GraphQLResponse<T = any> {
-  data: T;
+  data: T & { rateLimit?: { limit: number; remaining: number; resetAt: string } };
   errors?: Array<{ message: string; locations?: any[]; path?: string[] }>;
+}
+
+export interface RateLimitStatus {
+  limit: number;
+  remaining: number;
+  resetAt: string;
+}
+
+let lastRateLimit: RateLimitStatus | null = null;
+
+export function getLastRateLimit(): RateLimitStatus | null {
+  return lastRateLimit;
+}
+
+function injectRateLimit(query: string): string {
+  if (query.includes("rateLimit")) return query;
+  return query.replace(/(\bquery\b[^{]*\{)/, "$1\n    rateLimit { limit remaining resetAt }");
 }
 
 /**
  * Execute a GitHub GraphQL query.
- * Creates a fresh request each call so it always picks up the latest token.
+ * Automatically injects rateLimit field into every query for tracking.
  */
 export async function graphql<T = any>(
   query: string,
   variables: Record<string, any> = {},
+  label?: string,
 ): Promise<T> {
   const config = getConfig();
+  const tag = label || "query";
 
-  logger.debug("GraphQL", "POST /graphql");
+  const enrichedQuery = injectRateLimit(query);
+
+  logger.info("GraphQL", `${tag}: POST /graphql`);
 
   const response: AxiosResponse<GraphQLResponse<T>> = await axios.post(
     GITHUB_GRAPHQL_URL,
-    { query, variables },
+    { query: enrichedQuery, variables },
     {
       headers: {
         Authorization: `Bearer ${config.githubToken}`,
@@ -34,12 +55,21 @@ export async function graphql<T = any>(
 
   if (response.data.errors && response.data.errors.length > 0) {
     const messages = response.data.errors.map((e) => e.message).join("; ");
-    logger.error("GraphQL", messages);
+    logger.error("GraphQL", `${tag}: ${messages}`);
     const error: any = new Error(`GitHub GraphQL error: ${messages}`);
     error.graphqlErrors = response.data.errors;
     throw error;
   }
 
-  logger.debug("GraphQL", `${response.status} OK`);
+  const rl = response.data.data?.rateLimit;
+  if (rl) {
+    lastRateLimit = { limit: rl.limit, remaining: rl.remaining, resetAt: rl.resetAt };
+    const resetTime = new Date(rl.resetAt).toLocaleTimeString();
+    logger.info(
+      "GraphQL",
+      `${tag}: ${rl.remaining}/${rl.limit} remaining (resets ${resetTime})`,
+    );
+  }
+
   return response.data.data;
 }

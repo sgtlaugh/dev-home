@@ -38,6 +38,7 @@ import { JiraVelocity } from "./components/JiraVelocity";
 import { PeerActivity } from "./components/PeerActivity";
 import { useActivity } from "./hooks/useActivity";
 import { usePeerActivity } from "./hooks/usePeerActivity";
+import { useGitHubRateLimit } from "./hooks/useGitHubRateLimit";
 import { apiCache } from "./utils/cache";
 
 export default function App() {
@@ -107,6 +108,7 @@ export default function App() {
     refresh: refreshActivity,
   } = useActivity(configured);
   const { activities: peerActivities, refresh: refreshPeerActivity } = usePeerActivity(configured);
+  const { rateLimit } = useGitHubRateLimit(configured);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -227,6 +229,24 @@ export default function App() {
                         {Math.round((Date.now() - lastRefreshTime) / 60000)}m
                       </span>
                     )}
+                    {rateLimit &&
+                      (() => {
+                        const pct = rateLimit.remaining / rateLimit.limit;
+                        const color = pct > 0.8 ? "#3fb950" : pct > 0.5 ? "#d29922" : "#da3633";
+                        return (
+                          <span
+                            className="rate-limit-indicator"
+                            title={`GitHub API: ${rateLimit.remaining}/${rateLimit.limit} remaining\nResets ${new Date(rateLimit.resetAt).toLocaleTimeString()}`}
+                          >
+                            <span className="rate-limit-bar-track">
+                              <span
+                                className="rate-limit-bar-fill"
+                                style={{ width: `${pct * 100}%`, backgroundColor: color }}
+                              />
+                            </span>
+                          </span>
+                        );
+                      })()}
                   </div>
                   <div className="content-header-actions">
                     <button

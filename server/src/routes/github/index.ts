@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { getConfig } from "../../config";
-import { graphql } from "../../clients/githubGraphqlClient";
+import { graphql, getLastRateLimit } from "../../clients/githubGraphqlClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import {
@@ -38,7 +38,7 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
       myPRsQuery,
       reviewsQuery,
       first: 50,
-    });
+    }, "dashboard/prs+reviews");
   } catch (error) {
     logger.error("GET /dashboard", `GraphQL error: ${error}`);
     return res.status(500).json({ error: "Failed to fetch dashboard data" });
@@ -71,6 +71,23 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
   const responseData = { prs, pr_comments: prComments, reviews };
   apiCache.set(cacheKey, responseData);
   res.json(responseData);
+});
+
+/**
+ * GET /api/github/rate-limit
+ * Get current GitHub GraphQL API rate limit status
+ */
+router.get("/rate-limit", async (_req: Request, res: Response) => {
+  let rateLimit = getLastRateLimit();
+  if (!rateLimit) {
+    try {
+      await graphql("query { viewer { login } }", {}, "rate-limit/probe");
+      rateLimit = getLastRateLimit();
+    } catch {
+      // ignore
+    }
+  }
+  res.json({ rateLimit });
 });
 
 // Mount sub-routers

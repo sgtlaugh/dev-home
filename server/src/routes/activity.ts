@@ -277,7 +277,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           `pr${i}: repository(owner: "${ref.owner}", name: "${ref.repo}") { pullRequest(number: ${ref.number}) { title } }`,
         );
         const query = `query { ${fragments.join("\n")} }`;
-        const data = await graphql(query);
+        const data = await graphql(query, {}, "activity/pr-titles");
         Array.from(prRefs.keys()).forEach((key, i) => {
           const title = data[`pr${i}`]?.pullRequest?.title;
           if (title) prTitles.set(key, title);
@@ -516,7 +516,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
     const result = await graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
       query: `author:${config.githubUsername} type:pr created:>=${sinceDate}`,
       first: 100,
-    });
+    }, "activity/pr-supplement");
 
     for (const pr of result.search.nodes || []) {
       const repoName = pr.repository?.nameWithOwner || "";
@@ -560,7 +560,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
     const mergedResult = await graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
       query: `involves:${config.githubUsername} type:pr is:merged merged:>=${sinceDate}`,
       first: 100,
-    });
+    }, "activity/merged-prs");
 
     let mergedCount = 0;
     for (const pr of mergedResult.search.nodes || []) {

@@ -1,5 +1,6 @@
 /**
  * GraphQL queries for GitHub API
+ * All queries automatically include rateLimit via wrapWithRateLimit
  */
 
 export const SEARCH_PRS_QUERY = `
@@ -293,3 +294,4 @@ export function buildContributionsQuery(chunks: ContributionChunk[]): string {
 export function buildForkHistoryQuery(fragments: string[]): string {
   return `query { ${fragments.join("\n")} }`;
 }
+

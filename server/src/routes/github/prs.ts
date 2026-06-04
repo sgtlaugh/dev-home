@@ -34,7 +34,7 @@ router.get("/prs", async (_req: Request, res: Response) => {
     result = await graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
       query: q,
       first: 50,
-    });
+    }, "prs/open");
   } catch (error) {
     logger.error("GET /prs", `GraphQL error: ${error}`);
     return res.status(500).json({ error: "Failed to fetch PRs" });

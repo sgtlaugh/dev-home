@@ -310,7 +310,7 @@ export async function fetchPRsForSubRange(
       try {
         result = await graphql<{
           search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
-        }>(SEARCH_MY_PRS_QUERY, { query: q, first: 100, after: cursor });
+        }>(SEARCH_MY_PRS_QUERY, { query: q, first: 100, after: cursor }, "pr-history/page");
       } catch (error) {
         logger.error("fetchPRsForSubRange", `Failed to fetch PRs for ${currentStart}..${currentEnd}: ${error}`);
         break;

@@ -72,7 +72,7 @@ router.get("/commits-search", async (req: Request, res: Response) => {
     const contribQuery = `query { viewer { id ${fragments.join("\n")} } }`;
 
     const [contribData, repos] = await Promise.all([
-      graphql<{ viewer: Record<string, any> }>(contribQuery),
+      graphql<{ viewer: Record<string, any> }>(contribQuery, {}, "commits/contributions"),
       fetchUserRepos(github),
     ]);
 
@@ -129,7 +129,7 @@ router.get("/commits-search", async (req: Request, res: Response) => {
 
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
-          const forkData = await graphql(forkQuery);
+          const forkData = await graphql(forkQuery, {}, `commits/forks-batch`);
           for (let idx = 0; idx < batch.length; idx++) {
             const count =
               forkData[`f${idx}`]?.defaultBranchRef?.target?.history?.totalCount || 0;

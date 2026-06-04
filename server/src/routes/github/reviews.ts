@@ -26,7 +26,7 @@ router.get("/reviews", async (_req: Request, res: Response) => {
     result = await graphql<{ search: { nodes: any[] } }>(SEARCH_PRS_QUERY, {
       query: q,
       first: 50,
-    });
+    }, "reviews/requested");
   } catch (error) {
     logger.error("GET /reviews", `GraphQL error: ${error}`);
     return res.status(500).json({ error: "Failed to fetch reviews" });
@@ -69,13 +69,13 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
           Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
         )}`,
         first: 100,
-      }),
+      }, "peer-activity/my-prs"),
       graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
         query: `involves:${username} -author:${username} type:pr updated:>=${monthsAgo(
           Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
         )}`,
         first: 100,
-      }),
+      }, "peer-activity/involved-prs"),
     ]);
 
     const myPRNodes = myPRsResult.search.nodes || [];
