@@ -4,7 +4,7 @@ import { createGitHubClient } from "../clients/githubApiClient";
 import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
 import { logger } from "../utils/logger";
-import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
+import { ACTIVITY_LOOKBACK_DAYS, COMMENT_PREVIEW_LENGTH } from "../utils/constants";
 
 const router = Router();
 
@@ -1125,6 +1125,9 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
         const login = comment.author?.login;
         if (!login || login === username || isBot(login)) continue;
 
+        const body = comment.body || "";
+        const trimmed = body.slice(0, COMMENT_PREVIEW_LENGTH);
+        const commentPreview = trimmed + (body.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
         activities.push({
           id: `peer-comment-${pr.number}-${login}-${comment.createdAt}`,
           type: "github",
@@ -1136,6 +1139,7 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
           metadata: {
             actor: { login, avatar_url: comment.author.avatarUrl },
             repo: repoName,
+            commentBody: commentPreview,
           },
         });
       }
@@ -1146,6 +1150,9 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
           const login = comment.author?.login;
           if (!login || login === username || isBot(login)) continue;
 
+          const body = comment.body || "";
+          const trimmed = body.slice(0, COMMENT_PREVIEW_LENGTH);
+          const commentPreview = trimmed + (body.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
           activities.push({
             id: `peer-thread-${pr.number}-${login}-${comment.createdAt}`,
             type: "github",
@@ -1157,6 +1164,7 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
             metadata: {
               actor: { login, avatar_url: comment.author.avatarUrl },
               repo: repoName,
+              commentBody: commentPreview,
             },
           });
         }

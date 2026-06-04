@@ -94,7 +94,8 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 const entityActionCount = collapsed.actions.length;
                 const reviewBadge = getReviewBadgeLabel(collapsed.reviewState);
                 const isExpanded = expandedEntities.has(collapsed.entityKey);
-                const showExpand = entityActionCount > 1;
+                const hasCommentPreview = collapsed.actions.some((a) => a.metadata?.commentBody);
+                const showExpand = entityActionCount > 1 || hasCommentPreview;
 
                 // Get last actor (most recent action) excluding currentUsername
                 let lastActor: { login: string; avatar_url: string } | undefined;
@@ -209,41 +210,64 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                     {isExpanded && (
                       <div style={{ marginTop: "6px", marginLeft: "76px" }}>
                         {collapsed.actions.map((action) => (
-                          <div
-                            key={action.id}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              paddingTop: "3px",
-                              paddingBottom: "3px",
-                              fontSize: "0.8rem",
-                            }}
-                          >
-                            <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>
-                              •
-                            </span>
-                            {action.metadata?.actor && (
-                              <img
-                                src={action.metadata.actor.avatar_url}
-                                alt={action.metadata.actor.login}
-                                title={action.metadata.actor.login}
-                                style={{
-                                  width: "16px",
-                                  height: "16px",
-                                  borderRadius: "50%",
-                                  flexShrink: 0,
-                                }}
-                              />
-                            )}
-                            <Badge
-                              bg=""
-                              className={getActivityBadgeClass(action)}
-                              style={{ fontSize: "0.625rem", flexShrink: 0 }}
+                          <div key={action.id}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                paddingTop: "3px",
+                                paddingBottom: "3px",
+                                fontSize: "0.8rem",
+                              }}
                             >
-                              {action.action}
-                            </Badge>
-                            <Timestamp timestamp={action.timestamp} />
+                              <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>
+                                •
+                              </span>
+                              {action.metadata?.actor && (
+                                <img
+                                  src={action.metadata.actor.avatar_url}
+                                  alt={action.metadata.actor.login}
+                                  title={action.metadata.actor.login}
+                                  style={{
+                                    width: "16px",
+                                    height: "16px",
+                                    borderRadius: "50%",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                              )}
+                              <Badge
+                                bg=""
+                                className={getActivityBadgeClass(action)}
+                                style={{ fontSize: "0.625rem", flexShrink: 0 }}
+                              >
+                                {action.action}
+                              </Badge>
+                              <Timestamp timestamp={action.timestamp} />
+                            </div>
+                            {action.metadata?.commentBody && (
+                              <a
+                                href={action.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: "block",
+                                  marginTop: "4px",
+                                  marginLeft: "24px",
+                                  fontSize: "0.75rem",
+                                  color: "var(--text-secondary)",
+                                  textDecoration: "none",
+                                  borderLeft: "2px solid var(--border-color)",
+                                  paddingLeft: "8px",
+                                  lineHeight: "1.3",
+                                  wordBreak: "break-word",
+                                }}
+                                title="Click to view comment on GitHub"
+                              >
+                                {action.metadata.commentBody}
+                              </a>
+                            )}
                           </div>
                         ))}
                       </div>

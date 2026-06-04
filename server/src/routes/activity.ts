@@ -6,7 +6,7 @@ import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
 import { logError } from "../utils/errors";
 import { logger } from "../utils/logger";
-import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
+import { ACTIVITY_LOOKBACK_DAYS, COMMENT_PREVIEW_LENGTH } from "../utils/constants";
 
 const router = Router();
 
@@ -261,6 +261,9 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           if (!issue) break;
 
           const isPR = !!issue.pull_request;
+          const body = comment?.body || "";
+          const trimmed = body.slice(0, COMMENT_PREVIEW_LENGTH);
+          const commentPreview = trimmed + (body.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
           activities.push({
             id: `github-comment-${event.id}`,
             type: "github",
@@ -269,7 +272,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             url: comment?.html_url || issue.html_url,
             timestamp: event.created_at,
             entityKey: `${repo}#${issue.number}`,
-            metadata: { actor: userActor },
+            metadata: { actor: userActor, commentBody: commentPreview },
           });
           break;
         }
@@ -278,6 +281,9 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           const pr = event.payload?.pull_request;
           if (!pr) break;
 
+          const body = comment?.body || "";
+          const trimmed = body.slice(0, COMMENT_PREVIEW_LENGTH);
+          const commentPreview = trimmed + (body.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
           activities.push({
             id: `github-comment-${event.id}`,
             type: "github",
@@ -286,7 +292,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             url: comment?.html_url || `https://github.com/${repo}/pull/${pr.number}`,
             timestamp: event.created_at,
             entityKey: `${repo}#${pr.number}`,
-            metadata: { actor: userActor },
+            metadata: { actor: userActor, commentBody: commentPreview },
           });
           break;
         }

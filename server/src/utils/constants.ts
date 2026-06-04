@@ -1,1 +1,2 @@
 export const ACTIVITY_LOOKBACK_DAYS = 30;
+export const COMMENT_PREVIEW_LENGTH = 500;
