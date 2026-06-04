@@ -138,14 +138,17 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
   const activities: ActivityItem[] = [];
   const thirtyDaysAgo = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
 
+  // Fetch user avatar once, reuse across event + GraphQL sections
+  let userActor = { login: config.githubUsername, avatar_url: "" };
   try {
-    // Fetch user avatar and events in parallel
-    const [{ data: userProfile }, { data: events }] = await Promise.all([
-      github.get(`/users/${config.githubUsername}`),
-      github.get(`/users/${config.githubUsername}/events`, { params: { per_page: 300 } }),
-    ]);
+    const { data: userProfile } = await github.get(`/users/${config.githubUsername}`);
+    userActor = { login: config.githubUsername, avatar_url: userProfile.avatar_url };
+  } catch (err) {
+    logError("Activity/GitHub user profile", err);
+  }
 
-    const userActor = { login: config.githubUsername, avatar_url: userProfile.avatar_url };
+  try {
+    const { data: events } = await github.get(`/users/${config.githubUsername}/events`, { params: { per_page: 300 } });
 
     logger.info("Activity", `GitHub events: ${events.length} raw`);
 
@@ -359,6 +362,74 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
     }
   } catch (err) {
     logger.error("Activity", "Failed to fetch GitHub events", { error: String(err) });
+  }
+
+  // Supplement with GraphQL to catch PRs missed by events API (limited to 300 events)
+  try {
+    const sinceDate = new Date(thirtyDaysAgo).toISOString().slice(0, 10);
+    const seenEntityKeys = new Set(activities.filter((a) => a.action.includes("PR")).map((a) => a.entityKey));
+
+    const PR_ACTIVITY_QUERY = `
+      query($query: String!, $first: Int!) {
+        search(query: $query, type: ISSUE, first: $first) {
+          nodes {
+            ... on PullRequest {
+              number
+              title
+              url
+              state
+              merged
+              createdAt
+              mergedAt
+              closedAt
+              author { login avatarUrl }
+              repository { nameWithOwner }
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
+      query: `author:${config.githubUsername} type:pr created:>=${sinceDate}`,
+      first: 100,
+    });
+
+    for (const pr of result.search.nodes || []) {
+      const repoName = pr.repository?.nameWithOwner || "";
+      const entityKey = `${repoName}#${pr.number}`;
+
+      if (pr.createdAt && !seenEntityKeys.has(entityKey)) {
+        activities.push({
+          id: `github-pr-gql-created-${pr.number}`,
+          type: "github",
+          action: "Created PR",
+          title: `${repoName}#${pr.number}: ${pr.title}`,
+          url: pr.url,
+          timestamp: pr.createdAt,
+          entityKey,
+          metadata: { actor: userActor },
+        });
+        seenEntityKeys.add(entityKey);
+      }
+
+      if (pr.merged && pr.mergedAt && !seenEntityKeys.has(`${entityKey}-merged`)) {
+        activities.push({
+          id: `github-pr-gql-merged-${pr.number}`,
+          type: "github",
+          action: "Merged PR",
+          title: `${repoName}#${pr.number}: ${pr.title}`,
+          url: pr.url,
+          timestamp: pr.mergedAt,
+          entityKey,
+          metadata: { actor: userActor },
+        });
+      }
+    }
+
+    logger.info("Activity", `GraphQL PR supplement: ${result.search.nodes?.length || 0} PRs checked`);
+  } catch (err) {
+    logError("Activity/GitHub GraphQL PRs", err);
   }
 
   logger.info("Activity", `GitHub: ${activities.length} activities`);
