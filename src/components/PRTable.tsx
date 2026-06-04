@@ -90,7 +90,7 @@ const PRCard: React.FC<PRCardProps> = ({ pr, variant, onClick }) => {
             )}
             <ChecksStatusIcon status={pr.checks_status} />
           </div>
-          <Timestamp timestamp={pr.updated_at} />
+          <Timestamp timestamp={pr.updated_at} label={isReview ? "Last activity" : undefined} />
         </div>
         <a
           href={pr.html_url}

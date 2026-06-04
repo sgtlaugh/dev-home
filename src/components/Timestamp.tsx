@@ -1,7 +1,12 @@
 import React from "react";
 import { formatRelativeTime } from "../utils/time";
 
-export function Timestamp({ timestamp }: { timestamp: string }) {
+interface TimestampProps {
+  timestamp: string;
+  label?: string;
+}
+
+export function Timestamp({ timestamp, label }: TimestampProps) {
   const now = Date.now();
   const actTime = new Date(timestamp).getTime();
   const hoursAgo = (now - actTime) / (1000 * 60 * 60);
@@ -28,8 +33,10 @@ export function Timestamp({ timestamp }: { timestamp: string }) {
     displayText = formatRelativeTime(timestamp);
   }
 
+  const tooltipText = label ? `${label} · ${fullDateTime}` : fullDateTime;
+
   return (
-    <span className="activity-time" title={fullDateTime}>
+    <span className="activity-time" title={tooltipText}>
       {displayText}
     </span>
   );
