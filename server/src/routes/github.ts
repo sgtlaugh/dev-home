@@ -741,32 +741,7 @@ async function fetchPRsForSubRange(username: string, startDate: string, endDate:
   return allPrs;
 }
 
-/** Split date range into N equal chunks, fetch PRs in parallel, dedupe. */
-async function fetchAllPRsByDateRange(username: string, startDate: string, endDate: string): Promise<any[]> {
-  const PR_PARALLEL_CHUNKS = 4;
-  const subRanges = buildEqualRanges(startDate, endDate, PR_PARALLEL_CHUNKS);
-
-  if (subRanges.length <= 1) {
-    return fetchPRsForSubRange(username, startDate, endDate);
-  }
-
-  const results = await Promise.all(
-    subRanges.map((r) => fetchPRsForSubRange(username, r.start, r.end)),
-  );
-
-  const seen = new Set<string>();
-  const allPrs: any[] = [];
-  for (const prs of results) {
-    for (const pr of prs) {
-      const id = pr.id || pr.url;
-      if (!seen.has(id)) {
-        seen.add(id);
-        allPrs.push(pr);
-      }
-    }
-  }
-  return allPrs;
-}
+const LONG_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h for immutable past data
 
 /** GET /api/github/prs-by-date-range */
 router.get("/prs-by-date-range", async (req: Request, res: Response) => {
@@ -786,50 +761,49 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   const cached = apiCache.get(cacheKey);
   if (cached) return res.json(cached);
 
-  const allNodes = await fetchAllPRsByDateRange(config.githubUsername, startDate, endDate);
-  const prs = allNodes.map(mapGraphQLPr);
+  const github = createGitHubClient();
+  const effectiveStart = await gateStartDate(github, config.githubUsername, startDate);
+  const yearRanges = buildYearRanges(effectiveStart, endDate);
+  const currentYear = new Date().getFullYear();
+  const PARALLEL_BATCH = 4;
 
+  async function fetchYearRange(range: { start: string; end: string }): Promise<any[]> {
+    const rangeYear = parseInt(range.start.slice(0, 4), 10);
+    if (rangeYear > currentYear) return [];
+
+    const yearCacheKey = `github:prs-year:${config.githubUsername}:${range.start}:${range.end}`;
+    const yearCached = apiCache.get<any[]>(yearCacheKey);
+    if (yearCached) return yearCached;
+
+    const nodes = await fetchPRsForSubRange(config.githubUsername, range.start, range.end);
+    apiCache.set(yearCacheKey, nodes, rangeYear < currentYear ? LONG_CACHE_TTL : undefined);
+    return nodes;
+  }
+
+  // Fetch in parallel batches of 4
+  const allPrs: any[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < yearRanges.length; i += PARALLEL_BATCH) {
+    const batch = yearRanges.slice(i, i + PARALLEL_BATCH);
+    const results = await Promise.all(batch.map(fetchYearRange));
+    for (const nodes of results) {
+      for (const pr of nodes) {
+        const id = pr.url || pr.id;
+        if (!seen.has(id)) {
+          seen.add(id);
+          allPrs.push(pr);
+        }
+      }
+    }
+  }
+
+  const prs = allPrs.map(mapGraphQLPr);
   logger.info("PRs", `${prs.length} PRs for ${startDate}..${endDate}`);
 
   const responseData = { prs };
   apiCache.set(cacheKey, responseData);
   res.json(responseData);
 });
-
-/** Split a date range into N roughly equal chunks (YYYY-MM-DD strings). */
-function buildEqualRanges(startDate: string, endDate: string, chunks: number): { start: string; end: string }[] {
-  const start = new Date(`${startDate}T00:00:00Z`).getTime();
-  const end = new Date(`${endDate}T23:59:59Z`).getTime();
-  const totalDays = Math.ceil((end - start) / (24 * 60 * 60 * 1000));
-
-  if (totalDays <= 1 || chunks <= 1) {
-    return [{ start: startDate, end: endDate }];
-  }
-
-  const n = Math.min(chunks, totalDays);
-  const daysPerChunk = Math.ceil(totalDays / n);
-  const ranges: { start: string; end: string }[] = [];
-
-  let cur = new Date(`${startDate}T00:00:00Z`);
-  const rangeEnd = new Date(`${endDate}T00:00:00Z`);
-
-  for (let i = 0; i < n && cur <= rangeEnd; i++) {
-    const chunkEnd = new Date(cur);
-    chunkEnd.setDate(chunkEnd.getDate() + daysPerChunk - 1);
-    const actualEnd = chunkEnd > rangeEnd ? rangeEnd : chunkEnd;
-
-    ranges.push({
-      start: cur.toISOString().split("T")[0],
-      end: actualEnd.toISOString().split("T")[0],
-    });
-
-    const next = new Date(actualEnd);
-    next.setDate(next.getDate() + 1);
-    cur = next;
-  }
-
-  return ranges;
-}
 
 /** Split a date range into yearly sub-ranges (YYYY-MM-DD strings). */
 function buildYearRanges(startDate: string, endDate: string): { start: string; end: string }[] {
@@ -904,19 +878,52 @@ async function fetchUserRepos(github: ReturnType<typeof createGitHubClient>): Pr
   return all;
 }
 
-/** Fetch user's GraphQL node ID (cached). */
-async function fetchUserNodeId(
+/** Fetch user's GitHub join date (YYYY-MM-DD, cached 24h). */
+async function fetchUserJoinDate(
   github: ReturnType<typeof createGitHubClient>,
   username: string,
-): Promise<string> {
-  const cacheKey = `github:user-node-id:${username}`;
+): Promise<string | null> {
+  const cacheKey = `github:user-join-date:${username}`;
   const cached = apiCache.get<string>(cacheKey);
   if (cached) return cached;
 
-  const { data: user } = await github.get(`/users/${username}`);
-  apiCache.set(cacheKey, user.node_id);
-  return user.node_id;
+  try {
+    const { data: user } = await github.get(`/users/${username}`);
+    const joinDate = user.created_at?.slice(0, 10) || null;
+    if (joinDate) apiCache.set(cacheKey, joinDate, LONG_CACHE_TTL);
+    return joinDate;
+  } catch {
+    return null;
+  }
 }
+
+/** Gate a start date to user's join date if earlier. */
+async function gateStartDate(
+  github: ReturnType<typeof createGitHubClient>,
+  username: string,
+  startDate: string,
+): Promise<string> {
+  const joinDate = await fetchUserJoinDate(github, username);
+  if (joinDate && joinDate > startDate) {
+    logger.info("DateGate", `${startDate} → ${joinDate} (join date)`);
+    return joinDate;
+  }
+  return startDate;
+}
+
+
+/** GET /api/github/user-info — user's join date for Big Bang range. */
+router.get("/user-info", async (_req: Request, res: Response) => {
+  try {
+    const config = getConfig();
+    const github = createGitHubClient();
+    const joinDate = await fetchUserJoinDate(github, config.githubUsername);
+    res.json({ createdAt: joinDate ? `${joinDate}T00:00:00Z` : null });
+  } catch (err: any) {
+    logger.error("UserInfo", err.message);
+    res.status(500).json({ error: "Failed to fetch user info" });
+  }
+});
 
 /** GET /api/github/commits-search — contributionsCollection + fork history. */
 router.get("/commits-search", async (req: Request, res: Response) => {
@@ -939,9 +946,10 @@ router.get("/commits-search", async (req: Request, res: Response) => {
   const github = createGitHubClient();
 
   try {
-    const since = `${startDate}T00:00:00Z`;
+    const effectiveStart = await gateStartDate(github, config.githubUsername, startDate);
+    const since = `${effectiveStart}T00:00:00Z`;
     const until = `${endDate}T23:59:59Z`;
-    const chunks = buildYearChunks(startDate, endDate);
+    const chunks = buildYearChunks(effectiveStart, endDate);
 
     const fragments = chunks.map(
       (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
@@ -1048,7 +1056,9 @@ router.get("/commits-search", async (req: Request, res: Response) => {
 
     logger.info("Commits", `Total: ${totalCount} (contributions: ${contribCount}, forks: ${forkCount})`);
     const responseData = { commitCount: totalCount };
-    apiCache.set(cacheKey, responseData);
+    const endYear = parseInt(endDate.slice(0, 4), 10);
+    const isPastRange = endYear < new Date().getFullYear();
+    apiCache.set(cacheKey, responseData, isPastRange ? LONG_CACHE_TTL : undefined);
     res.json(responseData);
   } catch (err: any) {
     logger.error("Commits", err.message);

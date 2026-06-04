@@ -44,11 +44,12 @@ class ApiCache {
     return JSON.parse(row.data);
   }
 
-  set<T>(key: string, data: T): void {
-    logger.debug("Cache", `SET ${key}`);
+  set<T>(key: string, data: T, ttlMs?: number): void {
+    logger.debug("Cache", `SET ${key}${ttlMs ? ` (ttl: ${Math.round(ttlMs / 1000)}s)` : ""}`);
+    const effectiveTimestamp = ttlMs ? Date.now() + ttlMs - this.ttl : Date.now();
     this.db
       .prepare("INSERT OR REPLACE INTO cache (key, data, timestamp) VALUES (?, ?, ?)")
-      .run(key, JSON.stringify(data), Date.now());
+      .run(key, JSON.stringify(data), effectiveTimestamp);
   }
 
   clear(): void {

@@ -96,6 +96,17 @@ export async function fetchCommitCount(
   return count;
 }
 
+export async function fetchUserJoinDate(signal?: AbortSignal): Promise<string> {
+  const cacheKey = "github:user-join-date";
+  const cached = apiCache.get<string>(cacheKey);
+  if (cached) return cached;
+
+  const { data } = await apiClient.get("/github/user-info", { signal });
+  const date = data.createdAt?.slice(0, 10) || "";
+  apiCache.set(cacheKey, date);
+  return date;
+}
+
 export async function fetchPeerActivity(signal?: AbortSignal): Promise<ActivityItem[]> {
   const cacheKey = "github:peer-activity";
   const cached = apiCache.get<ActivityItem[]>(cacheKey);

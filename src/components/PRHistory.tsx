@@ -9,7 +9,7 @@ import {
   IconChevronRight,
 } from "@tabler/icons-react";
 import { GitHubPR } from "../types";
-import { fetchPRsByDateRange, fetchCommitCount } from "../services/github";
+import { fetchPRsByDateRange, fetchCommitCount, fetchUserJoinDate } from "../services/github";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
 import { Timestamp } from "./Timestamp";
 import { EmptyState } from "./EmptyState";
@@ -328,7 +328,14 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
+  const [joinDate, setJoinDate] = useState<string | null>(null);
   const abortRef = React.useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    fetchUserJoinDate()
+      .then(setJoinDate)
+      .catch(() => setJoinDate(`${MIN_YEAR}-01-01`));
+  }, []);
 
   const getDateRange = (): { start: string; end: string } => {
     if (mode === "month") {
@@ -480,7 +487,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       d.setFullYear(d.getFullYear() - 1);
       start = toStr(d);
     } else {
-      start = `${MIN_YEAR}-01-01`;
+      start = joinDate || `${MIN_YEAR}-01-01`;
     }
     setStartDate(start);
     setEndDate(end);
