@@ -380,14 +380,25 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
   const myPRsQuery = `author:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
   const reviewsQuery = `review-requested:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
 
-  const result = await graphql<{
-    myPRs: { nodes: any[] };
-    reviews: { nodes: any[] };
-  }>(COMBINED_DASHBOARD_QUERY, {
-    myPRsQuery,
-    reviewsQuery,
-    first: 50,
-  });
+  let result;
+  try {
+    result = await graphql<{
+      myPRs: { nodes: any[] };
+      reviews: { nodes: any[] };
+    }>(COMBINED_DASHBOARD_QUERY, {
+      myPRsQuery,
+      reviewsQuery,
+      first: 50,
+    });
+  } catch (error) {
+    logger.error("GET /dashboard", `GraphQL error: ${error}`);
+    return res.status(500).json({ error: "Failed to fetch dashboard data" });
+  }
+
+  if (!result?.myPRs || !result?.reviews) {
+    logger.warn("GET /dashboard", "Missing myPRs or reviews in response");
+    return res.status(500).json({ error: "Invalid response from GitHub API" });
+  }
 
   const myPRsNodes = result.myPRs.nodes || [];
   const prs = myPRsNodes
@@ -422,10 +433,21 @@ router.get("/prs", async (_req: Request, res: Response) => {
   const config = getConfig();
   const q = `author:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
 
-  const result = await graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
-    query: q,
-    first: 50,
-  });
+  let result;
+  try {
+    result = await graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
+      query: q,
+      first: 50,
+    });
+  } catch (error) {
+    logger.error("GET /my-prs", `GraphQL error: ${error}`);
+    return res.status(500).json({ error: "Failed to fetch PRs" });
+  }
+
+  if (!result?.search) {
+    logger.warn("GET /my-prs", "Missing search in response");
+    return res.status(500).json({ error: "Invalid response from GitHub API" });
+  }
 
   const nodes = result.search.nodes || [];
   const prs = nodes
@@ -451,10 +473,21 @@ router.get("/reviews", async (_req: Request, res: Response) => {
   const config = getConfig();
   const q = `review-requested:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
 
-  const result = await graphql<{ search: { nodes: any[] } }>(SEARCH_PRS_QUERY, {
-    query: q,
-    first: 50,
-  });
+  let result;
+  try {
+    result = await graphql<{ search: { nodes: any[] } }>(SEARCH_PRS_QUERY, {
+      query: q,
+      first: 50,
+    });
+  } catch (error) {
+    logger.error("GET /reviews", `GraphQL error: ${error}`);
+    return res.status(500).json({ error: "Failed to fetch reviews" });
+  }
+
+  if (!result?.search) {
+    logger.warn("GET /reviews", "Missing search in response");
+    return res.status(500).json({ error: "Invalid response from GitHub API" });
+  }
 
   const reviews = (result.search.nodes || [])
     .map(mapGraphQLPr)
@@ -718,13 +751,24 @@ async function fetchPRsForSubRange(username: string, startDate: string, endDate:
     let hasNextPage = true;
 
     while (hasNextPage) {
-      const result = await graphql<{
-        search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
-      }>(SEARCH_MY_PRS_QUERY, { query: q, first: 100, after: cursor });
+      let result;
+      try {
+        result = await graphql<{
+          search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
+        }>(SEARCH_MY_PRS_QUERY, { query: q, first: 100, after: cursor });
+      } catch (error) {
+        logger.error("fetchPRsForSubRange", `Failed to fetch PRs for ${currentStart}..${currentEnd}: ${error}`);
+        break;
+      }
 
-      rangeNodes.push(...(result.search?.nodes || []));
-      hasNextPage = result.search?.pageInfo?.hasNextPage ?? false;
-      cursor = result.search?.pageInfo?.endCursor ?? null;
+      if (!result?.search) {
+        logger.warn("fetchPRsForSubRange", `No search data in response for ${currentStart}..${currentEnd}`);
+        break;
+      }
+
+      rangeNodes.push(...(result.search.nodes || []));
+      hasNextPage = result.search.pageInfo?.hasNextPage ?? false;
+      cursor = result.search.pageInfo?.endCursor ?? null;
     }
 
     allPrs.push(...rangeNodes);
