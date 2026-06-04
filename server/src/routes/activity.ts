@@ -127,16 +127,9 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
 
     // Query issues the user commented on recently
     const { data: commentedIssues } = await jira.post("/search/jql", {
-      jql: `issueFunction in commented("by currentUser() after -${ACTIVITY_LOOKBACK_DAYS}d") ORDER BY updated DESC`,
+      jql: `comment ~ currentUser() AND updated >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
       fields: ["summary"],
-      maxResults: 50,
-    }).catch(() => {
-      // issueFunction not available on all JIRA instances, fall back to broader query
-      return jira.post("/search/jql", {
-        jql: `comment ~ currentUser() AND updated >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
-        fields: ["summary", "comment"],
-        maxResults: 100,
-      });
+      maxResults: 100,
     });
 
     const issues = commentedIssues.issues || [];
