@@ -38,6 +38,7 @@ import { JiraVelocity } from "./components/JiraVelocity";
 import { PeerActivity } from "./components/PeerActivity";
 import { useActivity } from "./hooks/useActivity";
 import { usePeerActivity } from "./hooks/usePeerActivity";
+import { apiCache } from "./utils/cache";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("summary");
@@ -105,8 +106,10 @@ export default function App() {
     loading: activityLoading,
     refresh: refreshActivity,
   } = useActivity(configured);
-  const { activities: peerActivities } = usePeerActivity(configured);
+  const { activities: peerActivities, refresh: refreshPeerActivity } = usePeerActivity(configured);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
 
   // If config is not yet loaded, show settings first
@@ -227,15 +230,30 @@ export default function App() {
                   </div>
                   <div className="content-header-actions">
                     <button
-                      className="sidebar-action-btn"
+                      className={`sidebar-action-btn${refreshing ? " spinning" : ""}`}
                       onClick={async () => {
-                        await apiClient.post("/cache/purge");
-                        refresh();
-                        refreshNotes();
-                        refreshActivity();
+                        if (refreshing) return;
+                        setRefreshing(true);
+                        setToast("Clearing cache and refreshing...");
+                        try {
+                          apiCache.clear();
+                          await apiClient.post("/cache/purge");
+                          await Promise.all([
+                            refresh(),
+                            refreshNotes(),
+                            refreshActivity(),
+                            refreshPeerActivity(),
+                          ]);
+                          setToast("Refreshed successfully");
+                        } catch {
+                          setToast("Refresh failed — check connection");
+                        } finally {
+                          setRefreshing(false);
+                          setTimeout(() => setToast(null), 3000);
+                        }
                       }}
-                      disabled={loading}
-                      title="Refresh"
+                      disabled={refreshing}
+                      title="Clear cache and refresh all data"
                     >
                       <IconRefresh size={14} />
                     </button>
@@ -248,6 +266,12 @@ export default function App() {
                     </button>
                   </div>
                 </div>
+                {toast && (
+                  <div className="app-toast">
+                    {refreshing && <Spinner animation="border" size="sm" />}
+                    {toast}
+                  </div>
+                )}
                 <div className="tab-content-area" key={effectiveTab}>
                   {effectiveTab === "summary" && (
                     <SummaryView

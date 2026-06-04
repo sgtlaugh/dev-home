@@ -148,6 +148,15 @@ a:hover {
   cursor: not-allowed;
 }
 
+.sidebar-action-btn.spinning svg {
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .sidebar-refresh-time {
   font-size: 0.625rem;
   white-space: nowrap;
@@ -282,7 +291,7 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px 8px 16px;
+  padding: 6px 16px 4px 16px;
   border-top: 1px solid #21262d;
   flex-shrink: 0;
 }
@@ -2909,4 +2918,44 @@ a,
 [data-theme="light"] .heatmap-tooltip::before {
   background-color: #ffffff;
   border-color: #d0d7de;
+}
+
+/* --- App Toast --- */
+
+.app-toast {
+  position: fixed;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #161b22;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: toastSlideDown 200ms ease-out;
+}
+
+@keyframes toastSlideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+[data-theme="light"] .app-toast {
+  background-color: #ffffff;
+  color: #24292f;
+  border-color: #d0d7de;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
