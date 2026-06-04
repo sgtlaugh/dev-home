@@ -2,12 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import Card from "react-bootstrap/Card";
-import {
-  IconGitPullRequest,
-  IconGitMerge,
-  IconChevronLeft,
-  IconChevronRight,
-} from "@tabler/icons-react";
+import { IconGitPullRequest, IconGitMerge } from "@tabler/icons-react";
 import { GitHubPR } from "../types";
 import { fetchPRsByDateRange, fetchCommitCount, fetchUserJoinDate } from "../services/github";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
@@ -266,29 +261,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
     setStateFilter(stateFilter === key ? "all" : key);
   };
 
-  const stepMonth = (delta: number) => {
-    let newMonth = month + delta;
-    let newYear = year;
-    if (newMonth > 12) {
-      newMonth = 1;
-      newYear++;
-    } else if (newMonth < 1) {
-      newMonth = 12;
-      newYear--;
-    }
-    if (newYear >= MIN_YEAR && newYear <= now.getFullYear() + 1) {
-      setMonth(newMonth);
-      setYear(newYear);
-    }
-  };
-
-  const stepYear = (delta: number) => {
-    const newYear = year + delta;
-    if (newYear >= MIN_YEAR && newYear <= now.getFullYear() + 1) {
-      setYear(newYear);
-    }
-  };
-
   const applyPreset = (preset: string) => {
     const today = new Date();
     const toStr = (d: Date) =>
@@ -404,29 +376,50 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
             </div>
 
             {mode === "month" && (
-              <div className="month-nav">
-                <button className="month-nav-arrow" onClick={() => stepMonth(-1)}>
-                  <IconChevronLeft size={14} />
-                </button>
-                <span className="month-nav-label">{monthLabel}</span>
-                <button className="month-nav-arrow" onClick={() => stepMonth(1)}>
-                  <IconChevronRight size={14} />
-                </button>
+              <div className="d-flex gap-2 align-items-center">
+                <select
+                  className="date-dropdown"
+                  value={month}
+                  onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                >
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {new Date(year, i).toLocaleString("default", { month: "long" })}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="date-dropdown"
+                  value={year}
+                  onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                >
+                  {Array.from({ length: new Date().getFullYear() - 1999 }, (_, i) => {
+                    const y = new Date().getFullYear() - i;
+                    return (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             )}
 
             {mode === "year" && (
-              <div className="month-nav">
-                <button className="month-nav-arrow" onClick={() => stepYear(-1)}>
-                  <IconChevronLeft size={14} />
-                </button>
-                <span className="month-nav-label" style={{ minWidth: "60px" }}>
-                  {year}
-                </span>
-                <button className="month-nav-arrow" onClick={() => stepYear(1)}>
-                  <IconChevronRight size={14} />
-                </button>
-              </div>
+              <select
+                className="date-dropdown"
+                value={year}
+                onChange={(e) => setYear(parseInt(e.target.value, 10))}
+              >
+                {Array.from({ length: new Date().getFullYear() - 1999 }, (_, i) => {
+                  const y = new Date().getFullYear() - i;
+                  return (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  );
+                })}
+              </select>
             )}
 
             {mode === "custom" && (
