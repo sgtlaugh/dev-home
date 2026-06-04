@@ -419,15 +419,13 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                 </span>
                               )}
                               {entityActionCount > 1 && (
-                                <span
-                                  style={{
-                                    fontSize: "0.75rem",
-                                    color: "var(--text-secondary)",
-                                    fontWeight: 500,
-                                  }}
+                                <Badge
+                                  bg=""
+                                  className="badge-status-neutral"
+                                  style={{ fontSize: "0.6rem" }}
                                 >
-                                  ({entityActionCount})
-                                </span>
+                                  {entityActionCount}
+                                </Badge>
                               )}
                             </div>
                             <Timestamp timestamp={collapsed.lastTimestamp} />
