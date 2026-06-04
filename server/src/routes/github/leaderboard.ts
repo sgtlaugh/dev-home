@@ -16,6 +16,7 @@ import { MAX_REPOS_PER_CONTRIBUTION } from "../../utils/constants";
 
 const router = Router();
 const LONG_CACHE_TTL = 24 * 60 * 60 * 1000;
+const CURRENT_MONTH_CACHE_TTL = 10 * 60 * 1000;
 const MAX_BATCH_SIZE = 5;
 const MAX_FIELDS_PER_QUERY = 50;
 const MAX_CONCURRENT_BATCHES = 3;
@@ -271,14 +272,37 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     }
 
     if (partialMonths.length > 0) {
-      const chunks = partialMonths.map((month, i) => {
-        const [y, m] = month.split("-").map(Number);
-        const first = month === allMonths[0] ? startDate : `${month}-01`;
-        const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
-        return { from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: `p${i}` };
-      });
-      const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY / chunks.length)));
-      addToTotals(totals, await fetchBatchFromApi(members, chunks, batchSize, "leaderboard/partial", `${org}/`));
+      const currentMonthPartials = partialMonths.filter((m) => m === currentMonth);
+      const otherPartials = partialMonths.filter((m) => m !== currentMonth);
+
+      for (const month of currentMonthPartials) {
+        const cmKey = `leaderboard:current:${org}:${month}:${startDate}:${effectiveEnd}`;
+        const cmCached = apiCache.get<LeaderboardEntry[]>(cmKey);
+        if (cmCached) {
+          logger.info("Leaderboard", `Current month ${month} from cache`);
+          addToTotals(totals, cmCached);
+        } else {
+          const [y, m] = month.split("-").map(Number);
+          const first = month === allMonths[0] ? startDate : `${month}-01`;
+          const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
+          const chunks = [{ from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: "p0" }];
+          const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY)));
+          const results = await fetchBatchFromApi(members, chunks, batchSize, `leaderboard/current`, `${org}/`);
+          apiCache.set(cmKey, results, CURRENT_MONTH_CACHE_TTL);
+          addToTotals(totals, results);
+        }
+      }
+
+      if (otherPartials.length > 0) {
+        const chunks = otherPartials.map((month, i) => {
+          const [y, m] = month.split("-").map(Number);
+          const first = month === allMonths[0] ? startDate : `${month}-01`;
+          const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
+          return { from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: `p${i}` };
+        });
+        const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY / chunks.length)));
+        addToTotals(totals, await fetchBatchFromApi(members, chunks, batchSize, "leaderboard/partial", `${org}/`));
+      }
     }
 
     const profiles = loadProfiles(members);
