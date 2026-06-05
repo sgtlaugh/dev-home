@@ -211,9 +211,9 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
     }
   };
 
-  const totalCommits = members.reduce((s, m) => s + m.commits, 0);
-  const totalPRs = members.reduce((s, m) => s + m.prs, 0);
-  const totalReviews = members.reduce((s, m) => s + m.reviews, 0);
+  const totalCommits = loading ? 0 : members.reduce((s, m) => s + m.commits, 0);
+  const totalPRs = loading ? 0 : members.reduce((s, m) => s + m.prs, 0);
+  const totalReviews = loading ? 0 : members.reduce((s, m) => s + m.reviews, 0);
 
   if (!orgsLoading && orgs.length === 0) {
     return (
@@ -234,32 +234,30 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   return (
     <div>
       {/* Stats + Search */}
-      {members.length > 0 && (
-        <div className="d-flex gap-2 mb-3">
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: "#1a7f37" }}>
-              {totalCommits.toLocaleString()}
-            </div>
-            <div className="stat-label">Commits</div>
+      <div className="d-flex gap-2 mb-3">
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: "#1a7f37" }}>
+            {totalCommits.toLocaleString()}
           </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: "#0969da" }}>
-              {totalPRs.toLocaleString()}
-            </div>
-            <div className="stat-label">PRs</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: "#8250df" }}>
-              {totalReviews.toLocaleString()}
-            </div>
-            <div className="stat-label">Reviews</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{members.length}</div>
-            <div className="stat-label">Members</div>
-          </div>
+          <div className="stat-label">Commits</div>
         </div>
-      )}
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: "#0969da" }}>
+            {totalPRs.toLocaleString()}
+          </div>
+          <div className="stat-label">PRs</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: "#8250df" }}>
+            {totalReviews.toLocaleString()}
+          </div>
+          <div className="stat-label">Reviews</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{loading ? 0 : members.length}</div>
+          <div className="stat-label">Members</div>
+        </div>
+      </div>
 
       {/* Controls */}
       <Card className="controls-card mb-3">
