@@ -17,7 +17,7 @@ import { startPrefetch, isPrefetchRunning } from "../../services/contributionPre
 import { MAX_REPOS_PER_CONTRIBUTION, SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
-const MAX_BATCH_SIZE = 5;
+const MAX_BATCH_SIZE = 30;
 const MAX_FIELDS_PER_QUERY = 50;
 const MAX_CONCURRENT_BATCHES = 3;
 const MAX_RETRIES = 3;
