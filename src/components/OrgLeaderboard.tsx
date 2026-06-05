@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import { useUserOrgs, useOrgLeaderboard } from "../hooks/useOrgLeaderboard";
-import { CustomDateInputs } from "./CustomDateInputs";
+import { DateRangePicker } from "./DateRangePicker";
 
 type DateMode = "month" | "year" | "custom";
 type SortKey = "commits" | "prs" | "reviews";
@@ -10,13 +10,6 @@ type SortDir = "asc" | "desc";
 
 const STORAGE_KEY = "org-leaderboard:state";
 const MIN_YEAR = 2008;
-
-function isValidDate(s: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-  const [y, m, d] = s.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
-}
 
 function loadState() {
   try {
@@ -78,68 +71,16 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   const [month, setMonth] = useState(stored?.month ?? now.getMonth() + 1);
   const [customStart, setCustomStart] = useState(stored?.startDate ?? "");
   const [customEnd, setCustomEnd] = useState(stored?.endDate ?? "");
-  const [inputStart, setInputStart] = useState(customStart);
-  const [inputEnd, setInputEnd] = useState(customEnd);
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(
-    stored?.selectedPreset ?? null,
-  );
   const [sortKey, setSortKey] = useState<SortKey>("commits");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [search, setSearch] = useState("");
-  const [customTrigger, setCustomTrigger] = useState(0);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const applyPreset = useCallback((key: string) => {
-    const today = new Date();
-    const fmt = (d: Date) => d.toISOString().split("T")[0];
-    const end = fmt(today);
-    let start = `${MIN_YEAR}-01-01`;
-
-    if (key === "30d") {
-      const d = new Date(today);
-      d.setDate(d.getDate() - 30);
-      start = fmt(d);
-    } else if (key === "90d") {
-      const d = new Date(today);
-      d.setDate(d.getDate() - 90);
-      start = fmt(d);
-    } else if (key === "6mo") {
-      const d = new Date(today);
-      d.setMonth(d.getMonth() - 6);
-      start = fmt(d);
-    } else if (key === "1y") {
-      const d = new Date(today);
-      d.setFullYear(d.getFullYear() - 1);
-      start = fmt(d);
-    }
-
-    setInputStart(start);
-    setInputEnd(end);
+  const handleDateChange = useCallback((start: string, end: string) => {
     setCustomStart(start);
     setCustomEnd(end);
-    setSelectedPreset(key);
-    setCustomTrigger((t) => t + 1);
+    setMode("custom");
   }, []);
-
-  const triggerCustomSearch = useCallback(
-    (start?: string, end?: string) => {
-      const startVal = start ?? inputStart;
-      const endVal = end ?? inputEnd;
-
-      if (!isValidDate(startVal) || !isValidDate(endVal)) {
-        setValidationError("Enter valid dates (YYYY-MM-DD)");
-        return;
-      }
-      setValidationError(null);
-      setInputStart(startVal);
-      setInputEnd(endVal);
-      setCustomStart(startVal);
-      setCustomEnd(endVal);
-      setSelectedPreset(null);
-      setCustomTrigger((t) => t + 1);
-    },
-    [inputStart, inputEnd],
-  );
 
   useEffect(() => {
     if (orgs.length > 0 && !org) setOrg(orgs[0].login);
@@ -153,9 +94,8 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
       month,
       startDate: customStart,
       endDate: customEnd,
-      selectedPreset,
     });
-  }, [org, mode, year, month, customTrigger, selectedPreset]);
+  }, [org, mode, year, month, customStart, customEnd]);
 
   const { startDate, endDate } = useMemo(() => {
     if (mode === "month") {
@@ -170,12 +110,10 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
       return { startDate: `${year}-01-01`, endDate: `${year}-12-31` };
     }
     return { startDate: customStart, endDate: customEnd };
-  }, [mode, year, month, customTrigger]);
-
-  const validDates = mode !== "custom" || (isValidDate(startDate) && isValidDate(endDate));
+  }, [mode, year, month, customStart, customEnd]);
 
   const { members, loading, error } = useOrgLeaderboard(
-    active && validDates,
+    active && !validationError,
     org,
     startDate,
     endDate,
@@ -336,12 +274,11 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
               </select>
             )}
             {mode === "custom" && (
-              <CustomDateInputs
-                inputStart={inputStart}
-                inputEnd={inputEnd}
-                selectedPreset={selectedPreset}
-                onApplyPreset={applyPreset}
-                onTriggerSearch={triggerCustomSearch}
+              <DateRangePicker
+                joinDate={`${MIN_YEAR}-01-01`}
+                onDateChange={handleDateChange}
+                validationError={validationError}
+                onValidationError={setValidationError}
               />
             )}
           </div>
@@ -359,13 +296,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
             style={{ fontSize: "0.8rem", padding: "6px 10px", width: "100%" }}
           />
         </div>
-      )}
-
-      {/* Validation Error */}
-      {validationError && (
-        <Card className="mb-3" style={{ borderColor: "#9a6700" }}>
-          <Card.Body style={{ color: "#9a6700" }}>{validationError}</Card.Body>
-        </Card>
       )}
 
       {/* Error */}
