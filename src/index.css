@@ -1222,6 +1222,11 @@ a,
   background-color: #1a7f37;
 }
 
+.activity-bar-max {
+  background-color: #116329;
+  opacity: 1;
+}
+
 .activity-bar-empty {
   height: 4px !important;
   background-color: #d1d9e0;

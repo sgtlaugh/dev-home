@@ -64,11 +64,12 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts 
         {dailyCounts.map((day) => {
           const isToday = day.date === today;
           const isEmpty = day.count === 0;
+          const isMax = day.count === maxCount && maxCount > 0;
 
           return (
             <div key={day.date} className={`activity-bar-wrapper`}>
               <div
-                className={`activity-bar${isToday ? " activity-bar-today" : ""}${isEmpty ? " activity-bar-empty" : ""}`}
+                className={`activity-bar${isToday ? " activity-bar-today" : ""}${isEmpty ? " activity-bar-empty" : ""}${isMax ? " activity-bar-max" : ""}`}
                 style={
                   isEmpty ? undefined : { height: `${Math.max((day.count / maxCount) * 100, 12)}%` }
                 }
