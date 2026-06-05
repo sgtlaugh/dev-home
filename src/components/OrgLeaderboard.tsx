@@ -291,7 +291,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
         <div className="mb-3">
           <input
             type="text"
-            placeholder="Filter by name or login..."
+            placeholder="Search by name or login"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="filter-input"
