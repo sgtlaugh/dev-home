@@ -280,7 +280,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 >
                   {actionCount}
                 </Badge>
-                {items.length > 1 && (
+                {expandableItems.length > 0 && (
                   <button
                     className="activity-date-toggle"
                     onClick={() => toggleDateGroup(items)}
