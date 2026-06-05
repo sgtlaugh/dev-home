@@ -4,7 +4,7 @@ import { createGitHubClient } from "../../clients/githubApiClient";
 import { graphql } from "../../clients/githubGraphqlClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
-import { LONG_CACHE_TTL } from "../../utils/constants";
+import { LONG_CACHE_TTL, RECENT_ACTIVITY_MONTHS } from "../../utils/constants";
 import { fetchUserRepos, fetchUserJoinDate, gateStartDate } from "./helpers";
 import {
   getMonthsBetween,
@@ -36,6 +36,20 @@ function monthToRange(month: string): { from: string; to: string } {
     from: `${month}-01T00:00:00Z`,
     to: `${month}-${lastDay.toString().padStart(2, "0")}T23:59:59Z`,
   };
+}
+
+function getRecentRangeBounds(startDate: string, endDate: string, months: number): { start: string; end: string } | null {
+  const now = new Date();
+  const cutoff = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
+  const end = new Date(endDate);
+
+  // Range entirely in the past
+  if (end < cutoff) return null;
+
+  // Range entirely recent or spanning cutoff
+  const start = new Date(startDate);
+  const effectiveStart = start > cutoff ? startDate : cutoff.toISOString().slice(0, 10);
+  return { start: effectiveStart, end: endDate };
 }
 
 
@@ -111,82 +125,97 @@ router.get("/commits-search", async (req: Request, res: Response) => {
       }
     }
 
-    // Fork check: get viewer ID + contrib repo names, then check forks
-    const effectiveStart = await gateStartDate(github, config.githubUsername, startDate);
-    const since = `${effectiveStart}T00:00:00Z`;
-    const until = `${endDate}T23:59:59Z`;
+    // Fork check: only check recent 3 months (forks rarely active in old ranges)
+    let forkCount = 0;
+    const forkRange = getRecentRangeBounds(startDate, endDate, RECENT_ACTIVITY_MONTHS);
 
-    // Split fork check into yearly chunks to avoid >1 year contributionsCollection limit
-    const startYear = parseInt(effectiveStart.slice(0, 4), 10);
-    const endYear = parseInt(endDate.slice(0, 4), 10);
-    const contribRepoNames = new Set<string>();
-    let userId = "";
+    if (forkRange) {
+      const effectiveStart = await gateStartDate(github, config.githubUsername, forkRange.start);
+      const since = `${effectiveStart}T00:00:00Z`;
+      const until = `${forkRange.end}T23:59:59Z`;
 
-    for (let year = startYear; year <= endYear; year++) {
-      const chunkFrom = year === startYear ? since : `${year}-01-01T00:00:00Z`;
-      const chunkTo = year === endYear ? until : `${year}-12-31T23:59:59Z`;
-      try {
-        const data = await graphql<{ viewer: { id: string; c: { commitContributionsByRepository: { repository: { nameWithOwner: string } }[] } } }>(
-          `query { viewer { id c: contributionsCollection(from: "${chunkFrom}", to: "${chunkTo}") {
-            commitContributionsByRepository(maxRepositories: 100) { repository { nameWithOwner } }
-          } } }`,
-          {}, `commits/fork-repos-${year}`,
-        );
-        userId = data.viewer?.id || userId;
-        for (const entry of data.viewer?.c?.commitContributionsByRepository || []) {
-          contribRepoNames.add(entry.repository.nameWithOwner.split("/")[1]);
+      logger.info("Commits", `Fork check: ${effectiveStart}..${forkRange.end} (recent ${RECENT_ACTIVITY_MONTHS} months only)`);
+
+      // Split fork check into yearly chunks to avoid >1 year contributionsCollection limit
+      const startYear = parseInt(effectiveStart.slice(0, 4), 10);
+      const endYear = parseInt(forkRange.end.slice(0, 4), 10);
+      const contribRepoNames = new Set<string>();
+      let userId = "";
+
+      for (let year = startYear; year <= endYear; year++) {
+        const chunkFrom = year === startYear ? since : `${year}-01-01T00:00:00Z`;
+        const chunkTo = year === endYear ? until : `${year}-12-31T23:59:59Z`;
+        try {
+          const data = await graphql<{ viewer: { id: string; c: { commitContributionsByRepository: { repository: { nameWithOwner: string } }[] } } }>(
+            `query { viewer { id c: contributionsCollection(from: "${chunkFrom}", to: "${chunkTo}") {
+              commitContributionsByRepository(maxRepositories: 100) { repository { nameWithOwner } }
+            } } }`,
+            {}, `commits/fork-repos-${year}`,
+          );
+          userId = data.viewer?.id || userId;
+          for (const entry of data.viewer?.c?.commitContributionsByRepository || []) {
+            contribRepoNames.add(entry.repository.nameWithOwner.split("/")[1]);
+          }
+        } catch (err) {
+          logger.warn("Commits", `Fork repo check failed for ${year}: ${err}`);
         }
-      } catch (err) {
-        logger.warn("Commits", `Fork repo check failed for ${year}: ${err}`);
       }
-    }
 
-    const repos = await fetchUserRepos(github);
-    const forkRepos = repos.filter(
-      (r: any) =>
+      // Cache fetchUserRepos for 24h
+      const reposCacheKey = `user-repos:${config.githubUsername}`;
+      let repos = apiCache.get<any[]>(reposCacheKey);
+      if (!repos) {
+        repos = await fetchUserRepos(github);
+        apiCache.set(reposCacheKey, repos, LONG_CACHE_TTL);
+      }
+
+      // Filter user's fork repos
+      const forkRepos = repos.filter((r: any) =>
         r.fork &&
         r.owner.login === config.githubUsername &&
         r.pushed_at >= since &&
-        !contribRepoNames.has(r.name),
-    );
+        !contribRepoNames.has(r.name)
+      );
 
-    let forkCount = 0;
-    const BATCH_SIZE = 10;
-    const MAX_RETRIES = 2;
+      const BATCH_SIZE = 10;
+      const MAX_RETRIES = 2;
 
-    for (let i = 0; i < forkRepos.length; i += BATCH_SIZE) {
-      const batch = forkRepos.slice(i, i + BATCH_SIZE);
-      const forkFragments = batch.map((repo: any, idx: number) => {
-        const [owner, name] = repo.full_name.split("/");
-        return `f${idx}: repository(owner: "${owner}", name: "${name}") {
-          defaultBranchRef { target { ... on Commit {
-            history(since: "${since}", until: "${until}", author: { id: "${userId}" }) { totalCount }
-          } } }
-        }`;
-      });
+      for (let i = 0; i < forkRepos.length; i += BATCH_SIZE) {
+        const batch = forkRepos.slice(i, i + BATCH_SIZE);
+        const forkFragments = batch.map((repo: any, idx: number) => {
+          const [owner, name] = repo.full_name.split("/");
+          return `f${idx}: repository(owner: "${owner}", name: "${name}") {
+            defaultBranchRef { target { ... on Commit {
+              history(since: "${since}", until: "${until}", author: { id: "${userId}" }) { totalCount }
+            } } }
+          }`;
+        });
 
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          const forkData = await graphql(`query { ${forkFragments.join("\n")} }`, {}, "commits/forks-batch");
-          for (let idx = 0; idx < batch.length; idx++) {
-            const count = forkData[`f${idx}`]?.defaultBranchRef?.target?.history?.totalCount || 0;
-            if (count > 0) logger.info("Commits", `fork ${batch[idx].full_name}: ${count}`);
-            forkCount += count;
-          }
-          break;
-        } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : String(err);
-          if (attempt < MAX_RETRIES) {
-            logger.warn("Commits", `Fork batch retry ${attempt + 1}: ${message}`);
-            await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-          } else {
-            logger.error("Commits", `Fork batch DROPPED: ${batch.map((r: any) => r.full_name).join(", ")}`);
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            const forkData = await graphql(`query { ${forkFragments.join("\n")} }`, {}, "commits/forks-batch");
+            for (let idx = 0; idx < batch.length; idx++) {
+              const count = forkData[`f${idx}`]?.defaultBranchRef?.target?.history?.totalCount || 0;
+              if (count > 0) logger.info("Commits", `fork ${batch[idx].full_name}: ${count}`);
+              forkCount += count;
+            }
+            break;
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            if (attempt < MAX_RETRIES) {
+              logger.warn("Commits", `Fork batch retry ${attempt + 1}: ${message}`);
+              await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+            } else {
+              logger.error("Commits", `Fork batch DROPPED: ${batch.map((r: any) => r.full_name).join(", ")}`);
+            }
           }
         }
       }
-    }
 
-    if (forkCount > 0) logger.info("Commits", `Forks: ${forkCount} from ${forkRepos.length} repos`);
+      if (forkCount > 0) logger.info("Commits", `Forks: ${forkCount} from ${forkRepos.length} repos`);
+    } else {
+      logger.info("Commits", `Skipping fork check (range end ${endDate} > ${RECENT_ACTIVITY_MONTHS} months ago)`);
+    }
 
     const totalCount = contribCount + forkCount;
     logger.info("Commits", `Total: ${totalCount} (contributions: ${contribCount}, forks: ${forkCount})`);
