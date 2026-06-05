@@ -31,10 +31,12 @@ function getHeatmapDisplayRange(
   const maxDate = new Date(Math.max(...prDates));
   const rangeMs = maxDate.getTime() - minDate.getTime();
   const oneYearMs = 365.25 * 24 * 60 * 60 * 1000;
-  const displayStart = new Date(
-    Math.min(minDate.getTime(), maxDate.getTime() - Math.max(rangeMs, oneYearMs)),
-  );
-  return { start: displayStart, end: maxDate };
+
+  // Show at least 1 year
+  if (rangeMs < oneYearMs) {
+    return { start: minDate, end: new Date(minDate.getTime() + oneYearMs) };
+  }
+  return { start: minDate, end: maxDate };
 }
 
 function getMonthLabels(
@@ -190,6 +192,7 @@ export function ContributionHeatmap({
               <div
                 key={i}
                 className={`heatmap-cell heatmap-cell-${level}`}
+                style={level === 0 ? { opacity: 0.3 } : undefined}
                 onMouseEnter={(e) => {
                   const rect = (e.target as HTMLElement).getBoundingClientRect();
                   const below = rect.top > 60;
