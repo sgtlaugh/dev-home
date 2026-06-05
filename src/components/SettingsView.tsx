@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from "react";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Alert from "react-bootstrap/Alert";
 import Form from "react-bootstrap/Form";
 import Spinner from "react-bootstrap/Spinner";
-import { IconArrowLeft } from "@tabler/icons-react";
-import { AppSettings, loadSettingsFromStore } from "../services/config";
+import { IconArrowLeft, IconTrash, IconBrandGithub, IconBrandJira } from "@tabler/icons-react";
+import { AppSettings, loadSettingsFromStore, apiClient } from "../services/config";
+import { useUserOrgs } from "../hooks/useOrgLeaderboard";
+
+declare const __APP_VERSION__: string;
 
 interface SettingsViewProps {
   backendOnline: boolean;
@@ -24,6 +29,12 @@ const EMPTY_SETTINGS: AppSettings = {
   githubUsername: "",
 };
 
+interface CacheStats {
+  apiCache: number;
+  contributions: number;
+  profiles: number;
+}
+
 export const SettingsView: React.FC<SettingsViewProps> = ({
   backendOnline,
   configured,
@@ -36,20 +47,33 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
+  const { orgs } = useUserOrgs(configured);
+  const [defaultOrg, setDefaultOrg] = useState(
+    () => localStorage.getItem("leaderboard:defaultOrg") || "",
+  );
 
   useEffect(() => {
     async function loadSettings() {
       try {
         const stored = await loadSettingsFromStore();
-        if (stored) {
-          setFormState(stored);
-        }
+        if (stored) setFormState(stored);
       } catch (err) {
         console.error("Failed to load settings from store:", err);
       }
     }
     loadSettings();
+    fetchCacheStats();
   }, []);
+
+  const fetchCacheStats = async () => {
+    try {
+      const { data } = await apiClient.get<CacheStats>("/cache/stats");
+      setCacheStats(data);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const handleChange = (field: keyof AppSettings) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormState((prev) => ({ ...prev, [field]: e.target.value }));
@@ -61,6 +85,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setErrorMessage(null);
 
     try {
+      localStorage.setItem("leaderboard:defaultOrg", defaultOrg);
       await saveSettings(formState);
       setSuccessMessage("Settings saved successfully.");
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -72,67 +97,98 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
   };
 
+  const handleClearCache = async () => {
+    try {
+      await apiClient.post("/cache/purge");
+      fetchCacheStats();
+      setSuccessMessage("Cache cleared.");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch {
+      /* ignore */
+    }
+  };
+
   const labelStyle: React.CSSProperties = { fontSize: "0.8125rem" };
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", paddingTop: 16 }}>
-      {/* Back button */}
-      <Button
-        variant="outline-secondary"
-        size="sm"
-        className="mb-3 d-flex align-items-center gap-2"
-        onClick={onBack}
-      >
-        <IconArrowLeft size={14} />
-        Back
-      </Button>
-
-      <h5 style={{ marginBottom: 4 }}>Settings</h5>
-      <p className="text-secondary-custom" style={{ fontSize: "0.8125rem", marginBottom: 24 }}>
-        Configure your JIRA and GitHub integrations.
-      </p>
-
-      {/* Backend Server Status */}
-      <Card className="mb-3">
-        <Card.Body>
-          <div className="d-flex align-items-center gap-2 mb-3">
-            <h6 className="mb-0">Backend Server</h6>
-            <span className={`status-dot ${backendOnline ? "online" : "offline"}`} />
-            <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                color: backendOnline ? "#1a7f37" : "#cf222e",
-              }}
-            >
-              {backendOnline ? "Online" : "Offline"}
-            </span>
+    <div>
+      <div className="d-flex align-items-center justify-content-between mb-3">
+        <div className="d-flex align-items-center gap-3">
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            className="d-flex align-items-center gap-2"
+            onClick={onBack}
+          >
+            <IconArrowLeft size={14} />
+            Back
+          </Button>
+          <div>
+            <h5 className="mb-0">Settings</h5>
+            <p className="text-secondary-custom mb-0" style={{ fontSize: "0.8125rem" }}>
+              Configure your integrations and preferences.
+            </p>
           </div>
-
-          {!backendOnline && (
-            <Alert variant="danger" className="py-2 mb-0">
-              The backend server is not reachable. Start it by running:{" "}
-              <code>cd server && yarn dev</code>
-            </Alert>
+        </div>
+        <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+          {saving ? (
+            <>
+              <Spinner animation="border" size="sm" className="me-2" />
+              Saving...
+            </>
+          ) : (
+            "Save Settings"
           )}
+        </Button>
+      </div>
 
-          {backendOnline && !configured && (
-            <Alert variant="warning" className="py-2 mb-0">
-              The backend server is running but not configured. Fill in your credentials below and
-              save to configure the server.
-            </Alert>
-          )}
-
-          {backendOnline && configured && (
-            <Alert variant="success" className="py-2 mb-0">
-              Connected. JIRA: <strong>{jiraBaseUrl}</strong> | GitHub:{" "}
-              <strong>{githubUsername}</strong>
-            </Alert>
-          )}
+      <Card className="mb-3" style={{ minHeight: "auto" }}>
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex align-items-center gap-2">
+            <span className={`status-dot ${backendOnline ? "online" : "offline"}`} />
+            <span style={{ fontSize: "0.8rem", fontWeight: 500 }}>
+              {backendOnline ? "Connected" : "Offline"}
+            </span>
+            {backendOnline && configured && (
+              <span
+                className="d-flex align-items-center gap-2"
+                style={{ fontSize: "0.75rem", marginLeft: "auto" }}
+              >
+                <a
+                  href={jiraBaseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="d-flex align-items-center gap-1"
+                >
+                  <IconBrandJira size={12} />
+                  {jiraBaseUrl}
+                </a>
+                <span className="text-secondary-custom">·</span>
+                <a
+                  href={`https://github.com/${githubUsername}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="d-flex align-items-center gap-1"
+                >
+                  <IconBrandGithub size={12} />
+                  {githubUsername}
+                </a>
+              </span>
+            )}
+            {!backendOnline && (
+              <span className="text-secondary-custom" style={{ fontSize: "0.75rem" }}>
+                Run: <code>cd server && yarn dev</code>
+              </span>
+            )}
+            {backendOnline && !configured && (
+              <span className="text-secondary-custom" style={{ fontSize: "0.75rem" }}>
+                Fill in credentials below and save.
+              </span>
+            )}
+          </div>
         </Card.Body>
       </Card>
 
-      {/* Success / Error alerts */}
       {successMessage && (
         <Alert
           variant="success"
@@ -149,98 +205,178 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </Alert>
       )}
 
-      {/* JIRA Configuration */}
-      <Card className="mb-3">
-        <Card.Body>
-          <h6 style={{ marginBottom: 12 }}>JIRA Configuration</h6>
+      <Row>
+        <Col lg={6}>
+          <Card className="mb-3" style={{ minHeight: "auto" }}>
+            <Card.Body>
+              <h6 style={{ marginBottom: 12 }}>GitHub</h6>
 
-          <Form.Group className="mb-3">
-            <Form.Label className="text-secondary-custom" style={labelStyle}>
-              JIRA Base URL
-            </Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="https://your-org.atlassian.net"
-              value={formState.jiraBaseUrl}
-              onChange={handleChange("jiraBaseUrl")}
-              size="sm"
-            />
-          </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label className="text-secondary-custom" style={labelStyle}>
+                  Token
+                </Form.Label>
+                <Form.Control
+                  type="password"
+                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                  value={formState.githubToken}
+                  onChange={handleChange("githubToken")}
+                  size="sm"
+                />
+              </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label className="text-secondary-custom" style={labelStyle}>
-              JIRA Email
-            </Form.Label>
-            <Form.Control
-              type="email"
-              placeholder="you@company.com"
-              value={formState.jiraEmail}
-              onChange={handleChange("jiraEmail")}
-              size="sm"
-            />
-          </Form.Group>
+              <Form.Group className="mb-0">
+                <Form.Label className="text-secondary-custom" style={labelStyle}>
+                  Username
+                </Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="your-github-username"
+                  value={formState.githubUsername}
+                  onChange={handleChange("githubUsername")}
+                  size="sm"
+                />
+              </Form.Group>
+            </Card.Body>
+          </Card>
+        </Col>
 
-          <Form.Group className="mb-0">
-            <Form.Label className="text-secondary-custom" style={labelStyle}>
-              JIRA API Token
-            </Form.Label>
-            <Form.Control
-              type="password"
-              placeholder="your-jira-api-token"
-              value={formState.jiraApiToken}
-              onChange={handleChange("jiraApiToken")}
-              size="sm"
-            />
-          </Form.Group>
+        <Col lg={6}>
+          <Card className="mb-3" style={{ minHeight: "auto" }}>
+            <Card.Body>
+              <h6 style={{ marginBottom: 12 }}>JIRA</h6>
+
+              <Form.Group className="mb-3">
+                <Form.Label className="text-secondary-custom" style={labelStyle}>
+                  Base URL
+                </Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="https://your-org.atlassian.net"
+                  value={formState.jiraBaseUrl}
+                  onChange={handleChange("jiraBaseUrl")}
+                  size="sm"
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label className="text-secondary-custom" style={labelStyle}>
+                  Email
+                </Form.Label>
+                <Form.Control
+                  type="email"
+                  placeholder="you@company.com"
+                  value={formState.jiraEmail}
+                  onChange={handleChange("jiraEmail")}
+                  size="sm"
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-0">
+                <Form.Label className="text-secondary-custom" style={labelStyle}>
+                  API Token
+                </Form.Label>
+                <Form.Control
+                  type="password"
+                  placeholder="your-jira-api-token"
+                  value={formState.jiraApiToken}
+                  onChange={handleChange("jiraApiToken")}
+                  size="sm"
+                />
+              </Form.Group>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col lg={6}>
+          <Card className="mb-3" style={{ minHeight: "auto" }}>
+            <Card.Body>
+              <h6 style={{ marginBottom: 12 }}>Preferences</h6>
+
+              <Form.Group className="mb-0">
+                <Form.Label className="text-secondary-custom" style={labelStyle}>
+                  Default Organization
+                </Form.Label>
+                <Form.Select
+                  size="sm"
+                  value={defaultOrg}
+                  onChange={(e) => setDefaultOrg(e.target.value)}
+                  className="date-dropdown"
+                >
+                  {orgs.map((o) => (
+                    <option key={o.login} value={o.login}>
+                      {o.login}
+                    </option>
+                  ))}
+                </Form.Select>
+                <Form.Text className="text-secondary-custom" style={{ fontSize: "0.7rem" }}>
+                  Default org for the Leaderboard tab.
+                </Form.Text>
+              </Form.Group>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col lg={6}>
+          <Card className="mb-3" style={{ minHeight: "auto" }}>
+            <Card.Body>
+              <div className="d-flex align-items-center justify-content-between mb-2">
+                <h6 className="mb-0">Cache</h6>
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={handleClearCache}
+                  className="d-flex align-items-center gap-1"
+                  style={{ fontSize: "0.7rem", padding: "2px 8px" }}
+                >
+                  <IconTrash size={12} />
+                  Clear
+                </Button>
+              </div>
+              {cacheStats && (
+                <div style={{ fontSize: "0.8rem" }}>
+                  <div
+                    className="d-flex justify-content-between py-1"
+                    style={{ borderBottom: "1px solid #d1d9e0" }}
+                  >
+                    <span className="text-secondary-custom">API cache entries</span>
+                    <span>{cacheStats.apiCache}</span>
+                  </div>
+                  <div
+                    className="d-flex justify-content-between py-1"
+                    style={{ borderBottom: "1px solid #d1d9e0" }}
+                  >
+                    <span className="text-secondary-custom">Cached contributions</span>
+                    <span>{cacheStats.contributions.toLocaleString()}</span>
+                  </div>
+                  <div className="d-flex justify-content-between py-1">
+                    <span className="text-secondary-custom">Cached profiles</span>
+                    <span>{cacheStats.profiles}</span>
+                  </div>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      <Card className="mb-3" style={{ minHeight: "auto" }}>
+        <Card.Body className="py-2 px-3">
+          <div className="d-flex align-items-center gap-2" style={{ fontSize: "0.75rem" }}>
+            <IconBrandGithub size={14} />
+            <span className="text-secondary-custom">dev-home v{__APP_VERSION__}</span>
+            <a
+              href="https://github.com/sgtlaugh/dev-home"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ marginLeft: "auto", fontSize: "0.7rem" }}
+            >
+              View on GitHub
+            </a>
+          </div>
         </Card.Body>
       </Card>
-
-      {/* GitHub Configuration */}
-      <Card className="mb-3">
-        <Card.Body>
-          <h6 style={{ marginBottom: 12 }}>GitHub Configuration</h6>
-
-          <Form.Group className="mb-3">
-            <Form.Label className="text-secondary-custom" style={labelStyle}>
-              GitHub Token
-            </Form.Label>
-            <Form.Control
-              type="password"
-              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-              value={formState.githubToken}
-              onChange={handleChange("githubToken")}
-              size="sm"
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-0">
-            <Form.Label className="text-secondary-custom" style={labelStyle}>
-              GitHub Username
-            </Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="your-github-username"
-              value={formState.githubUsername}
-              onChange={handleChange("githubUsername")}
-              size="sm"
-            />
-          </Form.Group>
-        </Card.Body>
-      </Card>
-
-      {/* Save button */}
-      <div className="d-flex justify-content-end mb-4">
-        <Button variant="primary" onClick={handleSave} disabled={saving}>
-          {saving ? (
-            <>
-              <Spinner animation="border" size="sm" className="me-2" />
-              Saving...
-            </>
-          ) : (
-            "Save Settings"
-          )}
-        </Button>
-      </div>
     </div>
   );
 };

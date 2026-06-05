@@ -2,7 +2,7 @@ import cors from "cors";
 import express, { Request, Response } from "express";
 import "express-async-errors";
 import { validateEnv } from "./config";
-import { closeDb } from "./db";
+import { closeDb, getDb } from "./db";
 import activityRoutes from "./routes/activity";
 import configRoutes from "./routes/config";
 import githubRoutes from "./routes/github";
@@ -52,7 +52,17 @@ export function createServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Cache purge — clear all cached data
+  app.get("/api/cache/stats", (_req: Request, res: Response) => {
+    const db = getDb();
+    const contributions = db.prepare("SELECT COUNT(*) as cnt FROM org_contributions").get() as { cnt: number };
+    const profiles = db.prepare("SELECT COUNT(*) as cnt FROM github_profiles").get() as { cnt: number };
+    res.json({
+      apiCache: apiCache.size(),
+      contributions: contributions.cnt,
+      profiles: profiles.cnt,
+    });
+  });
+
   app.post("/api/cache/purge", (_req: Request, res: Response) => {
     apiCache.clear();
     clearProfiles();

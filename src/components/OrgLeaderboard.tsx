@@ -66,7 +66,9 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   const stored = loadState();
   const now = new Date();
 
-  const [org, setOrg] = useState<string | null>(stored?.org ?? null);
+  const [org, setOrg] = useState<string | null>(
+    stored?.org ?? localStorage.getItem("leaderboard:defaultOrg") ?? null,
+  );
   const [mode, setMode] = useState<DateMode>(stored?.mode ?? "month");
   const [year, setYear] = useState(stored?.year ?? now.getFullYear());
   const [month, setMonth] = useState(stored?.month ?? now.getMonth() + 1);

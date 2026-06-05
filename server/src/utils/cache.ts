@@ -57,6 +57,11 @@ class ApiCache {
     this.db.prepare("DELETE FROM cache").run();
   }
 
+  size(): number {
+    const row = this.db.prepare("SELECT COUNT(*) as cnt FROM cache").get() as { cnt: number };
+    return row.cnt;
+  }
+
   private cleanExpired(): void {
     const cutoff = Date.now() - this.ttl;
     const result = this.db.prepare("DELETE FROM cache WHERE timestamp < ?").run(cutoff);
