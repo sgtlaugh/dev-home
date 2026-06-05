@@ -217,7 +217,7 @@ export default function App() {
                     {rateLimit &&
                       (() => {
                         const pct = rateLimit.remaining / rateLimit.limit;
-                        const color = pct > 0.8 ? "#1a7f37" : pct > 0.5 ? "#9a6700" : "#cf222e";
+                        const color = pct > 0.5 ? "#1a7f37" : pct > 0.2 ? "#9a6700" : "#cf222e";
                         const size = 16;
                         const stroke = 2.5;
                         const r = (size - stroke) / 2;
