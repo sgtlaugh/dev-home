@@ -233,6 +233,34 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
 
   return (
     <div>
+      {/* Stats + Search */}
+      {members.length > 0 && (
+        <div className="d-flex gap-2 mb-3">
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: "#1a7f37" }}>
+              {totalCommits.toLocaleString()}
+            </div>
+            <div className="stat-label">Commits</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: "#0969da" }}>
+              {totalPRs.toLocaleString()}
+            </div>
+            <div className="stat-label">PRs</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: "#8250df" }}>
+              {totalReviews.toLocaleString()}
+            </div>
+            <div className="stat-label">Reviews</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{members.length}</div>
+            <div className="stat-label">Members</div>
+          </div>
+        </div>
+      )}
+
       {/* Controls */}
       <Card className="controls-card mb-3">
         <Card.Body className="p-3">
@@ -321,33 +349,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
         </Card.Body>
       </Card>
 
-      {/* Stats + Search */}
-      {members.length > 0 && (
-        <div className="d-flex gap-2 mb-3">
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: "#1a7f37" }}>
-              {totalCommits.toLocaleString()}
-            </div>
-            <div className="stat-label">Commits</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: "#0969da" }}>
-              {totalPRs.toLocaleString()}
-            </div>
-            <div className="stat-label">PRs</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: "#8250df" }}>
-              {totalReviews.toLocaleString()}
-            </div>
-            <div className="stat-label">Reviews</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{members.length}</div>
-            <div className="stat-label">Members</div>
-          </div>
-        </div>
-      )}
       {members.length > 0 && (
         <div className="mb-3">
           <input
