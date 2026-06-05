@@ -192,8 +192,10 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
           </div>
           <div className="stat-label">Reviews</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value">{loading ? 0 : members.length}</div>
+        <div className="stat-card" style={{ backgroundColor: "rgba(88, 166, 255, 0.05)" }}>
+          <div className="stat-value" style={{ color: "#656d76" }}>
+            {loading ? 0 : members.length}
+          </div>
           <div className="stat-label">Members</div>
         </div>
       </div>

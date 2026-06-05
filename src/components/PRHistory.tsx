@@ -271,25 +271,34 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
     <div style={{ padding: "1rem" }}>
       {/* Stat Cards */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
-        {STAT_DEFS.map((s) => (
-          <div
-            key={s.key}
-            className={`stat-card clickable${stateFilter === s.key || (s.key === "all" && stateFilter === "all") ? "" : ""}${stateFilter === s.key && s.key !== "all" ? " active" : ""}`}
-            style={
-              stateFilter === s.key && s.key !== "all"
-                ? { borderColor: s.color, boxShadow: `0 0 12px ${s.color}33` }
-                : undefined
-            }
-            onClick={() => toggleFilter(s.key)}
-          >
-            <div className="stat-value" style={{ color: s.color }}>
-              {statCounts[s.key]}
+        {STAT_DEFS.map((s) => {
+          const bgColors: Record<StateFilter, string> = {
+            all: "rgba(26, 127, 55, 0.05)",
+            merged: "rgba(130, 80, 223, 0.05)",
+            open: "rgba(9, 105, 218, 0.05)",
+            closed: "rgba(207, 34, 46, 0.05)",
+          };
+          return (
+            <div
+              key={s.key}
+              className={`stat-card clickable${stateFilter === s.key || (s.key === "all" && stateFilter === "all") ? "" : ""}${stateFilter === s.key && s.key !== "all" ? " active" : ""}`}
+              style={{
+                backgroundColor: bgColors[s.key],
+                ...(stateFilter === s.key && s.key !== "all"
+                  ? { borderColor: s.color, boxShadow: `0 0 12px ${s.color}33` }
+                  : {}),
+              }}
+              onClick={() => toggleFilter(s.key)}
+            >
+              <div className="stat-value" style={{ color: s.color }}>
+                {statCounts[s.key]}
+              </div>
+              <div className="stat-label">{s.label}</div>
             </div>
-            <div className="stat-label">{s.label}</div>
-          </div>
-        ))}
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: "#0969da" }}>
+          );
+        })}
+        <div className="stat-card" style={{ backgroundColor: "rgba(26, 127, 55, 0.05)" }}>
+          <div className="stat-value" style={{ color: "#3fb950" }}>
             {commitCount}
           </div>
           <div className="stat-label">Commits</div>
