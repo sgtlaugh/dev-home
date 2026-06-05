@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo, useCallback, useRef } from "react";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import { useUserOrgs, useOrgLeaderboard } from "../hooks/useOrgLeaderboard";
@@ -11,7 +11,10 @@ const STORAGE_KEY = "org-leaderboard:state";
 const MIN_YEAR = 2008;
 
 function isValidDate(s: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(s);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [y, m, d] = s.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
 }
 
 function loadState() {
@@ -58,6 +61,89 @@ function SortHeader({
   );
 }
 
+interface CustomDateInputsProps {
+  inputStart: string;
+  inputEnd: string;
+  selectedPreset: string | null;
+  onInputsChange: (start: string, end: string) => void;
+  onApplyPreset: (key: string) => void;
+  onTriggerSearch: () => void;
+}
+
+const CustomDateInputs = memo(
+  ({
+    inputStart,
+    inputEnd,
+    selectedPreset,
+    onInputsChange,
+    onApplyPreset,
+    onTriggerSearch,
+  }: CustomDateInputsProps) => {
+    const startRef = useRef<HTMLInputElement>(null);
+    const endRef = useRef<HTMLInputElement>(null);
+
+    const handleTrigger = () => {
+      const start = startRef.current?.value || "";
+      const end = endRef.current?.value || "";
+      onInputsChange(start, end);
+      onTriggerSearch();
+    };
+
+    return (
+      <div className="d-flex gap-2 align-items-center flex-wrap">
+        {[
+          { key: "30d", label: "30 days" },
+          { key: "90d", label: "90 days" },
+          { key: "6mo", label: "6 months" },
+          { key: "1y", label: "1 year" },
+          { key: "alltime", label: "All Time" },
+        ].map((p) => (
+          <button
+            key={p.key}
+            className="activity-filter-chip"
+            style={
+              selectedPreset === p.key ? { borderColor: "#0969da", color: "#0969da" } : undefined
+            }
+            onClick={() => onApplyPreset(p.key)}
+          >
+            {p.label}
+          </button>
+        ))}
+        <span style={{ color: "#d1d9e0", fontSize: "0.75rem" }}>|</span>
+        <input
+          ref={startRef}
+          key={`start-${inputStart}`}
+          type="text"
+          placeholder="YYYY-MM-DD"
+          defaultValue={inputStart}
+          onKeyDown={(e) => e.key === "Enter" && handleTrigger()}
+          className="filter-input"
+          style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
+        />
+        <span style={{ color: "#656d76", fontSize: "0.75rem" }}>→</span>
+        <input
+          ref={endRef}
+          key={`end-${inputEnd}`}
+          type="text"
+          placeholder="YYYY-MM-DD"
+          defaultValue={inputEnd}
+          onKeyDown={(e) => e.key === "Enter" && handleTrigger()}
+          className="filter-input"
+          style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
+        />
+        <button
+          className="segmented-btn active"
+          style={{ fontSize: "0.7rem", padding: "4px 10px" }}
+          onClick={handleTrigger}
+        >
+          Go
+        </button>
+      </div>
+    );
+  },
+);
+CustomDateInputs.displayName = "CustomDateInputs";
+
 export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string }> = ({
   active,
   githubUsername,
@@ -74,12 +160,64 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   const [month, setMonth] = useState(stored?.month ?? now.getMonth() + 1);
   const [customStart, setCustomStart] = useState(stored?.startDate ?? "");
   const [customEnd, setCustomEnd] = useState(stored?.endDate ?? "");
+  const [inputStart, setInputStart] = useState(customStart);
+  const [inputEnd, setInputEnd] = useState(customEnd);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(
     stored?.selectedPreset ?? null,
   );
   const [sortKey, setSortKey] = useState<SortKey>("commits");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [search, setSearch] = useState("");
+  const [customTrigger, setCustomTrigger] = useState(0);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const applyPreset = useCallback((key: string) => {
+    const today = new Date();
+    const fmt = (d: Date) => d.toISOString().split("T")[0];
+    const end = fmt(today);
+    let start = `${MIN_YEAR}-01-01`;
+
+    if (key === "30d") {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 30);
+      start = fmt(d);
+    } else if (key === "90d") {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 90);
+      start = fmt(d);
+    } else if (key === "6mo") {
+      const d = new Date(today);
+      d.setMonth(d.getMonth() - 6);
+      start = fmt(d);
+    } else if (key === "1y") {
+      const d = new Date(today);
+      d.setFullYear(d.getFullYear() - 1);
+      start = fmt(d);
+    }
+
+    setInputStart(start);
+    setInputEnd(end);
+    setCustomStart(start);
+    setCustomEnd(end);
+    setSelectedPreset(key);
+    setCustomTrigger((t) => t + 1);
+  }, []);
+
+  const handleInputsChange = useCallback((start: string, end: string) => {
+    setInputStart(start);
+    setInputEnd(end);
+  }, []);
+
+  const triggerCustomSearch = useCallback(() => {
+    if (!isValidDate(inputStart) || !isValidDate(inputEnd)) {
+      setValidationError("Enter valid dates (YYYY-MM-DD)");
+      return;
+    }
+    setValidationError(null);
+    setCustomStart(inputStart);
+    setCustomEnd(inputEnd);
+    setCustomTrigger((t) => t + 1);
+  }, [inputStart, inputEnd]);
 
   useEffect(() => {
     if (orgs.length > 0 && !org) setOrg(orgs[0].login);
@@ -95,7 +233,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
       endDate: customEnd,
       selectedPreset,
     });
-  }, [org, mode, year, month, customStart, customEnd, selectedPreset]);
+  }, [org, mode, year, month, customTrigger, selectedPreset]);
 
   const { startDate, endDate } = useMemo(() => {
     if (mode === "month") {
@@ -110,7 +248,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
       return { startDate: `${year}-01-01`, endDate: `${year}-12-31` };
     }
     return { startDate: customStart, endDate: customEnd };
-  }, [mode, year, month, customStart, customEnd]);
+  }, [mode, year, month, customTrigger]);
 
   const validDates = mode !== "custom" || (isValidDate(startDate) && isValidDate(endDate));
 
@@ -149,37 +287,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
     } else {
       setSortKey(key);
       setSortDir("desc");
-    }
-  };
-
-  const applyPreset = (key: string) => {
-    setSelectedPreset(key);
-    const today = new Date();
-    const fmt = (d: Date) => d.toISOString().split("T")[0];
-
-    if (key === "30d") {
-      const s = new Date(today);
-      s.setDate(s.getDate() - 30);
-      setCustomStart(fmt(s));
-      setCustomEnd(fmt(today));
-    } else if (key === "90d") {
-      const s = new Date(today);
-      s.setDate(s.getDate() - 90);
-      setCustomStart(fmt(s));
-      setCustomEnd(fmt(today));
-    } else if (key === "6mo") {
-      const s = new Date(today);
-      s.setMonth(s.getMonth() - 6);
-      setCustomStart(fmt(s));
-      setCustomEnd(fmt(today));
-    } else if (key === "1y") {
-      const s = new Date(today);
-      s.setFullYear(s.getFullYear() - 1);
-      setCustomStart(fmt(s));
-      setCustomEnd(fmt(today));
-    } else if (key === "alltime") {
-      setCustomStart(`${MIN_YEAR}-01-01`);
-      setCustomEnd(fmt(today));
     }
   };
 
@@ -285,52 +392,14 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
             )}
 
             {mode === "custom" && (
-              <div className="d-flex gap-2 align-items-center flex-wrap">
-                {[
-                  { key: "30d", label: "30 days" },
-                  { key: "90d", label: "90 days" },
-                  { key: "6mo", label: "6 months" },
-                  { key: "1y", label: "1 year" },
-                  { key: "alltime", label: "All Time" },
-                ].map((p) => (
-                  <button
-                    key={p.key}
-                    className="activity-filter-chip"
-                    style={
-                      selectedPreset === p.key
-                        ? { borderColor: "#0969da", color: "#0969da" }
-                        : undefined
-                    }
-                    onClick={() => applyPreset(p.key)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-                <span style={{ color: "#d1d9e0", fontSize: "0.75rem" }}>|</span>
-                <input
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={customStart}
-                  onChange={(e) => {
-                    setCustomStart(e.target.value);
-                    setSelectedPreset(null);
-                  }}
-                  className="filter-input"
-                  style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
-                />
-                <span style={{ color: "#656d76", fontSize: "0.75rem" }}>→</span>
-                <input
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={customEnd}
-                  onChange={(e) => {
-                    setCustomEnd(e.target.value);
-                    setSelectedPreset(null);
-                  }}
-                  className="filter-input"
-                  style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
-                />
-              </div>
+              <CustomDateInputs
+                inputStart={inputStart}
+                inputEnd={inputEnd}
+                selectedPreset={selectedPreset}
+                onInputsChange={handleInputsChange}
+                onApplyPreset={applyPreset}
+                onTriggerSearch={triggerCustomSearch}
+              />
             )}
           </div>
         </Card.Body>
@@ -374,6 +443,13 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
             style={{ fontSize: "0.8rem", padding: "6px 10px", width: "100%" }}
           />
         </div>
+      )}
+
+      {/* Validation Error */}
+      {validationError && (
+        <Card className="mb-3" style={{ borderColor: "#9a6700" }}>
+          <Card.Body style={{ color: "#9a6700" }}>{validationError}</Card.Body>
+        </Card>
       )}
 
       {/* Error */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo, useCallback, useRef } from "react";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import Card from "react-bootstrap/Card";
@@ -18,9 +18,10 @@ type StateFilter = "all" | "open" | "merged" | "closed";
 const MIN_YEAR = 2000;
 
 function isValidDate(dateStr: string): boolean {
-  if (dateStr.length !== 10) return false;
-  const date = new Date(dateStr);
-  return !isNaN(date.getTime());
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
 }
 
 interface PRHistoryProps {
@@ -134,6 +135,89 @@ function saveState(state: {
   }
 }
 
+interface CustomDateInputsProps {
+  inputStart: string;
+  inputEnd: string;
+  selectedPreset: string | null;
+  onInputsChange: (start: string, end: string) => void;
+  onApplyPreset: (key: string) => void;
+  onTriggerSearch: () => void;
+}
+
+const CustomDateInputs = memo(
+  ({
+    inputStart,
+    inputEnd,
+    selectedPreset,
+    onInputsChange,
+    onApplyPreset,
+    onTriggerSearch,
+  }: CustomDateInputsProps) => {
+    const startRef = useRef<HTMLInputElement>(null);
+    const endRef = useRef<HTMLInputElement>(null);
+
+    const handleTrigger = () => {
+      const start = startRef.current?.value || "";
+      const end = endRef.current?.value || "";
+      onInputsChange(start, end);
+      onTriggerSearch();
+    };
+
+    return (
+      <div className="d-flex gap-2 align-items-center flex-wrap">
+        {[
+          { key: "30d", label: "30 days" },
+          { key: "90d", label: "90 days" },
+          { key: "6mo", label: "6 months" },
+          { key: "1y", label: "1 year" },
+          { key: "alltime", label: "All Time" },
+        ].map((p) => (
+          <button
+            key={p.key}
+            className="activity-filter-chip"
+            style={
+              selectedPreset === p.key ? { borderColor: "#0969da", color: "#0969da" } : undefined
+            }
+            onClick={() => onApplyPreset(p.key)}
+          >
+            {p.label}
+          </button>
+        ))}
+        <span style={{ color: "#d1d9e0", fontSize: "0.75rem" }}>|</span>
+        <input
+          ref={startRef}
+          key={`start-${inputStart}`}
+          type="text"
+          placeholder="YYYY-MM-DD"
+          defaultValue={inputStart}
+          onKeyDown={(e) => e.key === "Enter" && handleTrigger()}
+          className="filter-input"
+          style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
+        />
+        <span style={{ color: "#656d76", fontSize: "0.75rem" }}>→</span>
+        <input
+          ref={endRef}
+          key={`end-${inputEnd}`}
+          type="text"
+          placeholder="YYYY-MM-DD"
+          defaultValue={inputEnd}
+          onKeyDown={(e) => e.key === "Enter" && handleTrigger()}
+          className="filter-input"
+          style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
+        />
+        <button
+          className="segmented-btn active"
+          style={{ fontSize: "0.7rem", padding: "4px 10px" }}
+          onClick={handleTrigger}
+        >
+          Go
+        </button>
+      </div>
+    );
+  },
+);
+CustomDateInputs.displayName = "CustomDateInputs";
+
 export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   const now = new Date();
   const stored = loadState();
@@ -142,16 +226,74 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   const [month, setMonth] = useState(stored?.month ?? now.getMonth() + 1);
   const [startDate, setStartDate] = useState(stored?.startDate ?? "");
   const [endDate, setEndDate] = useState(stored?.endDate ?? "");
+  const [inputStart, setInputStart] = useState(startDate);
+  const [inputEnd, setInputEnd] = useState(endDate);
   const [stateFilter, setStateFilter] = useState<StateFilter>("all");
   const [prs, setPrs] = useState<GitHubPR[]>([]);
   const [commitCount, setCommitCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
   const [joinDate, setJoinDate] = useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(
     stored?.selectedPreset ?? null,
   );
+  const [customTrigger, setCustomTrigger] = useState(0);
+
+  const applyPreset = useCallback(
+    (preset: string) => {
+      const today = new Date();
+      const toStr = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const end = toStr(today);
+      let start: string;
+      if (preset === "30d") {
+        const d = new Date(today);
+        d.setDate(d.getDate() - 30);
+        start = toStr(d);
+      } else if (preset === "90d") {
+        const d = new Date(today);
+        d.setDate(d.getDate() - 90);
+        start = toStr(d);
+      } else if (preset === "6mo") {
+        const d = new Date(today);
+        d.setMonth(d.getMonth() - 6);
+        start = toStr(d);
+      } else if (preset === "1y") {
+        const d = new Date(today);
+        d.setFullYear(d.getFullYear() - 1);
+        start = toStr(d);
+      } else {
+        start = joinDate || `${MIN_YEAR}-01-01`;
+      }
+      setInputStart(start);
+      setInputEnd(end);
+      setStartDate(start);
+      setEndDate(end);
+      setMode("custom");
+      setSelectedPreset(preset);
+      setCustomTrigger((t) => t + 1);
+    },
+    [joinDate],
+  );
+
+  const handleInputsChange = useCallback((start: string, end: string) => {
+    setInputStart(start);
+    setInputEnd(end);
+  }, []);
+
+  const triggerCustomSearch = useCallback(() => {
+    if (!isValidDate(inputStart) || !isValidDate(inputEnd)) {
+      setValidationError("Enter valid dates (YYYY-MM-DD)");
+      return;
+    }
+    setValidationError(null);
+    setStartDate(inputStart);
+    setEndDate(inputEnd);
+    setCustomTrigger((t) => t + 1);
+  }, [inputStart, inputEnd]);
+
   const abortRef = React.useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -162,7 +304,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
 
   useEffect(() => {
     saveState({ mode, year, month, startDate, endDate, selectedPreset });
-  }, [mode, year, month, startDate, endDate, selectedPreset]);
+  }, [mode, year, month, customTrigger, selectedPreset]);
 
   useEffect(() => {
     abortRef.current?.abort();
@@ -221,7 +363,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
 
     loadPRs();
     return () => abortRef.current?.abort();
-  }, [mode, year, month, startDate, endDate, onCountChange]);
+  }, [mode, year, month, customTrigger, onCountChange]);
 
   const mergedCount = prs.filter((pr) => pr.merged).length;
   const closedCount = prs.filter((pr) => pr.state === "closed" && !pr.merged).length;
@@ -259,37 +401,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
 
   const toggleFilter = (key: StateFilter) => {
     setStateFilter(stateFilter === key ? "all" : key);
-  };
-
-  const applyPreset = (preset: string) => {
-    const today = new Date();
-    const toStr = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    const end = toStr(today);
-    let start: string;
-    if (preset === "30d") {
-      const d = new Date(today);
-      d.setDate(d.getDate() - 30);
-      start = toStr(d);
-    } else if (preset === "90d") {
-      const d = new Date(today);
-      d.setDate(d.getDate() - 90);
-      start = toStr(d);
-    } else if (preset === "6mo") {
-      const d = new Date(today);
-      d.setMonth(d.getMonth() - 6);
-      start = toStr(d);
-    } else if (preset === "1y") {
-      const d = new Date(today);
-      d.setFullYear(d.getFullYear() - 1);
-      start = toStr(d);
-    } else {
-      start = joinDate || `${MIN_YEAR}-01-01`;
-    }
-    setStartDate(start);
-    setEndDate(end);
-    setMode("custom");
-    setSelectedPreset(preset);
   };
 
   const monthLabel = new Date(year, month - 1).toLocaleString("default", {
@@ -423,56 +534,24 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
             )}
 
             {mode === "custom" && (
-              <div className="d-flex gap-2 align-items-center flex-wrap">
-                {[
-                  { key: "30d", label: "30 days" },
-                  { key: "90d", label: "90 days" },
-                  { key: "6mo", label: "6 months" },
-                  { key: "1y", label: "1 year" },
-                  { key: "alltime", label: "All Time" },
-                ].map((p) => (
-                  <button
-                    key={p.key}
-                    className="activity-filter-chip"
-                    style={
-                      selectedPreset === p.key
-                        ? { borderColor: "#0969da", color: "#0969da" }
-                        : undefined
-                    }
-                    onClick={() => applyPreset(p.key)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-                <span style={{ color: "#d1d9e0", fontSize: "0.75rem" }}>|</span>
-                <input
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    setSelectedPreset(null);
-                  }}
-                  className="filter-input"
-                  style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
-                />
-                <span style={{ color: "#656d76", fontSize: "0.75rem" }}>→</span>
-                <input
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={endDate}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    setSelectedPreset(null);
-                  }}
-                  className="filter-input"
-                  style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
-                />
-              </div>
+              <CustomDateInputs
+                inputStart={inputStart}
+                inputEnd={inputEnd}
+                selectedPreset={selectedPreset}
+                onInputsChange={handleInputsChange}
+                onApplyPreset={applyPreset}
+                onTriggerSearch={triggerCustomSearch}
+              />
             )}
           </div>
         </Card.Body>
       </Card>
+
+      {validationError && (
+        <div className="alert alert-warning small" role="alert" style={{ marginBottom: "12px" }}>
+          {validationError}
+        </div>
+      )}
 
       {error && (
         <div className="alert alert-danger small" role="alert">
