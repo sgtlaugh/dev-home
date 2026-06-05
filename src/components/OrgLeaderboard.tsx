@@ -279,6 +279,8 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                 onDateChange={handleDateChange}
                 validationError={validationError}
                 onValidationError={setValidationError}
+                initialStart={customStart}
+                initialEnd={customEnd}
               />
             )}
           </div>

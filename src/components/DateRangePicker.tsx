@@ -6,6 +6,8 @@ interface DateRangePickerProps {
   onDateChange: (start: string, end: string) => void;
   validationError: string | null;
   onValidationError: (error: string | null) => void;
+  initialStart?: string;
+  initialEnd?: string;
 }
 
 const MIN_YEAR = 2000;
@@ -22,9 +24,11 @@ export function DateRangePicker({
   onDateChange,
   validationError,
   onValidationError,
+  initialStart = "",
+  initialEnd = "",
 }: DateRangePickerProps) {
-  const [inputStart, setInputStart] = useState("");
-  const [inputEnd, setInputEnd] = useState("");
+  const [inputStart, setInputStart] = useState(initialStart);
+  const [inputEnd, setInputEnd] = useState(initialEnd);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   const applyPreset = useCallback(

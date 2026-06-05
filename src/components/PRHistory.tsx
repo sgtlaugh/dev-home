@@ -389,6 +389,8 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                 onDateChange={handleDateChange}
                 validationError={validationError}
                 onValidationError={setValidationError}
+                initialStart={startDate}
+                initialEnd={endDate}
               />
             )}
           </div>
