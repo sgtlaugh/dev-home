@@ -76,15 +76,23 @@ export function groupActivitiesByDate(
   const now = Date.now();
 
   function getDateKey(timestamp: string): string {
-    const actTime = new Date(timestamp).getTime();
-    const hoursAgo = (now - actTime) / (1000 * 60 * 60);
+    const actDate = new Date(timestamp);
+    const todayDate = new Date(now);
 
-    if (hoursAgo < 24) {
+    const actDateOnly = new Date(actDate.getFullYear(), actDate.getMonth(), actDate.getDate());
+    const todayDateOnly = new Date(
+      todayDate.getFullYear(),
+      todayDate.getMonth(),
+      todayDate.getDate(),
+    );
+    const yesterdayDateOnly = new Date(todayDateOnly);
+    yesterdayDateOnly.setDate(yesterdayDateOnly.getDate() - 1);
+
+    if (actDateOnly.getTime() === todayDateOnly.getTime()) {
       return "Today";
-    } else if (hoursAgo < 48) {
+    } else if (actDateOnly.getTime() === yesterdayDateOnly.getTime()) {
       return "Yesterday";
     } else {
-      const actDate = new Date(timestamp);
       return actDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     }
   }
