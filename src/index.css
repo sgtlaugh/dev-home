@@ -1595,11 +1595,11 @@ a,
   background-color: #f6f8fa;
   border: 1px solid #d1d9e0;
   border-radius: 8px;
-  padding: 1rem;
-  min-width: 100px;
+  padding: 1.25rem;
+  min-width: 110px;
   text-align: center;
   flex: 0 1 auto;
-  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease, background-color 150ms ease;
 }
 
 .stat-card.clickable {
@@ -1620,7 +1620,8 @@ a,
 
 .stat-card:hover {
   border-color: #0969da;
-  box-shadow: 0 2px 8px rgba(88, 166, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background-color: #ffffff;
 }
 
 .stat-value {

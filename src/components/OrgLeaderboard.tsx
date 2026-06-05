@@ -174,19 +174,19 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
     <div>
       {/* Stats + Search */}
       <div className="d-flex gap-2 mb-3">
-        <div className="stat-card">
+        <div className="stat-card" style={{ backgroundColor: "rgba(26, 127, 55, 0.05)" }}>
           <div className="stat-value" style={{ color: "#1a7f37" }}>
             {totalCommits.toLocaleString()}
           </div>
           <div className="stat-label">Commits</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card" style={{ backgroundColor: "rgba(9, 105, 218, 0.05)" }}>
           <div className="stat-value" style={{ color: "#0969da" }}>
             {totalPRs.toLocaleString()}
           </div>
           <div className="stat-label">PRs</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card" style={{ backgroundColor: "rgba(130, 80, 223, 0.05)" }}>
           <div className="stat-value" style={{ color: "#8250df" }}>
             {totalReviews.toLocaleString()}
           </div>
