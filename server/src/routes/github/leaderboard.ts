@@ -13,7 +13,7 @@ import {
   getCachedProfiles,
   saveProfiles,
 } from "../../services/contributionCache";
-import { startPrefetch, isPrefetchRunning } from "../../services/contributionPrefetch";
+import { startPrefetch, isPrefetchRunning, stopPrefetch } from "../../services/contributionPrefetch";
 import { MAX_REPOS_PER_CONTRIBUTION, SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
@@ -155,7 +155,24 @@ async function fetchBatchFromApi(
         return logins.map((_, j) => data[`u${j}`]).filter(Boolean).map((u) => parseUserData(u, chunks, orgPrefix));
       } catch (err: any) {
         const status = err?.response?.status;
-        if ((status === 403 || status === 502) && attempt < MAX_RETRIES) {
+        if (status === 403 && logins.length > 1) {
+          logger.warn("Leaderboard", `${tag} got 403, falling back to single-user`);
+          const results: LeaderboardEntry[] = [];
+          for (const login of logins) {
+            try {
+              const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks), {}, `${tag}-${login}`);
+              if (d.u0) results.push(parseUserData(d.u0, chunks));
+            } catch (e: any) {
+              if (e?.response?.status === 403) {
+                logger.warn("Leaderboard", `${tag}-${login} skipped (403)`);
+                continue;
+              }
+              logger.error("Leaderboard", `${tag}-${login} failed: ${e}`);
+            }
+          }
+          return results;
+        }
+        if (status === 502 && attempt < MAX_RETRIES) {
           const delay = RETRY_BASE_DELAY_MS * (attempt + 1);
           logger.warn("Leaderboard", `${tag} got ${status}, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`);
           await new Promise((r) => setTimeout(r, delay));
@@ -168,7 +185,11 @@ async function fetchBatchFromApi(
             try {
               const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks), {}, `${tag}-${login}`);
               if (d.u0) results.push(parseUserData(d.u0, chunks));
-            } catch (e) {
+            } catch (e: any) {
+              if (e?.response?.status === 403) {
+                logger.warn("Leaderboard", `${tag}-${login} skipped (403)`);
+                continue;
+              }
               logger.error("Leaderboard", `${tag}-${login} failed: ${e}`);
             }
           }
@@ -186,7 +207,7 @@ async function fetchBatchFromApi(
   for (let i = 0; i < indices.length; i += MAX_CONCURRENT_BATCHES) {
     const results = await Promise.all(indices.slice(i, i + MAX_CONCURRENT_BATCHES).map(fetchOne));
     entries.push(...results.flat());
-    if (i + MAX_CONCURRENT_BATCHES < indices.length) await new Promise((r) => setTimeout(r, 500));
+    if (i + MAX_CONCURRENT_BATCHES < indices.length) await new Promise((r) => setTimeout(r, 1500));
   }
   saveProfiles(entries.map((e) => ({ login: e.login, name: e.name, avatarUrl: e.avatarUrl })));
   return entries;
@@ -223,6 +244,12 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
   }
 
   try {
+    const wasPrefetching = isPrefetchRunning();
+    if (wasPrefetching) {
+      logger.info("Leaderboard", "Pausing prefetch for leaderboard calculation");
+      stopPrefetch();
+    }
+
     const members = await fetchOrgMembers(org);
     const today = new Date().toISOString().split("T")[0];
     const effectiveEnd = endDate > today ? today : endDate;
@@ -308,6 +335,9 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     logger.info("Leaderboard", `${entries.length} members for ${org} (${startDate} to ${effectiveEnd})`);
     res.json(responseData);
 
+    if (wasPrefetching) {
+      logger.info("Leaderboard", "Resuming prefetch");
+    }
     triggerPrefetch(org);
   } catch (err) {
     logger.error("Leaderboard", `Failed: ${err}`);
