@@ -187,6 +187,22 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   const totalPRs = members.reduce((s, m) => s + m.prs, 0);
   const totalReviews = members.reduce((s, m) => s + m.reviews, 0);
 
+  if (!orgsLoading && orgs.length === 0) {
+    return (
+      <div className="text-secondary-custom text-center py-5" style={{ fontSize: "0.875rem" }}>
+        No GitHub organizations found.{" "}
+        <a
+          href="https://docs.github.com/en/organizations"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Join an organization
+        </a>{" "}
+        to use the leaderboard.
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Controls */}

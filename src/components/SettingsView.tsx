@@ -298,21 +298,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <Form.Label className="text-secondary-custom" style={labelStyle}>
                   Default Organization
                 </Form.Label>
-                <Form.Select
-                  size="sm"
-                  value={defaultOrg}
-                  onChange={(e) => setDefaultOrg(e.target.value)}
-                  className="date-dropdown"
-                >
-                  {orgs.map((o) => (
-                    <option key={o.login} value={o.login}>
-                      {o.login}
-                    </option>
-                  ))}
-                </Form.Select>
-                <Form.Text className="text-secondary-custom" style={{ fontSize: "0.7rem" }}>
-                  Default org for the Leaderboard tab.
-                </Form.Text>
+                {orgs.length > 0 ? (
+                  <>
+                    <Form.Select
+                      size="sm"
+                      value={defaultOrg}
+                      onChange={(e) => setDefaultOrg(e.target.value)}
+                      className="date-dropdown"
+                    >
+                      {orgs.map((o) => (
+                        <option key={o.login} value={o.login}>
+                          {o.login}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Form.Text className="text-secondary-custom" style={{ fontSize: "0.7rem" }}>
+                      Default org for the Leaderboard tab.
+                    </Form.Text>
+                  </>
+                ) : (
+                  <div className="text-secondary-custom" style={{ fontSize: "0.8rem" }}>
+                    No organizations found.{" "}
+                    <a
+                      href="https://docs.github.com/en/organizations"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Learn about GitHub organizations
+                    </a>
+                  </div>
+                )}
               </Form.Group>
             </Card.Body>
           </Card>
