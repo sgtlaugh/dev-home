@@ -187,7 +187,10 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
 
   const toggleDateGroup = useCallback(
     (items: CollapsedActivity[]) => {
-      const keys = items.map((i) => i.entityKey);
+      const expandableItems = items.filter(
+        (i) => i.actions.length > 1 || i.actions.some((a) => a.metadata?.commentBody),
+      );
+      const keys = expandableItems.map((i) => i.entityKey);
       const allExpanded = keys.every((k) => expandedEntities.has(k));
       const newSet = new Set(expandedEntities);
       for (const k of keys) {
