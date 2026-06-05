@@ -264,7 +264,10 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
       {/* Timeline */}
       {Array.from(groupedActivities.entries()).map(
         ([dateLabel, { collapsed: items, actionCount }]) => {
-          const allExpanded = items.every((i) => expandedEntities.has(i.entityKey));
+          const expandableItems = items.filter(
+            (i) => i.actions.length > 1 || i.actions.some((a) => a.metadata?.commentBody),
+          );
+          const allExpanded = expandableItems.every((i) => expandedEntities.has(i.entityKey));
 
           return (
             <div key={dateLabel} className="activity-section">
