@@ -308,7 +308,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     >
                       {orgs.map((o) => (
                         <option key={o.login} value={o.login}>
-                          {o.login}
+                          {o.login.charAt(0).toUpperCase() + o.login.slice(1)}
                         </option>
                       ))}
                     </Form.Select>

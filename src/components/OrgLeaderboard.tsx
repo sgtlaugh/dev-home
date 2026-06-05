@@ -273,7 +273,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
               {orgsLoading && <option>Loading...</option>}
               {orgs.map((o) => (
                 <option key={o.login} value={o.login}>
-                  {o.login}
+                  {o.login.charAt(0).toUpperCase() + o.login.slice(1)}
                 </option>
               ))}
             </select>
