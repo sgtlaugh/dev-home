@@ -298,7 +298,7 @@ export default function App() {
                     {toast}
                   </div>
                 )}
-                <div className="tab-content-area" key={effectiveTab}>
+                <div className="tab-content-area">
                   {effectiveTab === "summary" && (
                     <SummaryView
                       jiraIssues={jiraIssues}
@@ -353,7 +353,10 @@ export default function App() {
                     />
                   )}
                   {effectiveTab === "pr-history" && (
-                    <PRHistory onCountChange={setCurrentMonthPRsCount} />
+                    <PRHistory
+                      onCountChange={setCurrentMonthPRsCount}
+                      active={effectiveTab === "pr-history"}
+                    />
                   )}
                   {effectiveTab === "leaderboard" && (
                     <OrgLeaderboard

@@ -20,6 +20,7 @@ const MIN_YEAR = 2000;
 
 interface PRHistoryProps {
   onCountChange?: (count: number) => void;
+  active?: boolean;
 }
 
 function getDateKey(timestamp: string): string {
@@ -128,7 +129,7 @@ function saveState(state: {
   }
 }
 
-export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
+export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = true }) => {
   const now = new Date();
   const stored = loadState();
   const [mode, setMode] = useState<DateMode>(stored?.mode ?? "month");
@@ -164,6 +165,8 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
   }, [mode, year, month, startDate, endDate]);
 
   useEffect(() => {
+    if (!active) return;
+
     abortRef.current?.abort();
     abortRef.current = new AbortController();
     const signal = abortRef.current.signal;
@@ -216,7 +219,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
 
     loadPRs();
     return () => abortRef.current?.abort();
-  }, [mode, year, month, startDate, endDate, onCountChange]);
+  }, [mode, year, month, startDate, endDate, onCountChange, active]);
 
   const mergedCount = prs.filter((pr) => pr.merged).length;
   const closedCount = prs.filter((pr) => pr.state === "closed" && !pr.merged).length;
