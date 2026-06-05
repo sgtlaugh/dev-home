@@ -396,7 +396,10 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <span style={{ minWidth: 36 }}>{m.commits.toLocaleString()}</span>
-                          <div className="leaderboard-bar-track">
+                          <div
+                            className="leaderboard-bar-track"
+                            title={`${m.commits} commits (${Math.round((m.commits / maxCommits) * 100)}% of max contributor)`}
+                          >
                             <div
                               className="leaderboard-bar-fill"
                               style={{
@@ -410,7 +413,10 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <span style={{ minWidth: 36 }}>{m.prs.toLocaleString()}</span>
-                          <div className="leaderboard-bar-track">
+                          <div
+                            className="leaderboard-bar-track"
+                            title={`${m.prs} PRs (${Math.round((m.prs / maxPRs) * 100)}% of max contributor)`}
+                          >
                             <div
                               className="leaderboard-bar-fill"
                               style={{
@@ -424,7 +430,10 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <span style={{ minWidth: 36 }}>{m.reviews.toLocaleString()}</span>
-                          <div className="leaderboard-bar-track">
+                          <div
+                            className="leaderboard-bar-track"
+                            title={`${m.reviews} reviews (${Math.round((m.reviews / maxReviews) * 100)}% of max contributor)`}
+                          >
                             <div
                               className="leaderboard-bar-fill"
                               style={{
