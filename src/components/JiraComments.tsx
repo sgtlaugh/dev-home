@@ -97,7 +97,10 @@ export const JiraComments: React.FC<JiraCommentsProps> = ({ comments, loading, b
                     </a>
                     {comment.type && (
                       <Badge
-                        bg={comment.type === "mentioned" ? "info" : "secondary"}
+                        bg=""
+                        className={
+                          comment.type === "mentioned" ? "badge-status-blue" : "badge-status-green"
+                        }
                         style={{ fontSize: "0.625rem", padding: "2px 6px" }}
                       >
                         {comment.type === "mentioned" ? "@mentioned" : "assigned"}

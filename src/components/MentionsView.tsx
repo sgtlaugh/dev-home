@@ -23,7 +23,7 @@ export const MentionsView: React.FC<MentionsViewProps> = ({
       <div className="section-header">
         JIRA Notifications
         {jiraComments.length > 0 && (
-          <Badge bg="secondary" pill>
+          <Badge bg="" className="badge-mentions-count" pill>
             {jiraComments.length}
           </Badge>
         )}

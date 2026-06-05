@@ -453,6 +453,16 @@ a:hover {
   color: #656d76;
 }
 
+.badge-status-blue {
+  background-color: rgba(8, 96, 202, 0.15);
+  color: #0860ca;
+}
+
+.badge-mentions-count {
+  background-color: #d1d9e0;
+  color: #1f2328;
+}
+
 /* --- Alerts --- */
 .alert {
   border-radius: 8px;
