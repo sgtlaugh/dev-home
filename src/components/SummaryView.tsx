@@ -248,32 +248,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
           <Row className="g-2 flex-grow-1">
             <Col md={6}>
               <Section
-                icon={<IconEye size={13} stroke={1.8} />}
-                title="Review Requests"
-                count={reviewRequests.length}
-                onSeeMore={reviewRequests.length > 5 ? () => onNavigate("reviews") : undefined}
-                loading={reviewRequestsLoading}
-              >
-                {topReviews.length > 0 ? (
-                  topReviews.map((r) => (
-                    <ItemRow
-                      key={r.id}
-                      url={r.html_url}
-                      title={`#${r.number} ${r.title}`}
-                      subtitle={`${r.repo_full_name} · ${r.user.login}`}
-                      time={r.updated_at}
-                      badgeClass="badge-status-yellow"
-                      checksStatus={r.checks_status}
-                      onClick={() => setSelectedPR(r)}
-                    />
-                  ))
-                ) : (
-                  <EmptyRow text="No pending reviews" />
-                )}
-              </Section>
-            </Col>
-            <Col md={6}>
-              <Section
                 icon={<IconGitPullRequest size={13} stroke={1.8} />}
                 title="Open Pull Requests"
                 count={openPRs.length}
@@ -296,31 +270,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                   ))
                 ) : (
                   <EmptyRow text="No open pull requests" />
-                )}
-              </Section>
-            </Col>
-
-            {/* Row 2 */}
-            <Col md={6}>
-              <Section
-                icon={<IconAt size={13} stroke={1.8} />}
-                title="JIRA Notifications"
-                count={jiraComments.length}
-                onSeeMore={jiraComments.length > 5 ? () => onNavigate("mentions") : undefined}
-                loading={jiraCommentsLoading}
-              >
-                {allMentions.length > 0 ? (
-                  allMentions.map((m) => (
-                    <ItemRow
-                      key={m.id}
-                      url={m.url}
-                      title={m.title}
-                      subtitle={m.subtitle}
-                      time={m.time}
-                    />
-                  ))
-                ) : (
-                  <EmptyRow text="No recent mentions" />
                 )}
               </Section>
             </Col>
@@ -351,6 +300,57 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                   ))
                 ) : (
                   <EmptyRow text="No assigned issues" />
+                )}
+              </Section>
+            </Col>
+
+            {/* Row 2 */}
+            <Col md={6}>
+              <Section
+                icon={<IconEye size={13} stroke={1.8} />}
+                title="Review Requests"
+                count={reviewRequests.length}
+                onSeeMore={reviewRequests.length > 5 ? () => onNavigate("reviews") : undefined}
+                loading={reviewRequestsLoading}
+              >
+                {topReviews.length > 0 ? (
+                  topReviews.map((r) => (
+                    <ItemRow
+                      key={r.id}
+                      url={r.html_url}
+                      title={`#${r.number} ${r.title}`}
+                      subtitle={`${r.repo_full_name} · ${r.user.login}`}
+                      time={r.updated_at}
+                      badgeClass="badge-status-yellow"
+                      checksStatus={r.checks_status}
+                      onClick={() => setSelectedPR(r)}
+                    />
+                  ))
+                ) : (
+                  <EmptyRow text="No pending reviews" />
+                )}
+              </Section>
+            </Col>
+            <Col md={6}>
+              <Section
+                icon={<IconAt size={13} stroke={1.8} />}
+                title="JIRA Notifications"
+                count={jiraComments.length}
+                onSeeMore={jiraComments.length > 5 ? () => onNavigate("mentions") : undefined}
+                loading={jiraCommentsLoading}
+              >
+                {allMentions.length > 0 ? (
+                  allMentions.map((m) => (
+                    <ItemRow
+                      key={m.id}
+                      url={m.url}
+                      title={m.title}
+                      subtitle={m.subtitle}
+                      time={m.time}
+                    />
+                  ))
+                ) : (
+                  <EmptyRow text="No recent mentions" />
                 )}
               </Section>
             </Col>
