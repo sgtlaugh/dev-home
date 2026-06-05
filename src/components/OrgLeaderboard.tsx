@@ -204,20 +204,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
       <Card className="controls-card mb-3">
         <Card.Body className="p-3">
           <div className="d-flex gap-3 align-items-center flex-wrap">
-            {/* Org selector */}
-            <select
-              className="date-dropdown"
-              value={org || ""}
-              onChange={(e) => setOrg(e.target.value)}
-              disabled={orgsLoading}
-            >
-              {orgsLoading && <option>Loading...</option>}
-              {orgs.map((o) => (
-                <option key={o.login} value={o.login}>
-                  {o.login.charAt(0).toUpperCase() + o.login.slice(1)}
-                </option>
-              ))}
-            </select>
             {/* Mode selector */}
             <div className="segmented-control">
               {(["month", "year", "custom"] as DateMode[]).map((m) => (
@@ -290,14 +276,28 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
       </Card>
 
       {members.length > 0 && (
-        <div className="mb-3">
+        <div className="mb-3 d-flex gap-2 align-items-center">
+          <select
+            className="date-dropdown"
+            value={org || ""}
+            onChange={(e) => setOrg(e.target.value)}
+            disabled={orgsLoading}
+            style={{ flex: "0 0 auto" }}
+          >
+            {orgsLoading && <option>Loading...</option>}
+            {orgs.map((o) => (
+              <option key={o.login} value={o.login}>
+                {o.login.charAt(0).toUpperCase() + o.login.slice(1)}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             placeholder="Search by name or login"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="filter-input"
-            style={{ fontSize: "0.8rem", padding: "6px 10px", width: "100%" }}
+            style={{ fontSize: "0.8rem", padding: "6px 10px", flex: 1 }}
           />
         </div>
       )}
