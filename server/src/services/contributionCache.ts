@@ -135,3 +135,28 @@ export function clearProfiles(): void {
   const db = getDb();
   db.exec("DELETE FROM github_profiles");
 }
+
+export function getCachedCommitCount(yearMonth: string): number | null {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT commit_count FROM user_commit_cache WHERE year_month = ?")
+    .get(yearMonth) as { commit_count: number } | undefined;
+  return row?.commit_count ?? null;
+}
+
+export function saveCommitCount(yearMonth: string, count: number): void {
+  const db = getDb();
+  db.prepare(
+    "INSERT OR REPLACE INTO user_commit_cache (year_month, commit_count, fetched_at) VALUES (?, ?, datetime('now'))",
+  ).run(yearMonth, count);
+}
+
+export function getCachedCommitCounts(months: string[]): Map<string, number> {
+  if (months.length === 0) return new Map();
+  const db = getDb();
+  const placeholders = months.map(() => "?").join(",");
+  const rows = db
+    .prepare(`SELECT year_month, commit_count FROM user_commit_cache WHERE year_month IN (${placeholders})`)
+    .all(...months) as { year_month: string; commit_count: number }[];
+  return new Map(rows.map((r) => [r.year_month, r.commit_count]));
+}

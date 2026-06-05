@@ -5,19 +5,15 @@ import { graphql } from "../../clients/githubGraphqlClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import { LONG_CACHE_TTL } from "../../utils/constants";
+import { fetchUserRepos, fetchUserJoinDate, gateStartDate } from "./helpers";
 import {
-  buildYearChunks,
-  fetchUserRepos,
-  fetchUserJoinDate,
-  gateStartDate,
-} from "./helpers";
+  getMonthsBetween,
+  getCachedCommitCounts,
+  saveCommitCount,
+} from "../../services/contributionCache";
 
 const router = Router();
 
-/**
- * GET /api/github/user-info
- * Fetch user's join date for "All Time" range bounds.
- */
 router.get("/user-info", async (_req: Request, res: Response) => {
   try {
     const config = getConfig();
@@ -31,10 +27,25 @@ router.get("/user-info", async (_req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/github/commits-search
- * Fetch contributionsCollection and fork commit history for a date range.
- */
+function monthToRange(month: string): { from: string; to: string } {
+  const [y, m] = month.split("-").map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  return {
+    from: `${month}-01T00:00:00Z`,
+    to: `${month}-${lastDay.toString().padStart(2, "0")}T23:59:59Z`,
+  };
+}
+
+function getCurrentYearMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`;
+}
+
+function isFullMonth(startDate: string, endDate: string, month: string): boolean {
+  const [y, m] = month.split("-").map(Number);
+  return startDate <= `${month}-01` && endDate >= `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
+}
+
 router.get("/commits-search", async (req: Request, res: Response) => {
   const config = getConfig();
   const startDate = req.query.startDate as string;
@@ -43,7 +54,6 @@ router.get("/commits-search", async (req: Request, res: Response) => {
   if (!startDate || !endDate) {
     return res.status(400).json({ error: "startDate and endDate are required" });
   }
-
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
     return res.status(400).json({ error: "Dates must be in YYYY-MM-DD format" });
   }
@@ -52,50 +62,93 @@ router.get("/commits-search", async (req: Request, res: Response) => {
   const cached = apiCache.get(cacheKey);
   if (cached) return res.json(cached);
 
+  const currentMonth = getCurrentYearMonth();
+  const allMonths = getMonthsBetween(startDate, endDate);
+  const fullPastMonths = allMonths.filter((m) => m < currentMonth && isFullMonth(startDate, endDate, m));
+  const partialMonths = allMonths.filter((m) => !fullPastMonths.includes(m));
+
+  const dbCache = getCachedCommitCounts(fullPastMonths);
+  const missingMonths = fullPastMonths.filter((m) => !dbCache.has(m));
+
+  let cachedTotal = 0;
+  for (const count of dbCache.values()) cachedTotal += count;
+
+  logger.info(
+    "Commits",
+    `${allMonths.length} months (${dbCache.size} cached, ${missingMonths.length} to fetch, ${partialMonths.length} partial)`,
+  );
+
   const github = createGitHubClient();
 
   try {
-    const effectiveStart = await gateStartDate(github, config.githubUsername, startDate);
-    const since = `${effectiveStart}T00:00:00Z`;
-    const until = `${endDate}T23:59:59Z`;
-    const chunks = buildYearChunks(effectiveStart, endDate);
+    let contribCount = cachedTotal;
 
-    const fragments = chunks.map(
-      (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
-        totalCommitContributions
-        commitContributionsByRepository(maxRepositories: 100) {
-          repository { nameWithOwner }
-          contributions { totalCount }
-        }
-      }`,
-    );
-    const contribQuery = `query { viewer { id ${fragments.join("\n")} } }`;
-
-    const [contribData, repos] = await Promise.all([
-      graphql<{ viewer: Record<string, any> }>(contribQuery, {}, "commits/contributions"),
-      fetchUserRepos(github),
-    ]);
-
-    const userId = contribData.viewer?.id;
-
-    let contribCount = 0;
-    const repoTotals = new Map<string, number>();
-
-    for (const chunk of chunks) {
-      const collection = contribData.viewer?.[chunk.alias];
-      contribCount += collection?.totalCommitContributions || 0;
-
-      for (const entry of collection?.commitContributionsByRepository || []) {
-        const repoName = entry.repository?.nameWithOwner || "unknown";
-        const count = entry.contributions?.totalCount || 0;
-        repoTotals.set(repoName, (repoTotals.get(repoName) || 0) + count);
+    const MONTHS_PER_BATCH = 12;
+    for (let b = 0; b < missingMonths.length; b += MONTHS_PER_BATCH) {
+      const batch = missingMonths.slice(b, b + MONTHS_PER_BATCH);
+      const aliases = batch.map((month, i) => {
+        const range = monthToRange(month);
+        return `m${i}: contributionsCollection(from: "${range.from}", to: "${range.to}") { totalCommitContributions }`;
+      });
+      const data = await graphql<{ viewer: Record<string, any> }>(
+        `query { viewer { ${aliases.join("\n")} } }`,
+        {}, `commits/months-${b / MONTHS_PER_BATCH + 1}-of-${Math.ceil(missingMonths.length / MONTHS_PER_BATCH)}`,
+      );
+      for (let i = 0; i < batch.length; i++) {
+        const count = data.viewer?.[`m${i}`]?.totalCommitContributions || 0;
+        saveCommitCount(batch[i], count);
+        contribCount += count;
       }
     }
 
-    logger.info("Commits", `contributionsCollection: ${contribCount} (${chunks.length} chunks)`);
+    // Fetch partial/current months
+    for (const month of partialMonths) {
+      const [y, m] = month.split("-").map(Number);
+      const first = month === allMonths[0] ? startDate : `${month}-01`;
+      const lastDayOfMonth = new Date(y, m, 0).getDate();
+      const last = month === allMonths[allMonths.length - 1] ? endDate : `${month}-${lastDayOfMonth.toString().padStart(2, "0")}`;
+      try {
+        const data = await graphql<{ viewer: { c: { totalCommitContributions: number } } }>(
+          `query { viewer { c: contributionsCollection(from: "${first}T00:00:00Z", to: "${last}T23:59:59Z") { totalCommitContributions } } }`,
+          {}, `commits/partial-${month}`,
+        );
+        contribCount += data.viewer?.c?.totalCommitContributions || 0;
+      } catch (err) {
+        logger.error("Commits", `Failed to fetch partial ${month}: ${err}`);
+      }
+    }
 
-    const contribRepoNames = new Set([...repoTotals.keys()].map((n) => n.split("/")[1]));
+    // Fork check: get viewer ID + contrib repo names, then check forks
+    const effectiveStart = await gateStartDate(github, config.githubUsername, startDate);
+    const since = `${effectiveStart}T00:00:00Z`;
+    const until = `${endDate}T23:59:59Z`;
 
+    // Split fork check into yearly chunks to avoid >1 year contributionsCollection limit
+    const startYear = parseInt(effectiveStart.slice(0, 4), 10);
+    const endYear = parseInt(endDate.slice(0, 4), 10);
+    const contribRepoNames = new Set<string>();
+    let userId = "";
+
+    for (let year = startYear; year <= endYear; year++) {
+      const chunkFrom = year === startYear ? since : `${year}-01-01T00:00:00Z`;
+      const chunkTo = year === endYear ? until : `${year}-12-31T23:59:59Z`;
+      try {
+        const data = await graphql<{ viewer: { id: string; c: { commitContributionsByRepository: { repository: { nameWithOwner: string } }[] } } }>(
+          `query { viewer { id c: contributionsCollection(from: "${chunkFrom}", to: "${chunkTo}") {
+            commitContributionsByRepository(maxRepositories: 100) { repository { nameWithOwner } }
+          } } }`,
+          {}, `commits/fork-repos-${year}`,
+        );
+        userId = data.viewer?.id || userId;
+        for (const entry of data.viewer?.c?.commitContributionsByRepository || []) {
+          contribRepoNames.add(entry.repository.nameWithOwner.split("/")[1]);
+        }
+      } catch (err) {
+        logger.warn("Commits", `Fork repo check failed for ${year}: ${err}`);
+      }
+    }
+
+    const repos = await fetchUserRepos(github);
     const forkRepos = repos.filter(
       (r: any) =>
         r.fork &&
@@ -113,33 +166,18 @@ router.get("/commits-search", async (req: Request, res: Response) => {
       const forkFragments = batch.map((repo: any, idx: number) => {
         const [owner, name] = repo.full_name.split("/");
         return `f${idx}: repository(owner: "${owner}", name: "${name}") {
-          defaultBranchRef {
-            target {
-              ... on Commit {
-                history(since: "${since}", until: "${until}", author: { id: "${userId}" }) {
-                  totalCount
-                }
-              }
-            }
-          }
+          defaultBranchRef { target { ... on Commit {
+            history(since: "${since}", until: "${until}", author: { id: "${userId}" }) { totalCount }
+          } } }
         }`;
       });
 
-      const forkQuery = `query { ${forkFragments.join("\n")} }`;
-
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
-          const forkData = await graphql(forkQuery, {}, `commits/forks-batch`);
+          const forkData = await graphql(`query { ${forkFragments.join("\n")} }`, {}, "commits/forks-batch");
           for (let idx = 0; idx < batch.length; idx++) {
-            const count =
-              forkData[`f${idx}`]?.defaultBranchRef?.target?.history?.totalCount || 0;
-            if (count > 0) {
-              logger.info("Commits", `fork ${batch[idx].full_name}: ${count}`);
-              repoTotals.set(
-                batch[idx].full_name,
-                (repoTotals.get(batch[idx].full_name) || 0) + count,
-              );
-            }
+            const count = forkData[`f${idx}`]?.defaultBranchRef?.target?.history?.totalCount || 0;
+            if (count > 0) logger.info("Commits", `fork ${batch[idx].full_name}: ${count}`);
             forkCount += count;
           }
           break;
@@ -147,38 +185,21 @@ router.get("/commits-search", async (req: Request, res: Response) => {
           const message = err instanceof Error ? err.message : String(err);
           if (attempt < MAX_RETRIES) {
             logger.warn("Commits", `Fork batch retry ${attempt + 1}: ${message}`);
-            await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+            await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
           } else {
-            logger.error(
-              "Commits",
-              `Fork batch DROPPED: ${batch.map((r: any) => r.full_name).join(", ")}`,
-            );
+            logger.error("Commits", `Fork batch DROPPED: ${batch.map((r: any) => r.full_name).join(", ")}`);
           }
         }
       }
     }
 
-    if (forkCount > 0) {
-      logger.info("Commits", `Forks: ${forkCount} from ${forkRepos.length} repos`);
-    }
+    if (forkCount > 0) logger.info("Commits", `Forks: ${forkCount} from ${forkRepos.length} repos`);
 
     const totalCount = contribCount + forkCount;
+    logger.info("Commits", `Total: ${totalCount} (contributions: ${contribCount}, forks: ${forkCount})`);
 
-    const sortedRepos = [...repoTotals.entries()].sort((a, b) => b[1] - a[1]);
-    for (const [repo, count] of sortedRepos.slice(0, 20)) {
-      logger.info("Commits", `${repo}: ${count}`);
-    }
-    if (sortedRepos.length > 20) {
-      logger.info("Commits", `... and ${sortedRepos.length - 20} more repos`);
-    }
-
-    logger.info(
-      "Commits",
-      `Total: ${totalCount} (contributions: ${contribCount}, forks: ${forkCount})`,
-    );
+    const isPastRange = allMonths.every((m) => m < currentMonth);
     const responseData = { commitCount: totalCount };
-    const endYear = parseInt(endDate.slice(0, 4), 10);
-    const isPastRange = endYear < new Date().getFullYear();
     apiCache.set(cacheKey, responseData, isPastRange ? LONG_CACHE_TTL : undefined);
     res.json(responseData);
   } catch (err: unknown) {

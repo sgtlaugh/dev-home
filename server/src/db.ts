@@ -141,6 +141,17 @@ const MIGRATIONS: Migration[] = [
       );
     `);
   },
+
+  // 8 – create user_commit_cache for caching personal commit counts by month
+  (d) => {
+    d.exec(`
+      CREATE TABLE IF NOT EXISTS user_commit_cache (
+        year_month TEXT PRIMARY KEY,
+        commit_count INTEGER NOT NULL,
+        fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+  },
 ];
 
 function runMigrations(d: Database.Database): void {
