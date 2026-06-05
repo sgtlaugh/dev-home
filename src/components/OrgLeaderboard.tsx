@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo, memo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import { useUserOrgs, useOrgLeaderboard } from "../hooks/useOrgLeaderboard";
+import { CustomDateInputs } from "./CustomDateInputs";
 
 type DateMode = "month" | "year" | "custom";
 type SortKey = "commits" | "prs" | "reviews";
@@ -60,89 +61,6 @@ function SortHeader({
     </th>
   );
 }
-
-interface CustomDateInputsProps {
-  inputStart: string;
-  inputEnd: string;
-  selectedPreset: string | null;
-  onInputsChange: (start: string, end: string) => void;
-  onApplyPreset: (key: string) => void;
-  onTriggerSearch: () => void;
-}
-
-const CustomDateInputs = memo(
-  ({
-    inputStart,
-    inputEnd,
-    selectedPreset,
-    onInputsChange,
-    onApplyPreset,
-    onTriggerSearch,
-  }: CustomDateInputsProps) => {
-    const startRef = useRef<HTMLInputElement>(null);
-    const endRef = useRef<HTMLInputElement>(null);
-
-    const handleTrigger = () => {
-      const start = startRef.current?.value || "";
-      const end = endRef.current?.value || "";
-      onInputsChange(start, end);
-      onTriggerSearch();
-    };
-
-    return (
-      <div className="d-flex gap-2 align-items-center flex-wrap">
-        {[
-          { key: "30d", label: "30 days" },
-          { key: "90d", label: "90 days" },
-          { key: "6mo", label: "6 months" },
-          { key: "1y", label: "1 year" },
-          { key: "alltime", label: "All Time" },
-        ].map((p) => (
-          <button
-            key={p.key}
-            className="activity-filter-chip"
-            style={
-              selectedPreset === p.key ? { borderColor: "#0969da", color: "#0969da" } : undefined
-            }
-            onClick={() => onApplyPreset(p.key)}
-          >
-            {p.label}
-          </button>
-        ))}
-        <span style={{ color: "#d1d9e0", fontSize: "0.75rem" }}>|</span>
-        <input
-          ref={startRef}
-          key={`start-${inputStart}`}
-          type="text"
-          placeholder="YYYY-MM-DD"
-          defaultValue={inputStart}
-          onKeyDown={(e) => e.key === "Enter" && handleTrigger()}
-          className="filter-input"
-          style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
-        />
-        <span style={{ color: "#656d76", fontSize: "0.75rem" }}>→</span>
-        <input
-          ref={endRef}
-          key={`end-${inputEnd}`}
-          type="text"
-          placeholder="YYYY-MM-DD"
-          defaultValue={inputEnd}
-          onKeyDown={(e) => e.key === "Enter" && handleTrigger()}
-          className="filter-input"
-          style={{ fontSize: "0.75rem", padding: "4px 8px", width: "120px" }}
-        />
-        <button
-          className="segmented-btn active"
-          style={{ fontSize: "0.7rem", padding: "4px 10px" }}
-          onClick={handleTrigger}
-        >
-          Go
-        </button>
-      </div>
-    );
-  },
-);
-CustomDateInputs.displayName = "CustomDateInputs";
 
 export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string }> = ({
   active,
@@ -203,21 +121,24 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
     setCustomTrigger((t) => t + 1);
   }, []);
 
-  const handleInputsChange = useCallback((start: string, end: string) => {
-    setInputStart(start);
-    setInputEnd(end);
-  }, []);
+  const triggerCustomSearch = useCallback(
+    (start?: string, end?: string) => {
+      const startVal = start ?? inputStart;
+      const endVal = end ?? inputEnd;
 
-  const triggerCustomSearch = useCallback(() => {
-    if (!isValidDate(inputStart) || !isValidDate(inputEnd)) {
-      setValidationError("Enter valid dates (YYYY-MM-DD)");
-      return;
-    }
-    setValidationError(null);
-    setCustomStart(inputStart);
-    setCustomEnd(inputEnd);
-    setCustomTrigger((t) => t + 1);
-  }, [inputStart, inputEnd]);
+      if (!isValidDate(startVal) || !isValidDate(endVal)) {
+        setValidationError("Enter valid dates (YYYY-MM-DD)");
+        return;
+      }
+      setValidationError(null);
+      setInputStart(startVal);
+      setInputEnd(endVal);
+      setCustomStart(startVal);
+      setCustomEnd(endVal);
+      setCustomTrigger((t) => t + 1);
+    },
+    [inputStart, inputEnd],
+  );
 
   useEffect(() => {
     if (orgs.length > 0 && !org) setOrg(orgs[0].login);
@@ -396,7 +317,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                 inputStart={inputStart}
                 inputEnd={inputEnd}
                 selectedPreset={selectedPreset}
-                onInputsChange={handleInputsChange}
                 onApplyPreset={applyPreset}
                 onTriggerSearch={triggerCustomSearch}
               />
