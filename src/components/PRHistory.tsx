@@ -210,6 +210,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
       setInputEnd(endVal);
       setStartDate(startVal);
       setEndDate(endVal);
+      setSelectedPreset(null);
       setCustomTrigger((t) => t + 1);
     },
     [inputStart, inputEnd],

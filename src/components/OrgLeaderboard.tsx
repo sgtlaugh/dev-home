@@ -135,6 +135,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
       setInputEnd(endVal);
       setCustomStart(startVal);
       setCustomEnd(endVal);
+      setSelectedPreset(null);
       setCustomTrigger((t) => t + 1);
     },
     [inputStart, inputEnd],
