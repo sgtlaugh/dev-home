@@ -26,7 +26,7 @@ export const CustomDateInputs = memo(
     };
 
     return (
-      <div className="d-flex gap-2 align-items-center flex-wrap">
+      <div className="d-flex gap-2 align-items-center">
         {[
           { key: "30d", label: "30 days" },
           { key: "90d", label: "90 days" },

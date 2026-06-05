@@ -406,7 +406,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                 </button>
               ))}
             </div>
-
             {mode === "month" && (
               <div className="d-flex gap-2 align-items-center">
                 <select
@@ -436,7 +435,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                 </select>
               </div>
             )}
-
             {mode === "year" && (
               <select
                 className="date-dropdown"
@@ -453,7 +451,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange }) => {
                 })}
               </select>
             )}
-
             {mode === "custom" && (
               <CustomDateInputs
                 inputStart={inputStart}

@@ -234,7 +234,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   return (
     <div>
       {/* Controls */}
-      <Card className="mb-3">
+      <Card className="controls-card mb-3">
         <Card.Body className="p-3">
           <div className="d-flex gap-3 align-items-center flex-wrap">
             {/* Org selector */}
@@ -251,7 +251,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                 </option>
               ))}
             </select>
-
             {/* Mode selector */}
             <div className="segmented-control">
               {(["month", "year", "custom"] as DateMode[]).map((m) => (
@@ -264,7 +263,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                 </button>
               ))}
             </div>
-
             {mode === "month" && (
               <div className="d-flex gap-2 align-items-center">
                 <select
@@ -294,7 +292,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                 </select>
               </div>
             )}
-
             {mode === "year" && (
               <select
                 className="date-dropdown"
@@ -311,7 +308,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                 })}
               </select>
             )}
-
             {mode === "custom" && (
               <CustomDateInputs
                 inputStart={inputStart}
