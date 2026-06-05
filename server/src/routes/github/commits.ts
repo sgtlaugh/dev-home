@@ -8,6 +8,8 @@ import { LONG_CACHE_TTL } from "../../utils/constants";
 import { fetchUserRepos, fetchUserJoinDate, gateStartDate } from "./helpers";
 import {
   getMonthsBetween,
+  getCurrentYearMonth,
+  isFullMonth,
   getCachedCommitCounts,
   saveCommitCount,
 } from "../../services/contributionCache";
@@ -36,15 +38,6 @@ function monthToRange(month: string): { from: string; to: string } {
   };
 }
 
-function getCurrentYearMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`;
-}
-
-function isFullMonth(startDate: string, endDate: string, month: string): boolean {
-  const [y, m] = month.split("-").map(Number);
-  return startDate <= `${month}-01` && endDate >= `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
-}
 
 router.get("/commits-search", async (req: Request, res: Response) => {
   const config = getConfig();

@@ -6,3 +6,6 @@ export const MAX_REPOS_PER_CONTRIBUTION = 100;
 // LONG: immutable/slow-changing data (past ranges, user orgs)
 export const SHORT_CACHE_TTL = 15 * 60 * 1000;
 export const LONG_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+// PRs older than this are considered stable (state won't change) and cached permanently
+export const PR_CACHE_AGE_MONTHS = 3;

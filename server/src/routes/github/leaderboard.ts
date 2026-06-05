@@ -5,6 +5,8 @@ import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import {
   getMonthsBetween,
+  getCurrentYearMonth,
+  isFullMonth,
   getCachedContributions,
   saveContributions,
   MonthlyContribution,
@@ -113,15 +115,6 @@ function monthToChunk(month: string): { from: string; to: string; alias: string 
   };
 }
 
-function getCurrentYearMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`;
-}
-
-function isFullMonth(startDate: string, endDate: string, yearMonth: string): boolean {
-  const [y, m] = yearMonth.split("-").map(Number);
-  return startDate <= `${yearMonth}-01` && endDate >= `${yearMonth}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
-}
 
 async function fetchOrgMembers(org: string): Promise<string[]> {
   const cacheKey = `github:org-members:${org}`;

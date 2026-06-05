@@ -8,6 +8,16 @@ export interface MonthlyContribution {
   reviews: number;
 }
 
+export function getCurrentYearMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`;
+}
+
+export function isFullMonth(startDate: string, endDate: string, month: string): boolean {
+  const [y, m] = month.split("-").map(Number);
+  return startDate <= `${month}-01` && endDate >= `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
+}
+
 export function getMonthsBetween(startDate: string, endDate: string): string[] {
   const months: string[] = [];
   const [sy, sm] = startDate.split("-").map(Number);
@@ -136,19 +146,13 @@ export function clearProfiles(): void {
   db.exec("DELETE FROM github_profiles");
 }
 
-export function getCachedCommitCount(yearMonth: string): number | null {
-  const db = getDb();
-  const row = db
-    .prepare("SELECT commit_count FROM user_commit_cache WHERE year_month = ?")
-    .get(yearMonth) as { commit_count: number } | undefined;
-  return row?.commit_count ?? null;
-}
-
 export function saveCommitCount(yearMonth: string, count: number): void {
   const db = getDb();
   db.prepare(
-    "INSERT OR REPLACE INTO user_commit_cache (year_month, commit_count, fetched_at) VALUES (?, ?, datetime('now'))",
-  ).run(yearMonth, count);
+    `INSERT INTO user_contribution_cache (year_month, commit_count, fetched_at)
+     VALUES (?, ?, datetime('now'))
+     ON CONFLICT(year_month) DO UPDATE SET commit_count = ?, fetched_at = datetime('now')`,
+  ).run(yearMonth, count, count);
 }
 
 export function getCachedCommitCounts(months: string[]): Map<string, number> {
@@ -156,7 +160,32 @@ export function getCachedCommitCounts(months: string[]): Map<string, number> {
   const db = getDb();
   const placeholders = months.map(() => "?").join(",");
   const rows = db
-    .prepare(`SELECT year_month, commit_count FROM user_commit_cache WHERE year_month IN (${placeholders})`)
+    .prepare(`SELECT year_month, commit_count FROM user_contribution_cache WHERE year_month IN (${placeholders}) AND commit_count IS NOT NULL`)
     .all(...months) as { year_month: string; commit_count: number }[];
   return new Map(rows.map((r) => [r.year_month, r.commit_count]));
+}
+
+export function savePRs(yearMonth: string, prs: any[]): void {
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO user_contribution_cache (year_month, prs_json, fetched_at)
+     VALUES (?, ?, datetime('now'))
+     ON CONFLICT(year_month) DO UPDATE SET prs_json = ?, fetched_at = datetime('now')`,
+  ).run(yearMonth, JSON.stringify(prs), JSON.stringify(prs));
+}
+
+export function getCachedPRs(months: string[]): Map<string, any[]> {
+  if (months.length === 0) return new Map();
+  const db = getDb();
+  const placeholders = months.map(() => "?").join(",");
+  const rows = db
+    .prepare(`SELECT year_month, prs_json FROM user_contribution_cache WHERE year_month IN (${placeholders}) AND prs_json IS NOT NULL`)
+    .all(...months) as { year_month: string; prs_json: string }[];
+  const result = new Map<string, any[]>();
+  for (const row of rows) {
+    try {
+      result.set(row.year_month, JSON.parse(row.prs_json));
+    } catch { /* ignore corrupt data */ }
+  }
+  return result;
 }

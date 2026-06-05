@@ -142,12 +142,22 @@ const MIGRATIONS: Migration[] = [
     `);
   },
 
-  // 8 – create user_commit_cache for caching personal commit counts by month
+  // 8 – create user_commit_cache (original)
+  (d) => {
+    d.exec(`CREATE TABLE IF NOT EXISTS user_commit_cache (
+      year_month TEXT PRIMARY KEY, commit_count INTEGER NOT NULL,
+      fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+  },
+
+  // 9 – replace user_commit_cache with user_contribution_cache (commits + PRs)
   (d) => {
     d.exec(`
-      CREATE TABLE IF NOT EXISTS user_commit_cache (
+      DROP TABLE IF EXISTS user_commit_cache;
+      CREATE TABLE user_contribution_cache (
         year_month TEXT PRIMARY KEY,
-        commit_count INTEGER NOT NULL,
+        commit_count INTEGER NOT NULL DEFAULT 0,
+        prs_json TEXT,
         fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
     `);

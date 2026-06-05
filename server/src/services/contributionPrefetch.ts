@@ -5,6 +5,7 @@ import { MAX_REPOS_PER_CONTRIBUTION, LONG_CACHE_TTL } from "../utils/constants";
 import { logger } from "../utils/logger";
 import {
   getMonthsBetween,
+  getCurrentYearMonth,
   getCachedLoginsForMonth,
   saveContributions,
   saveProfiles,
@@ -49,11 +50,6 @@ function formatEta(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.round((seconds % 3600) / 60);
   return `${h}h${m}m`;
-}
-
-function getCurrentYearMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`;
 }
 
 async function getOrgCreatedMonth(org: string): Promise<string> {
