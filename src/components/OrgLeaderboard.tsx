@@ -337,7 +337,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                     currentKey={sortKey}
                     currentDir={sortDir}
                     onSort={handleSort}
-                    tooltip="Number of PRs opened, not commits within PRs"
+                    tooltip="Number of PRs created"
                   />
                   <SortHeader
                     label="Reviews ⓘ"
