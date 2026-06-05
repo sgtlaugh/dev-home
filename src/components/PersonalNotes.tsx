@@ -15,7 +15,6 @@ import {
 import { Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
 import { EmptyState } from "./EmptyState";
-import { Timestamp } from "./Timestamp";
 
 interface PersonalNotesProps {
   notes: Note[];
@@ -186,7 +185,6 @@ function NoteRow({
               {title}
             </span>
           )}
-          <Timestamp timestamp={note.created_at} />
         </div>
         {note.content && (
           <div

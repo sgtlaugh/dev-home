@@ -95,6 +95,7 @@ interface ItemRowProps {
   badgeClass?: string;
   checksStatus?: string | null;
   onClick?: () => void;
+  hideTime?: boolean;
 }
 
 function ItemRow({
@@ -106,6 +107,7 @@ function ItemRow({
   badgeClass,
   checksStatus,
   onClick,
+  hideTime,
 }: ItemRowProps) {
   return (
     <div className="summary-item d-flex align-items-center gap-3 px-3 py-2" onClick={onClick}>
@@ -129,16 +131,24 @@ function ItemRow({
       </div>
       <div
         className="d-flex align-items-center gap-2"
-        style={badge ? { width: "140px", flexShrink: 0 } : { flexShrink: 0 }}
+        style={
+          hideTime && badge
+            ? { flexShrink: 0 }
+            : badge
+              ? { width: "140px", flexShrink: 0 }
+              : { flexShrink: 0 }
+        }
       >
-        <div style={badge ? { width: "60px" } : {}}>
-          <Timestamp timestamp={time} />
-        </div>
+        {!hideTime && (
+          <div style={badge ? { width: "60px" } : {}}>
+            <Timestamp timestamp={time} />
+          </div>
+        )}
         {badge && (
           <Badge
             bg=""
             className={badgeClass || "badge-status-neutral"}
-            style={{ flex: 1, textAlign: "center" }}
+            style={hideTime ? {} : { flex: 1, textAlign: "center" }}
           >
             {badge}
           </Badge>
@@ -336,6 +346,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                         issue.status.name,
                       )}
                       onClick={() => setSelectedIssue(issue)}
+                      hideTime={true}
                     />
                   ))
                 ) : (
@@ -373,6 +384,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                   subtitle=""
                   time={note.created_at}
                   onClick={() => onOpenNote(note)}
+                  hideTime={true}
                 />
               ))
             ) : (

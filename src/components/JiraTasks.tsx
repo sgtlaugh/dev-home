@@ -6,7 +6,6 @@ import { JiraIssue } from "../types";
 import { StatusBadge } from "./StatusBadge";
 import { EmptyState } from "./EmptyState";
 import { DescriptionModal } from "./DescriptionModal";
-import { Timestamp } from "./Timestamp";
 
 interface JiraTasksProps {
   issues: JiraIssue[];
@@ -48,7 +47,6 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
             <th>Summary</th>
             <th>Status</th>
             <th>Project</th>
-            <th>Updated</th>
           </tr>
         </thead>
         <tbody>
@@ -96,9 +94,6 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
                 </td>
                 <td>
                   <span className="badge badge-status-neutral">{issue.project.key}</span>
-                </td>
-                <td>
-                  <Timestamp timestamp={issue.updated} />
                 </td>
               </tr>
             );
