@@ -6,7 +6,7 @@ import { closeDb, getDb } from "./db";
 import activityRoutes from "./routes/activity";
 import configRoutes from "./routes/config";
 import githubRoutes from "./routes/github";
-import jiraRoutes from "./routes/jira";
+import jiraRoutes, { resetJiraCache } from "./routes/jira";
 import notesRoutes from "./routes/notes";
 import { errorHandler } from "./utils/errors";
 import { apiCache } from "./utils/cache";
@@ -66,6 +66,7 @@ export function createServer() {
   app.post("/api/cache/purge", (_req: Request, res: Response) => {
     apiCache.clear();
     clearProfiles();
+    resetJiraCache();
     res.json({ status: "cache cleared" });
   });
 

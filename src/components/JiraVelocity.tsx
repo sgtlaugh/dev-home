@@ -54,10 +54,22 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
           <div className="stat-label">Completed</div>
         </div>
         <div className="stat-card">
+          <div className="stat-value" style={{ color: "#e3795c" }}>
+            {metrics?.totalStoryPoints || 0}
+          </div>
+          <div className="stat-label">Story Points</div>
+        </div>
+        <div className="stat-card">
           <div className="stat-value" style={{ color: "#1a7f37" }}>
             {metrics?.velocity.tasksPerWeek.toFixed(1) || "0.0"}
           </div>
           <div className="stat-label">Tasks/Week</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: "#e3795c" }}>
+            {metrics?.storyPointsPerWeek?.toFixed(1) || "0.0"}
+          </div>
+          <div className="stat-label">SP/Week</div>
         </div>
         <div className="stat-card">
           <div className="stat-value" style={{ color: "#8250df" }}>
@@ -169,6 +181,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                   <tr>
                     <th>Week</th>
                     <th>Completed</th>
+                    <th>Story Points</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -176,6 +189,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                     <tr key={week.weekRange}>
                       <td style={{ fontWeight: 500 }}>{week.weekRange}</td>
                       <td>{week.count}</td>
+                      <td>{week.storyPoints}</td>
                     </tr>
                   ))}
                 </tbody>

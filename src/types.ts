@@ -127,9 +127,12 @@ export interface Note {
 export interface JiraVelocityMetrics {
   period: { startDate: string; endDate: string };
   totalCompleted: number;
+  totalStoryPoints: number;
+  storyPointsPerWeek: number;
   completionsByWeek: Array<{
     weekRange: string;
     count: number;
+    storyPoints: number;
     issues: string[];
   }>;
   averageCompletionTime: {

@@ -2,8 +2,36 @@ import { Router, Request, Response } from "express";
 import { getConfig } from "../config";
 import { createJiraClient } from "../clients/jiraApiClient";
 import { apiCache } from "../utils/cache";
+import { logger } from "../utils/logger";
 
 const router = Router();
+
+let storyPointsFieldId: string | null = null;
+let storyPointsDetected = false;
+
+export function resetJiraCache(): void {
+  storyPointsFieldId = null;
+  storyPointsDetected = false;
+}
+
+async function getStoryPointsFieldId(): Promise<string | null> {
+  if (storyPointsDetected) return storyPointsFieldId;
+
+  try {
+    const jira = createJiraClient();
+    const { data } = await jira.get("/field");
+    const field = data.find((f: any) =>
+      /story.?point/i.test(f.name) || f.key === "story_points" || f.id === "story_points"
+    );
+    storyPointsFieldId = field?.id || field?.key || null;
+    storyPointsDetected = true;
+    logger.info("JIRA", `Story points field: ${storyPointsFieldId || "not found"}`);
+    return storyPointsFieldId;
+  } catch (err) {
+    logger.warn("JIRA", `Failed to detect story points field: ${err}`);
+    return null;
+  }
+}
 
 /**
  * Convert an ADF node to markdown-ish text for display purposes.
@@ -248,8 +276,9 @@ router.get("/velocity", async (req: Request, res: Response) => {
   const config = getConfig();
   const jira = createJiraClient();
 
+  const spField = await getStoryPointsFieldId();
   const jql = `assignee = "${config.jiraEmail}" AND statusCategory = Done AND resolutiondate >= "${startDate}" AND resolutiondate <= "${endDate}" ORDER BY resolutiondate DESC`;
-  const fields = ["key", "summary", "created", "resolutiondate"];
+  const fields = ["key", "summary", "created", "resolutiondate", ...(spField ? [spField] : [])];
 
   const { data } = await jira.post("/search/jql", {
     jql,
@@ -258,7 +287,7 @@ router.get("/velocity", async (req: Request, res: Response) => {
   });
 
   const issues = data.issues || [];
-  const metrics = calculateVelocityMetrics(issues, startDate, endDate);
+  const metrics = calculateVelocityMetrics(issues, startDate, endDate, spField);
 
   const result = { metrics };
   apiCache.set(cacheKey, result);
@@ -362,17 +391,22 @@ function calculateVelocityMetrics(
   issues: any[],
   startDate: string,
   endDate: string,
+  spFieldId?: string | null,
 ): Record<string, any> {
   const completionTimes: number[] = [];
-  const completionsByWeekMap = new Map<string, { count: number; issues: string[] }>();
+  const completionsByWeekMap = new Map<string, { count: number; storyPoints: number; issues: string[] }>();
+  let totalStoryPoints = 0;
 
   for (const issue of issues) {
     const time = getCompletionTime(issue);
     completionTimes.push(time);
+    const sp = spFieldId ? (Number(issue.fields?.[spFieldId]) || 0) : 0;
+    totalStoryPoints += sp;
 
     const weekKey = getWeekKey(new Date(issue.fields?.resolutiondate));
-    const entry = completionsByWeekMap.get(weekKey) || { count: 0, issues: [] };
+    const entry = completionsByWeekMap.get(weekKey) || { count: 0, storyPoints: 0, issues: [] };
     entry.count++;
+    entry.storyPoints += sp;
     entry.issues.push(issue.key);
     completionsByWeekMap.set(weekKey, entry);
   }
@@ -385,6 +419,7 @@ function calculateVelocityMetrics(
       return {
         weekRange: formatWeekRange(weekKey),
         count: data?.count || 0,
+        storyPoints: data?.storyPoints || 0,
         issues: data?.issues || [],
       };
     });
@@ -426,6 +461,8 @@ function calculateVelocityMetrics(
   return {
     period: { startDate, endDate },
     totalCompleted: issues.length,
+    totalStoryPoints,
+    storyPointsPerWeek: Math.round((totalStoryPoints / totalWeeks) * 100) / 100,
     completionsByWeek,
     averageCompletionTime: {
       mean: meanFormatted.value,
