@@ -252,15 +252,6 @@ export default function App() {
               <>
                 <div className="content-header">
                   <div className="content-header-time">
-                    {loading && <Spinner animation="border" size="sm" variant="secondary" />}
-                    {!loading && lastRefreshTime && (
-                      <span
-                        className="text-secondary sidebar-refresh-time"
-                        title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
-                      >
-                        {Math.round((Date.now() - lastRefreshTime) / 60000)}m
-                      </span>
-                    )}
                     {(prefetch.running || prefetch.complete) &&
                       effectiveTab === "leaderboard" &&
                       (() => {
@@ -315,6 +306,21 @@ export default function App() {
                       })()}
                   </div>
                   <div className="content-header-actions">
+                    {loading && <Spinner animation="border" size="sm" variant="secondary" />}
+                    {!loading && lastRefreshTime && (
+                      <span
+                        className="text-secondary sidebar-refresh-time sidebar-action-btn"
+                        title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
+                        style={{
+                          cursor: "default",
+                          padding: "0 8px",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        {Math.round((Date.now() - lastRefreshTime) / 60000)}m
+                      </span>
+                    )}
                     <button
                       className={`sidebar-action-btn${refreshing ? " spinning" : ""}`}
                       onClick={async () => {
