@@ -22,7 +22,7 @@ const MAX_FIELDS_PER_QUERY = 50;
 const MAX_CONCURRENT_BATCHES = 3;
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 3000;
-const BATCH_DELAY_MS = 3000;
+const BATCH_DELAY_MS = 5000;
 const FALLBACK_403_PAUSE_MS = 5000;
 const FALLBACK_403_PARALLEL = 5;
 
@@ -229,9 +229,11 @@ function loadProfiles(members: string[]): Map<string, { avatarUrl: string; name:
 
 function triggerPrefetch(org: string): void {
   if (isPrefetchRunning()) return;
-  fetchOrgMembers(org)
-    .then((members) => startPrefetch(org, members))
-    .catch((err) => logger.error("Prefetch", `Failed: ${err}`));
+  setTimeout(() => {
+    fetchOrgMembers(org)
+      .then((members) => startPrefetch(org, members))
+      .catch((err) => logger.error("Prefetch", `Failed: ${err}`));
+  }, 30000);
 }
 
 router.get("/org-leaderboard", async (req: Request, res: Response) => {
