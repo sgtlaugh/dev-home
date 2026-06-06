@@ -250,53 +250,156 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
     return startDate && endDate ? `${startDate} to ${endDate}` : "Custom Range";
   };
 
+  const totalLines = totalAdditions + totalDeletions;
+  const addRatio = totalLines > 0 ? (totalAdditions / totalLines) * 100 : 0;
+
   return (
     <div style={{ padding: "1rem" }}>
-      {/* Stat Cards */}
-      <div className="d-flex gap-2 mb-3 flex-wrap">
-        {STAT_DEFS.map((s) => {
-          const bgColors: Record<StateFilter, string> = {
-            all: "rgba(26, 127, 55, 0.05)",
-            merged: "rgba(130, 80, 223, 0.05)",
-            open: "rgba(9, 105, 218, 0.05)",
-            closed: "rgba(207, 34, 46, 0.05)",
-          };
-          return (
+      {/* Hero Stat Card */}
+      <div
+        className="stat-card clickable"
+        style={{
+          background: "linear-gradient(135deg, #0969da 0%, #033a99 100%)",
+          color: "white",
+          padding: "2rem",
+          borderRadius: "12px",
+          marginBottom: "1.5rem",
+          cursor: "pointer",
+          boxShadow: "0 4px 16px rgba(9, 105, 218, 0.2)",
+          display: "flex",
+          justifyContent: "space-around",
+          alignItems: "center",
+        }}
+        onClick={() => toggleFilter("all")}
+      >
+        <div>
+          <div style={{ fontSize: "2.5rem", fontWeight: 700 }}>{statCounts.all}</div>
+          <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>Pull Requests</div>
+        </div>
+        <div style={{ width: "1px", height: "60px", backgroundColor: "rgba(255,255,255,0.2)" }} />
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: "2.5rem", fontWeight: 700 }}>{commitCount}</div>
+          <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>Commits</div>
+        </div>
+      </div>
+
+      {/* PR Breakdown */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+        }}
+      >
+        {/* Merged */}
+        <div
+          className="stat-card clickable"
+          style={{
+            backgroundColor: "rgba(130, 80, 223, 0.05)",
+            textAlign: "center",
+            cursor: "pointer",
+            ...(stateFilter === "merged"
+              ? { borderColor: "#8250df", boxShadow: "0 0 12px #8250df33" }
+              : {}),
+          }}
+          onClick={() => toggleFilter("merged")}
+        >
+          <div style={{ color: "#8250df", fontWeight: 600, fontSize: "1.3rem" }}>{mergedCount}</div>
+          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>Merged</div>
+        </div>
+
+        {/* Open */}
+        <div
+          className="stat-card clickable"
+          style={{
+            backgroundColor: "rgba(9, 105, 218, 0.05)",
+            textAlign: "center",
+            cursor: "pointer",
+            ...(stateFilter === "open"
+              ? { borderColor: "#0969da", boxShadow: "0 0 12px #0969da33" }
+              : {}),
+          }}
+          onClick={() => toggleFilter("open")}
+        >
+          <div style={{ color: "#0969da", fontWeight: 600, fontSize: "1.3rem" }}>{openCount}</div>
+          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>Open</div>
+        </div>
+
+        {/* Closed */}
+        <div
+          className="stat-card clickable"
+          style={{
+            backgroundColor: "rgba(207, 34, 46, 0.05)",
+            textAlign: "center",
+            cursor: "pointer",
+            ...(stateFilter === "closed"
+              ? { borderColor: "#cf222e", boxShadow: "0 0 12px #cf222e33" }
+              : {}),
+          }}
+          onClick={() => toggleFilter("closed")}
+        >
+          <div style={{ color: "#cf222e", fontWeight: 600, fontSize: "1.3rem" }}>{closedCount}</div>
+          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>Closed</div>
+        </div>
+      </div>
+
+      {/* Code Metrics with Bar Chart */}
+      <div className="stat-card" style={{ padding: "1.5rem", marginBottom: "1.5rem" }}>
+        <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <div
+            style={{
+              flex: 1,
+              height: "28px",
+              background: "#f5f5f5",
+              borderRadius: "4px",
+              overflow: "hidden",
+              display: "flex",
+            }}
+          >
             <div
-              key={s.key}
-              className={`stat-card clickable${stateFilter === s.key || (s.key === "all" && stateFilter === "all") ? "" : ""}${stateFilter === s.key && s.key !== "all" ? " active" : ""}`}
               style={{
-                backgroundColor: bgColors[s.key],
-                ...(stateFilter === s.key && s.key !== "all"
-                  ? { borderColor: s.color, boxShadow: `0 0 12px ${s.color}33` }
-                  : {}),
+                width: `${addRatio}%`,
+                backgroundColor: "#1a7f37",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.7rem",
+                color: "white",
+                fontWeight: 600,
               }}
-              onClick={() => toggleFilter(s.key)}
             >
-              <div className="stat-value" style={{ color: s.color }}>
-                {statCounts[s.key]}
-              </div>
-              <div className="stat-label">{s.label}</div>
+              {addRatio > 20 && `${Math.round(addRatio)}%`}
             </div>
-          );
-        })}
-        <div className="stat-card" style={{ backgroundColor: "rgba(26, 127, 55, 0.05)" }}>
-          <div className="stat-value" style={{ color: "#3fb950" }}>
-            {commitCount}
+            <div
+              style={{
+                width: `${100 - addRatio}%`,
+                backgroundColor: "#cf222e",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.7rem",
+                color: "white",
+                fontWeight: 600,
+              }}
+            >
+              {100 - addRatio > 20 && `${Math.round(100 - addRatio)}%`}
+            </div>
           </div>
-          <div className="stat-label">Commits</div>
         </div>
-        <div className="stat-card" style={{ backgroundColor: "rgba(26, 127, 55, 0.05)" }}>
-          <div className="stat-value" style={{ color: "#1a7f37" }}>
-            +{totalAdditions.toLocaleString()}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div>
+            <div style={{ color: "#1a7f37", fontWeight: 600, fontSize: "1.1rem" }}>
+              +{totalAdditions.toLocaleString()}
+            </div>
+            <div style={{ fontSize: "0.75rem", color: "#656d76" }}>Lines Added</div>
           </div>
-          <div className="stat-label">Lines Added</div>
-        </div>
-        <div className="stat-card" style={{ backgroundColor: "rgba(207, 34, 46, 0.05)" }}>
-          <div className="stat-value" style={{ color: "#cf222e" }}>
-            -{totalDeletions.toLocaleString()}
+          <div>
+            <div style={{ color: "#cf222e", fontWeight: 600, fontSize: "1.1rem" }}>
+              -{totalDeletions.toLocaleString()}
+            </div>
+            <div style={{ fontSize: "0.75rem", color: "#656d76" }}>Lines Deleted</div>
           </div>
-          <div className="stat-label">Lines Deleted</div>
         </div>
       </div>
 
