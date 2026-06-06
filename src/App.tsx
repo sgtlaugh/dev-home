@@ -329,6 +329,7 @@ export default function App() {
                         setToast("Clearing cache and refreshing...");
                         try {
                           apiCache.clear();
+                          localStorage.clear();
                           await apiClient.post("/cache/purge");
                           await Promise.all([
                             refresh(),
