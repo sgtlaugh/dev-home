@@ -14,7 +14,7 @@ import {
 
 const QUERIES_PER_MINUTE = 40;
 const DELAY_BETWEEN_QUERIES_MS = Math.ceil(60000 / QUERIES_PER_MINUTE);
-const BATCH_SIZE = 40;
+const BATCH_SIZE = 35;
 
 let prefetchRunning = false;
 
@@ -171,7 +171,8 @@ export async function startPrefetch(
         }
 
         queriesDone++;
-        await new Promise((r) => setTimeout(r, DELAY_BETWEEN_QUERIES_MS));
+        const jitter = Math.random() * 500;
+        await new Promise((r) => setTimeout(r, DELAY_BETWEEN_QUERIES_MS + jitter));
       }
 
       const elapsed = (Date.now() - startTime) / 1000;

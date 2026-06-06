@@ -17,11 +17,14 @@ import { startPrefetch, isPrefetchRunning, stopPrefetch } from "../../services/c
 import { MAX_REPOS_PER_CONTRIBUTION, SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
-const MAX_BATCH_SIZE = 40;
+const MAX_BATCH_SIZE = 35;
 const MAX_FIELDS_PER_QUERY = 50;
 const MAX_CONCURRENT_BATCHES = 3;
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 3000;
+const BATCH_DELAY_MS = 3000;
+const FALLBACK_403_PAUSE_MS = 5000;
+const FALLBACK_403_PARALLEL = 5;
 
 interface LeaderboardEntry {
   login: string;
@@ -139,19 +142,27 @@ async function fetchBatchFromApi(
       } catch (err: any) {
         const status = err?.response?.status;
         if (status === 403 && logins.length > 1) {
-          logger.warn("Leaderboard", `${tag} got 403, falling back to single-user`);
+          logger.warn("Leaderboard", `${tag} got 403, pausing ${FALLBACK_403_PAUSE_MS}ms then falling back to parallel single-user`);
+          await new Promise((r) => setTimeout(r, FALLBACK_403_PAUSE_MS));
           const results: LeaderboardEntry[] = [];
-          for (const login of logins) {
-            try {
-              const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks, orgId), {}, `${tag}-${login}`);
-              if (d.u0) results.push(parseUserData(d.u0, chunks));
-            } catch (e: any) {
-              if (e?.response?.status === 403) {
-                logger.warn("Leaderboard", `${tag}-${login} skipped (403)`);
-                continue;
-              }
-              logger.error("Leaderboard", `${tag}-${login} failed: ${e}`);
-            }
+          for (let i = 0; i < logins.length; i += FALLBACK_403_PARALLEL) {
+            const batch = logins.slice(i, i + FALLBACK_403_PARALLEL);
+            const batchResults = await Promise.all(
+              batch.map(async (login) => {
+                try {
+                  const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks, orgId), {}, `${tag}-${login}`);
+                  return d.u0 ? parseUserData(d.u0, chunks) : null;
+                } catch (e: any) {
+                  if (e?.response?.status === 403) {
+                    logger.warn("Leaderboard", `${tag}-${login} skipped (403)`);
+                    return null;
+                  }
+                  logger.error("Leaderboard", `${tag}-${login} failed: ${e}`);
+                  return null;
+                }
+              })
+            );
+            results.push(...batchResults.filter(Boolean) as LeaderboardEntry[]);
           }
           return results;
         }
@@ -162,19 +173,26 @@ async function fetchBatchFromApi(
           continue;
         }
         if (err?.message?.includes("Resource limits") && logins.length > 1) {
-          logger.warn("Leaderboard", `${tag} resource limit, falling back to single-user`);
+          logger.warn("Leaderboard", `${tag} resource limit, falling back to parallel single-user`);
           const results: LeaderboardEntry[] = [];
-          for (const login of logins) {
-            try {
-              const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks, orgId), {}, `${tag}-${login}`);
-              if (d.u0) results.push(parseUserData(d.u0, chunks));
-            } catch (e: any) {
-              if (e?.response?.status === 403) {
-                logger.warn("Leaderboard", `${tag}-${login} skipped (403)`);
-                continue;
-              }
-              logger.error("Leaderboard", `${tag}-${login} failed: ${e}`);
-            }
+          for (let i = 0; i < logins.length; i += FALLBACK_403_PARALLEL) {
+            const batch = logins.slice(i, i + FALLBACK_403_PARALLEL);
+            const batchResults = await Promise.all(
+              batch.map(async (login) => {
+                try {
+                  const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks, orgId), {}, `${tag}-${login}`);
+                  return d.u0 ? parseUserData(d.u0, chunks) : null;
+                } catch (e: any) {
+                  if (e?.response?.status === 403) {
+                    logger.warn("Leaderboard", `${tag}-${login} skipped (403)`);
+                    return null;
+                  }
+                  logger.error("Leaderboard", `${tag}-${login} failed: ${e}`);
+                  return null;
+                }
+              })
+            );
+            results.push(...batchResults.filter(Boolean) as LeaderboardEntry[]);
           }
           return results;
         }
@@ -190,7 +208,10 @@ async function fetchBatchFromApi(
   for (let i = 0; i < indices.length; i += MAX_CONCURRENT_BATCHES) {
     const results = await Promise.all(indices.slice(i, i + MAX_CONCURRENT_BATCHES).map(fetchOne));
     entries.push(...results.flat());
-    if (i + MAX_CONCURRENT_BATCHES < indices.length) await new Promise((r) => setTimeout(r, 1500));
+    if (i + MAX_CONCURRENT_BATCHES < indices.length) {
+      const jitter = Math.random() * 500;
+      await new Promise((r) => setTimeout(r, BATCH_DELAY_MS + jitter));
+    }
   }
   saveProfiles(entries.map((e) => ({ login: e.login, name: e.name, avatarUrl: e.avatarUrl })));
   return entries;
