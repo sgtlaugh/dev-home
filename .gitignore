@@ -10,3 +10,4 @@ server/data/
 server/cache.db*
 
 notes.db*
+data/

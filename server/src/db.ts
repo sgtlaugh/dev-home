@@ -6,19 +6,27 @@ let db: Database.Database | null = null;
 
 /**
  * Resolve the path to the SQLite database file.
- * Checks DEV_HOME_DB_PATH env var first, then falls back to ../data/notes.db.
+ *
+ * Default location: /home/hashlife/Github/dev-home/data/dev-home.db
+ *
+ * Resolution:
+ * - tsx dev: __dirname = /server/src → ../../data
+ * - bundle: __dirname = /server/dist → ../../data
+ * - Both resolve to app root /data/dev-home.db
+ *
+ * Override with DEV_HOME_DB_PATH env var for custom location.
  */
 export function getDbPath(): string {
   if (process.env.DEV_HOME_DB_PATH) {
     return process.env.DEV_HOME_DB_PATH;
   }
 
-  const dataDir = path.resolve(__dirname, "../data");
+  const dataDir = path.resolve(__dirname, "../../data");
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  return path.join(dataDir, "notes.db");
+  return path.join(dataDir, "dev-home.db");
 }
 
 // ---------------------------------------------------------------------------

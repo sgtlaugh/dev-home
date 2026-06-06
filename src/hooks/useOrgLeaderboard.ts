@@ -52,6 +52,7 @@ export function useOrgLeaderboard(
   const [members, setMembers] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prefetchRunning, setPrefetchRunning] = useState(false);
 
   const fetch = useCallback(async () => {
     if (!configured || !org || !startDate || !endDate) return;
@@ -66,11 +67,12 @@ export function useOrgLeaderboard(
     setLoading(true);
     setError(null);
     try {
-      const { data } = await apiClient.get<{ members: LeaderboardEntry[] }>(
-        "/github/org-leaderboard",
-        { params: { org, startDate, endDate } },
-      );
+      const { data } = await apiClient.get<{
+        members: LeaderboardEntry[];
+        prefetchRunning: boolean;
+      }>("/github/org-leaderboard", { params: { org, startDate, endDate } });
       setMembers(data.members);
+      setPrefetchRunning(data.prefetchRunning);
       apiCache.set(cacheKey, data.members);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch leaderboard");
@@ -83,5 +85,5 @@ export function useOrgLeaderboard(
     fetch();
   }, [fetch]);
 
-  return { members, loading, error, refresh: fetch };
+  return { members, loading, error, prefetchRunning, refresh: fetch };
 }

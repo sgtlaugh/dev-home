@@ -326,7 +326,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
       return { login, avatarUrl: p.avatarUrl, name: p.name, ...t };
     });
 
-    const responseData = { members: entries };
+    const responseData = { members: entries, prefetchRunning: isPrefetchRunning() };
     apiCache.set(cacheKey, responseData, new Date(effectiveEnd) < new Date() ? LONG_CACHE_TTL : undefined);
     logger.info("Leaderboard", `${entries.length} members for ${org} (${startDate} to ${effectiveEnd})`);
     res.json(responseData);

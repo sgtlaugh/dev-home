@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
+import Alert from "react-bootstrap/Alert";
 import { useUserOrgs, useOrgLeaderboard } from "../hooks/useOrgLeaderboard";
 import { DateRangePicker } from "./DateRangePicker";
 
@@ -112,7 +113,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
     return { startDate: customStart, endDate: customEnd };
   }, [mode, year, month, customStart, customEnd]);
 
-  const { members, loading, error } = useOrgLeaderboard(
+  const { members, loading, error, prefetchRunning } = useOrgLeaderboard(
     active && !validationError,
     org,
     startDate,
@@ -302,6 +303,13 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
         </div>
       )}
 
+      {/* Prefetch status */}
+      {!loading && prefetchRunning && members.length > 0 && (
+        <Alert variant="info" className="mb-3" style={{ fontSize: "0.875rem" }}>
+          Background caching in progress. Future queries will be faster.
+        </Alert>
+      )}
+
       {/* Error */}
       {error && (
         <Card className="mb-3" style={{ borderColor: "#cf222e" }}>
@@ -311,8 +319,11 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
 
       {/* Loading */}
       {loading && (
-        <div className="d-flex justify-content-center py-5">
+        <div className="d-flex flex-column align-items-center py-5">
           <Spinner animation="border" variant="secondary" />
+          <div className="text-secondary-custom mt-3" style={{ fontSize: "0.875rem" }}>
+            Loading leaderboard... This may take a while for large organizations or date ranges.
+          </div>
         </div>
       )}
 
