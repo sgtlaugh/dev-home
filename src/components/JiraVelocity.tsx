@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { IconChartBar } from "@tabler/icons-react";
+import Badge from "react-bootstrap/Badge";
 import Card from "react-bootstrap/Card";
-import Table from "react-bootstrap/Table";
 import Spinner from "react-bootstrap/Spinner";
 import { useJiraVelocity } from "../hooks/useJiraVelocity";
 import { EmptyState } from "./EmptyState";
+import { VelocityChart } from "./VelocityChart";
+import { Timestamp } from "./Timestamp";
 
 type Preset = "30d" | "90d" | "6mo" | "1y";
 
@@ -14,6 +16,13 @@ const PRESETS: { key: Preset; label: string }[] = [
   { key: "6mo", label: "6 Months" },
   { key: "1y", label: "1 Year" },
 ];
+
+const TYPE_COLORS: Record<string, string> = {
+  Bug: "badge-status-red",
+  Story: "badge-status-green",
+  Task: "badge-status-blue",
+  "Sub-task": "badge-status-neutral",
+};
 
 export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
   const [preset, setPreset] = useState<Preset>(() => {
@@ -25,6 +34,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
     }
     return "30d";
   });
+  const [showAllIssues, setShowAllIssues] = useState(false);
 
   React.useEffect(() => {
     try {
@@ -32,6 +42,10 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
     } catch {
       /* ignore */
     }
+  }, [preset]);
+
+  React.useEffect(() => {
+    setShowAllIssues(false);
   }, [preset]);
 
   const { startDate, endDate } = useMemo(() => {
@@ -45,7 +59,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
     return { startDate: from.toISOString().split("T")[0], endDate: end };
   }, [preset]);
 
-  const { metrics, loading, error } = useJiraVelocity(startDate, endDate, active);
+  const { metrics, completedIssues, loading, error } = useJiraVelocity(startDate, endDate, active);
 
   const trendColor =
     metrics?.velocity.trend === "improving"
@@ -56,6 +70,8 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
 
   const trendArrow =
     metrics?.velocity.trendPercentage && metrics.velocity.trendPercentage > 0 ? "↑" : "↓";
+
+  const visibleIssues = showAllIssues ? completedIssues : completedIssues.slice(0, 10);
 
   return (
     <div style={{ padding: "1rem" }}>
@@ -72,18 +88,6 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
             {metrics?.totalStoryPoints || 0}
           </div>
           <div className="stat-label">Story Points</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: "#1a7f37" }}>
-            {metrics?.velocity.tasksPerWeek.toFixed(1) || "0.0"}
-          </div>
-          <div className="stat-label">Tasks/Week</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: "#e3795c" }}>
-            {metrics?.storyPointsPerWeek?.toFixed(1) || "0.0"}
-          </div>
-          <div className="stat-label">SP/Week</div>
         </div>
         <div className="stat-card">
           <div className="stat-value" style={{ color: "#8250df" }}>
@@ -143,49 +147,41 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
         />
       )}
 
-      {/* Weekly Breakdown Table */}
+      {/* Content */}
       {!loading && !error && metrics && metrics.totalCompleted > 0 && (
         <>
+          {/* Velocity Charts */}
           <Card className="mb-4">
             <Card.Body>
-              <h6 style={{ marginBottom: "1rem", fontWeight: 600 }}>Weekly Breakdown</h6>
-              <Table hover>
-                <thead>
-                  <tr>
-                    <th>Week</th>
-                    <th>Completed</th>
-                    <th>Story Points</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    const weeks = metrics.completionsByWeek;
-                    const mid = Math.ceil(weeks.length / 2);
-                    return weeks.map((week, i) => (
-                      <tr
-                        key={week.weekRange}
-                        style={{
-                          backgroundColor:
-                            weeks.length >= 2
-                              ? i < mid
-                                ? "rgba(9, 105, 218, 0.04)"
-                                : "rgba(130, 80, 223, 0.04)"
-                              : undefined,
-                        }}
-                      >
-                        <td style={{ fontWeight: 500 }}>{week.weekRange}</td>
-                        <td>{week.count}</td>
-                        <td>{week.storyPoints}</td>
-                      </tr>
-                    ));
-                  })()}
-                </tbody>
-              </Table>
+              <h6 style={{ marginBottom: "0.75rem", fontWeight: 600 }}>Issues Completed</h6>
+              <VelocityChart
+                weeks={metrics.completionsByWeek.map((w) => ({
+                  weekRange: w.weekRange,
+                  value: w.count,
+                }))}
+                color="#0969da"
+                label="Completed"
+              />
             </Card.Body>
           </Card>
+          {metrics.totalStoryPoints > 0 && (
+            <Card className="mb-4">
+              <Card.Body>
+                <h6 style={{ marginBottom: "0.75rem", fontWeight: 600 }}>Story Points</h6>
+                <VelocityChart
+                  weeks={metrics.completionsByWeek.map((w) => ({
+                    weekRange: w.weekRange,
+                    value: w.storyPoints,
+                  }))}
+                  color="#1a7f37"
+                  label="Story Points"
+                />
+              </Card.Body>
+            </Card>
+          )}
 
           {/* Completion Time Details */}
-          <Card style={{ minHeight: "auto" }}>
+          <Card className="mb-4" style={{ minHeight: "auto" }}>
             <Card.Body>
               <h6 style={{ marginBottom: "1rem", fontWeight: 600 }}>Completion Time Stats</h6>
               <div className="d-flex gap-3 flex-wrap">
@@ -216,6 +212,76 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
               </div>
             </Card.Body>
           </Card>
+
+          {/* Completed Issues */}
+          {completedIssues.length > 0 && (
+            <Card style={{ minHeight: "auto" }}>
+              <Card.Body>
+                <h6 style={{ marginBottom: "1rem", fontWeight: 600 }}>
+                  Completed Issues
+                  <Badge
+                    bg="secondary"
+                    pill
+                    style={{ fontSize: "0.65rem", marginLeft: 8, verticalAlign: "middle" }}
+                  >
+                    {completedIssues.length}
+                  </Badge>
+                </h6>
+                <div style={{ overflowX: "auto" }}>
+                  <table className="table" style={{ fontSize: "0.8125rem" }}>
+                    <thead>
+                      <tr>
+                        <th>Key</th>
+                        <th>Summary</th>
+                        <th>Type</th>
+                        <th>SP</th>
+                        <th>Time</th>
+                        <th>Resolved</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleIssues.map((issue) => (
+                        <tr key={issue.key}>
+                          <td style={{ whiteSpace: "nowrap", fontWeight: 500 }}>{issue.key}</td>
+                          <td style={{ maxWidth: 300 }}>
+                            <div className="text-truncate-custom">{issue.summary}</div>
+                          </td>
+                          <td>
+                            <Badge
+                              bg=""
+                              className={TYPE_COLORS[issue.type] || "badge-status-neutral"}
+                              style={{ fontSize: "0.65rem" }}
+                            >
+                              {issue.type}
+                            </Badge>
+                          </td>
+                          <td>{issue.storyPoints || "—"}</td>
+                          <td style={{ whiteSpace: "nowrap" }}>
+                            {issue.completionDays < 1
+                              ? "<1d"
+                              : `${Math.ceil(issue.completionDays)}d`}
+                          </td>
+                          <td>
+                            <Timestamp timestamp={issue.resolutiondate} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {completedIssues.length > 10 && (
+                  <div style={{ textAlign: "center", marginTop: 4 }}>
+                    <button
+                      className="see-more-btn"
+                      onClick={() => setShowAllIssues(!showAllIssues)}
+                    >
+                      {showAllIssues ? "Show less" : `Show all ${completedIssues.length} issues`}
+                    </button>
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
+          )}
         </>
       )}
     </div>

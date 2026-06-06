@@ -278,7 +278,7 @@ router.get("/velocity", async (req: Request, res: Response) => {
 
   const spField = await getStoryPointsFieldId();
   const jql = `assignee = "${config.jiraEmail}" AND statusCategory = Done AND resolutiondate >= "${startDate}" AND resolutiondate <= "${endDate}" ORDER BY resolutiondate DESC`;
-  const fields = ["key", "summary", "created", "resolutiondate", ...(spField ? [spField] : [])];
+  const fields = ["key", "summary", "created", "resolutiondate", "issuetype", ...(spField ? [spField] : [])];
 
   const { data } = await jira.post("/search/jql", {
     jql,
@@ -289,7 +289,16 @@ router.get("/velocity", async (req: Request, res: Response) => {
   const issues = data.issues || [];
   const metrics = calculateVelocityMetrics(issues, startDate, endDate, spField);
 
-  const result = { metrics };
+  const completedIssues = issues.map((issue: any) => ({
+    key: issue.key,
+    summary: issue.fields?.summary || "",
+    type: issue.fields?.issuetype?.name || "Task",
+    storyPoints: spField ? (Number(issue.fields?.[spField]) || 0) : 0,
+    resolutiondate: issue.fields?.resolutiondate || "",
+    completionDays: Math.round(getCompletionTime(issue) * 10) / 10,
+  }));
+
+  const result = { metrics, completedIssues };
   apiCache.set(cacheKey, result);
   res.json(result);
 });

@@ -124,6 +124,15 @@ export interface Note {
   updated_at: string;
 }
 
+export interface CompletedIssue {
+  key: string;
+  summary: string;
+  type: string;
+  storyPoints: number;
+  resolutiondate: string;
+  completionDays: number;
+}
+
 export interface JiraVelocityMetrics {
   period: { startDate: string; endDate: string };
   totalCompleted: number;

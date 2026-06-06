@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { JiraVelocityMetrics } from "../types";
-import { fetchVelocityMetrics } from "../services/jira";
+import { JiraVelocityMetrics, CompletedIssue } from "../types";
+import { fetchVelocityData } from "../services/jira";
 
 export function useJiraVelocity(startDate: string, endDate: string, active: boolean) {
   const [metrics, setMetrics] = useState<JiraVelocityMetrics | null>(null);
+  const [completedIssues, setCompletedIssues] = useState<CompletedIssue[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -11,6 +12,7 @@ export function useJiraVelocity(startDate: string, endDate: string, active: bool
   const fetch = useCallback(async () => {
     if (!active || !startDate || !endDate) {
       setMetrics(null);
+      setCompletedIssues([]);
       return;
     }
 
@@ -22,9 +24,10 @@ export function useJiraVelocity(startDate: string, endDate: string, active: bool
     setError(null);
 
     try {
-      const data = await fetchVelocityMetrics(startDate, endDate, signal);
+      const data = await fetchVelocityData(startDate, endDate, signal);
       if (!signal.aborted) {
-        setMetrics(data);
+        setMetrics(data.metrics);
+        setCompletedIssues(data.completedIssues);
       }
     } catch (err: any) {
       if (!signal.aborted) {
@@ -54,6 +57,7 @@ export function useJiraVelocity(startDate: string, endDate: string, active: bool
 
   return {
     metrics,
+    completedIssues,
     loading,
     error,
     refresh,

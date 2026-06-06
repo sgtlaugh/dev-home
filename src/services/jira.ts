@@ -1,4 +1,4 @@
-import { JiraIssue, JiraComment, JiraVelocityMetrics } from "../types";
+import { JiraIssue, JiraComment, JiraVelocityMetrics, CompletedIssue } from "../types";
 import { apiClient } from "./config";
 import { apiCache } from "../utils/cache";
 
@@ -22,13 +22,18 @@ export async function fetchRecentMentions(): Promise<JiraComment[]> {
   return data.comments;
 }
 
-export async function fetchVelocityMetrics(
+export interface VelocityData {
+  metrics: JiraVelocityMetrics;
+  completedIssues: CompletedIssue[];
+}
+
+export async function fetchVelocityData(
   startDate: string,
   endDate: string,
   signal?: AbortSignal,
-): Promise<JiraVelocityMetrics> {
+): Promise<VelocityData> {
   const cacheKey = `jira:velocity:${startDate}:${endDate}`;
-  const cached = apiCache.get<JiraVelocityMetrics>(cacheKey);
+  const cached = apiCache.get<VelocityData>(cacheKey);
   if (cached) return cached;
 
   const { data } = await apiClient.get("/jira/velocity", {
@@ -36,7 +41,10 @@ export async function fetchVelocityMetrics(
     signal,
   });
 
-  const metrics = data.metrics;
-  apiCache.set(cacheKey, metrics);
-  return metrics;
+  const result: VelocityData = {
+    metrics: data.metrics,
+    completedIssues: data.completedIssues || [],
+  };
+  apiCache.set(cacheKey, result);
+  return result;
 }
