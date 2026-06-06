@@ -41,6 +41,7 @@ import { OrgLeaderboard } from "./components/OrgLeaderboard";
 import { useActivity } from "./hooks/useActivity";
 import { usePeerActivity } from "./hooks/usePeerActivity";
 import { useGitHubRateLimit } from "./hooks/useGitHubRateLimit";
+import { usePrefetchStatus } from "./hooks/useOrgLeaderboard";
 import { apiCache } from "./utils/cache";
 
 export default function App() {
@@ -95,6 +96,7 @@ export default function App() {
   } = useActivity(configured);
   const { activities: peerActivities, refresh: refreshPeerActivity } = usePeerActivity(configured);
   const { rateLimit } = useGitHubRateLimit(configured);
+  const prefetch = usePrefetchStatus(configured);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -243,6 +245,44 @@ export default function App() {
                                 r={r}
                                 fill="none"
                                 stroke={color}
+                                strokeWidth={stroke}
+                                strokeDasharray={circ}
+                                strokeDashoffset={offset}
+                                strokeLinecap="round"
+                                transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                              />
+                            </svg>
+                          </span>
+                        );
+                      })()}
+                    {prefetch.running &&
+                      (() => {
+                        const pct = prefetch.percentage / 100;
+                        const size = 16;
+                        const stroke = 2.5;
+                        const r = (size - stroke) / 2;
+                        const circ = 2 * Math.PI * r;
+                        const offset = circ * (1 - pct);
+                        return (
+                          <span
+                            className="rate-limit-indicator"
+                            title={`Caching ${prefetch.org}... ${prefetch.percentage}% (${prefetch.queriesDone}/${prefetch.totalQueries} queries)`}
+                          >
+                            <svg width={size} height={size} className="rate-limit-ring">
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={r}
+                                fill="none"
+                                stroke="var(--bs-border-color)"
+                                strokeWidth={stroke}
+                              />
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={r}
+                                fill="none"
+                                stroke="#0969da"
                                 strokeWidth={stroke}
                                 strokeDasharray={circ}
                                 strokeDashoffset={offset}

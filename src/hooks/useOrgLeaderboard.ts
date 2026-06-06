@@ -1,6 +1,65 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import axios from "axios";
 import { apiClient } from "../services/config";
 import { apiCache } from "../utils/cache";
+
+interface PrefetchStatus {
+  running: boolean;
+  queriesDone: number;
+  totalQueries: number;
+  org: string;
+  completedAt: number;
+}
+
+export function usePrefetchStatus(active: boolean) {
+  const [status, setStatus] = useState<PrefetchStatus | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (!active) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const { data } = await apiClient.get<PrefetchStatus>("/github/prefetch-status");
+        if (!cancelled) setStatus(data);
+      } catch {
+        /* polling failure is non-critical */
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [active]);
+
+  useEffect(() => {
+    if (status?.completedAt && !status.running) {
+      timerRef.current = setTimeout(() => setDismissed(true), 30000);
+      return () => clearTimeout(timerRef.current);
+    }
+    if (status?.running) setDismissed(false);
+  }, [status?.completedAt, status?.running]);
+
+  const complete = !!(status?.completedAt && !status.running);
+  const percentage = status?.totalQueries
+    ? Math.round((status.queriesDone / status.totalQueries) * 100)
+    : 0;
+
+  return {
+    running: status?.running ?? false,
+    complete,
+    dismissed,
+    percentage,
+    queriesDone: status?.queriesDone ?? 0,
+    totalQueries: status?.totalQueries ?? 0,
+    org: status?.org ?? "",
+  };
+}
 
 export interface LeaderboardEntry {
   login: string;
@@ -52,7 +111,7 @@ export function useOrgLeaderboard(
   const [members, setMembers] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [prefetchRunning, setPrefetchRunning] = useState(false);
+  const abortRef = useRef<AbortController>();
 
   const fetch = useCallback(async () => {
     if (!configured || !org || !startDate || !endDate) return;
@@ -64,20 +123,24 @@ export function useOrgLeaderboard(
       return;
     }
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
-      const { data } = await apiClient.get<{
-        members: LeaderboardEntry[];
-        prefetchRunning: boolean;
-      }>("/github/org-leaderboard", { params: { org, startDate, endDate } });
+      const { data } = await apiClient.get<{ members: LeaderboardEntry[] }>(
+        "/github/org-leaderboard",
+        { params: { org, startDate, endDate }, signal: controller.signal },
+      );
       setMembers(data.members);
-      setPrefetchRunning(data.prefetchRunning);
       apiCache.set(cacheKey, data.members);
     } catch (err) {
+      if (axios.isCancel(err)) return;
       setError(err instanceof Error ? err.message : "Failed to fetch leaderboard");
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, [configured, org, startDate, endDate]);
 
@@ -85,5 +148,7 @@ export function useOrgLeaderboard(
     fetch();
   }, [fetch]);
 
-  return { members, loading, error, prefetchRunning, refresh: fetch };
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  return { members, loading, error, refresh: fetch };
 }

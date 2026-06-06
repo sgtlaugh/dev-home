@@ -13,7 +13,7 @@ import {
   getCachedProfiles,
   saveProfiles,
 } from "../../services/contributionCache";
-import { startPrefetch, isPrefetchRunning, registerLeaderboardCheck } from "../../services/contributionPrefetch";
+import { startPrefetch, isPrefetchRunning, registerLeaderboardCheck, getPrefetchStatus } from "../../services/contributionPrefetch";
 import { MAX_REPOS_PER_CONTRIBUTION, SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
@@ -135,6 +135,7 @@ async function fetchBatchFromApi(
   batchSize: number,
   label: string,
   orgId: string,
+  signal?: AbortSignal,
 ): Promise<LeaderboardEntry[]> {
   const totalBatches = Math.ceil(members.length / batchSize);
 
@@ -210,6 +211,7 @@ async function fetchBatchFromApi(
   const entries: LeaderboardEntry[] = [];
   const indices = Array.from({ length: totalBatches }, (_, i) => i);
   for (let i = 0; i < indices.length; i += MAX_CONCURRENT_BATCHES) {
+    if (signal?.aborted) break;
     const results = await Promise.all(indices.slice(i, i + MAX_CONCURRENT_BATCHES).map(fetchOne));
     entries.push(...results.flat());
   }
@@ -236,6 +238,9 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
   const cacheKey = `github:org-leaderboard:${org}:${startDate}:${endDate}`;
   const cached = apiCache.get(cacheKey);
   if (cached) return res.json(cached);
+
+  const abort = new AbortController();
+  req.on("close", () => abort.abort());
 
   activeLeaderboardRequests++;
   try {
@@ -272,8 +277,9 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     }
 
     for (const [month, logins] of missingByMonth) {
+      if (abort.signal.aborted) break;
       const chunk = monthToChunk(month);
-      const results = await fetchBatchFromApi(logins, [chunk], MAX_BATCH_SIZE, `leaderboard/${month}`, orgId);
+      const results = await fetchBatchFromApi(logins, [chunk], MAX_BATCH_SIZE, `leaderboard/${month}`, orgId, abort.signal);
       saveContributions(org, results.map((r) => ({ login: r.login, yearMonth: month, commits: r.commits, prs: r.prs, reviews: r.reviews })));
       addToTotals(totals, results);
     }
@@ -293,7 +299,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
           const first = month === allMonths[0] ? startDate : `${month}-01`;
           const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
           const chunks = [{ from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: "p0" }];
-          const results = await fetchBatchFromApi(members, chunks, MAX_BATCH_SIZE, `leaderboard/current`, orgId);
+          const results = await fetchBatchFromApi(members, chunks, MAX_BATCH_SIZE, `leaderboard/current`, orgId, abort.signal);
           apiCache.set(cmKey, results, SHORT_CACHE_TTL);
           addToTotals(totals, results);
         }
@@ -306,8 +312,13 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
           const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
           return { from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: `p${i}` };
         });
-        addToTotals(totals, await fetchBatchFromApi(members, chunks, MAX_BATCH_SIZE, "leaderboard/partial", orgId));
+        addToTotals(totals, await fetchBatchFromApi(members, chunks, MAX_BATCH_SIZE, "leaderboard/partial", orgId, abort.signal));
       }
+    }
+
+    if (abort.signal.aborted) {
+      logger.info("Leaderboard", `Request cancelled for ${org} (${startDate} to ${effectiveEnd})`);
+      return;
     }
 
     const profiles = loadProfiles(members);
@@ -317,7 +328,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
       return { login, avatarUrl: p.avatarUrl, name: p.name, ...t };
     });
 
-    const responseData = { members: entries, prefetchRunning: isPrefetchRunning() };
+    const responseData = { members: entries };
     apiCache.set(cacheKey, responseData, new Date(effectiveEnd) < new Date() ? LONG_CACHE_TTL : undefined);
     logger.info("Leaderboard", `${entries.length} members for ${org} (${startDate} to ${effectiveEnd})`);
     res.json(responseData);
@@ -333,6 +344,10 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
   } finally {
     activeLeaderboardRequests--;
   }
+});
+
+router.get("/prefetch-status", (_req: Request, res: Response) => {
+  res.json(getPrefetchStatus());
 });
 
 router.get("/user-orgs", async (_req: Request, res: Response) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, memo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import Card from "react-bootstrap/Card";
@@ -104,39 +104,13 @@ const STAT_DEFS: { key: StateFilter; label: string; color: string }[] = [
   { key: "closed", label: "Closed", color: "#cf222e" },
 ];
 
-const STORAGE_KEY = "prhistory:state";
-
-function loadState() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveState(state: {
-  mode: DateMode;
-  year: number;
-  month: number;
-  startDate: string;
-  endDate: string;
-}) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // ignore
-  }
-}
-
 export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = true }) => {
   const now = new Date();
-  const stored = loadState();
-  const [mode, setMode] = useState<DateMode>(stored?.mode ?? "month");
-  const [year, setYear] = useState(stored?.year ?? now.getFullYear());
-  const [month, setMonth] = useState(stored?.month ?? now.getMonth() + 1);
-  const [startDate, setStartDate] = useState(stored?.startDate ?? "");
-  const [endDate, setEndDate] = useState(stored?.endDate ?? "");
+  const [mode, setMode] = useState<DateMode>("month");
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [stateFilter, setStateFilter] = useState<StateFilter>("all");
   const [prs, setPrs] = useState<GitHubPR[]>([]);
   const [commitCount, setCommitCount] = useState(0);
@@ -159,10 +133,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
       .then(setJoinDate)
       .catch(() => setJoinDate(`${MIN_YEAR}-01-01`));
   }, []);
-
-  useEffect(() => {
-    saveState({ mode, year, month, startDate, endDate });
-  }, [mode, year, month, startDate, endDate]);
 
   useEffect(() => {
     if (!active) return;

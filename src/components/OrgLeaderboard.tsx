@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
-import Alert from "react-bootstrap/Alert";
 import { useUserOrgs, useOrgLeaderboard } from "../hooks/useOrgLeaderboard";
 import { DateRangePicker } from "./DateRangePicker";
 
@@ -9,25 +8,7 @@ type DateMode = "month" | "year" | "custom";
 type SortKey = "commits" | "prs" | "reviews";
 type SortDir = "asc" | "desc";
 
-const STORAGE_KEY = "org-leaderboard:state";
 const MIN_YEAR = 2008;
-
-function loadState() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveState(state: Record<string, any>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    /* ignore */
-  }
-}
 
 function SortHeader({
   label,
@@ -61,17 +42,16 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   githubUsername,
 }) => {
   const { orgs, loading: orgsLoading } = useUserOrgs(active);
-  const stored = loadState();
   const now = new Date();
 
   const [org, setOrg] = useState<string | null>(
-    stored?.org ?? localStorage.getItem("leaderboard:defaultOrg") ?? null,
+    localStorage.getItem("leaderboard:defaultOrg") ?? null,
   );
-  const [mode, setMode] = useState<DateMode>(stored?.mode ?? "month");
-  const [year, setYear] = useState(stored?.year ?? now.getFullYear());
-  const [month, setMonth] = useState(stored?.month ?? now.getMonth() + 1);
-  const [customStart, setCustomStart] = useState(stored?.startDate ?? "");
-  const [customEnd, setCustomEnd] = useState(stored?.endDate ?? "");
+  const [mode, setMode] = useState<DateMode>("month");
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("commits");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [search, setSearch] = useState("");
@@ -86,17 +66,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   useEffect(() => {
     if (orgs.length > 0 && !org) setOrg(orgs[0].login);
   }, [orgs, org]);
-
-  useEffect(() => {
-    saveState({
-      org,
-      mode,
-      year,
-      month,
-      startDate: customStart,
-      endDate: customEnd,
-    });
-  }, [org, mode, year, month, customStart, customEnd]);
 
   const { startDate, endDate } = useMemo(() => {
     if (mode === "month") {
@@ -113,7 +82,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
     return { startDate: customStart, endDate: customEnd };
   }, [mode, year, month, customStart, customEnd]);
 
-  const { members, loading, error, prefetchRunning } = useOrgLeaderboard(
+  const { members, loading, error } = useOrgLeaderboard(
     active && !validationError,
     org,
     startDate,
@@ -301,13 +270,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
             style={{ fontSize: "0.8rem", padding: "6px 10px", flex: 1 }}
           />
         </div>
-      )}
-
-      {/* Prefetch status */}
-      {!loading && prefetchRunning && members.length > 0 && (
-        <Alert variant="info" className="mb-3" style={{ fontSize: "0.875rem" }}>
-          Background caching in progress. Future queries will be faster.
-        </Alert>
       )}
 
       {/* Error */}
