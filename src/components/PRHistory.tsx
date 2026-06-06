@@ -27,7 +27,14 @@ function getDateKey(timestamp: string): string {
   const hoursAgo = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60);
   if (hoursAgo < 24) return "Today";
   if (hoursAgo < 48) return "Yesterday";
-  return new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const date = new Date(timestamp);
+  const today = new Date();
+  const isCurrentYear = date.getFullYear() === today.getFullYear();
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(isCurrentYear ? {} : { year: "numeric" }),
+  });
 }
 
 function PRCard({ pr, onClick }: { pr: GitHubPR; onClick: () => void }) {
