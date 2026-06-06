@@ -1,4 +1,5 @@
 import { getDb } from "../db";
+import { logger } from "../utils/logger";
 
 export interface MonthlyContribution {
   login: string;
@@ -162,6 +163,9 @@ export function getCachedCommitCounts(months: string[]): Map<string, number> {
   const rows = db
     .prepare(`SELECT year_month, commit_count FROM user_contribution_cache WHERE year_month IN (${placeholders}) AND commit_count IS NOT NULL`)
     .all(...months) as { year_month: string; commit_count: number }[];
+  if (rows.length > 0) {
+    logger.info("Commits", `Persistent cache hit: ${rows.length} months from SQLite`);
+  }
   return new Map(rows.map((r) => [r.year_month, r.commit_count]));
 }
 
@@ -186,6 +190,9 @@ export function getCachedPRs(months: string[]): Map<string, any[]> {
     try {
       result.set(row.year_month, JSON.parse(row.prs_json));
     } catch { /* ignore corrupt data */ }
+  }
+  if (result.size > 0) {
+    logger.info("PRs", `Persistent cache hit: ${result.size} months from SQLite`);
   }
   return result;
 }
