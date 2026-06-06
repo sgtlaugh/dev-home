@@ -14,11 +14,11 @@ import {
 
 const QUERIES_PER_MINUTE = 40;
 const DELAY_BETWEEN_QUERIES_MS = Math.ceil(60000 / QUERIES_PER_MINUTE);
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 40;
 
 let prefetchRunning = false;
 
-function buildMonthQuery(logins: string[], yearMonth: string): string {
+function buildMonthQuery(logins: string[], yearMonth: string, orgId: string): string {
   const [y, m] = yearMonth.split("-").map(Number);
   const lastDay = new Date(y, m, 0).getDate();
   const from = `${yearMonth}-01T00:00:00Z`;
@@ -28,15 +28,9 @@ function buildMonthQuery(logins: string[], yearMonth: string): string {
     (login, i) =>
       `u${i}: user(login: "${login}") {
         login name avatarUrl
-        c: contributionsCollection(from: "${from}", to: "${to}") {
-          commitContributionsByRepository(maxRepositories: ${MAX_REPOS_PER_CONTRIBUTION}) {
-            repository { nameWithOwner }
-            contributions { totalCount }
-          }
-          pullRequestContributionsByRepository(maxRepositories: ${MAX_REPOS_PER_CONTRIBUTION}) {
-            repository { nameWithOwner }
-            contributions { totalCount }
-          }
+        c: contributionsCollection(from: "${from}", to: "${to}", organizationID: "${orgId}") {
+          totalCommitContributions
+          totalPullRequestContributions
           totalPullRequestReviewContributions
         }
       }`,
@@ -87,6 +81,9 @@ export async function startPrefetch(
   const currentMonth = getCurrentYearMonth();
 
   try {
+    const data = await graphql<{ organization: { id: string } }>(`query { organization(login: "${org}") { id } }`);
+    const orgId = data.organization.id;
+
     const startYearMonth = await getOrgCreatedMonth(org);
     const allMonths = getMonthsBetween(`${startYearMonth}-01`, `${currentMonth}-28`);
     const monthsToProcess = allMonths.filter((m) => m !== currentMonth).reverse();
@@ -138,12 +135,11 @@ export async function startPrefetch(
         if (!prefetchRunning) return;
 
         const batch = missing.slice(i, i + BATCH_SIZE);
-        const query = buildMonthQuery(batch, month);
+        const query = buildMonthQuery(batch, month, orgId);
 
         try {
           const data = await graphql<Record<string, any>>(query, {}, `prefetch/${org}/${month}`);
 
-          const orgPrefix = `${org}/`;
           const entries: MonthlyContribution[] = [];
           const profiles: { login: string; name: string | null; avatarUrl: string }[] = [];
           for (let j = 0; j < batch.length; j++) {
@@ -152,31 +148,11 @@ export async function startPrefetch(
 
             profiles.push({ login: u.login, name: u.name, avatarUrl: u.avatarUrl });
 
-            const commitRepos = u.c.commitContributionsByRepository || [];
-            if (commitRepos.length >= MAX_REPOS_PER_CONTRIBUTION) {
-              logger.warn("Prefetch", `${u.login} hit ${MAX_REPOS_PER_CONTRIBUTION} repo cap for commits in ${month}`);
-            }
-            let commits = 0;
-            for (const repo of commitRepos) {
-              if (repo.repository.nameWithOwner.startsWith(orgPrefix))
-                commits += repo.contributions.totalCount || 0;
-            }
-
-            const prRepos = u.c.pullRequestContributionsByRepository || [];
-            if (prRepos.length >= MAX_REPOS_PER_CONTRIBUTION) {
-              logger.warn("Prefetch", `${u.login} hit ${MAX_REPOS_PER_CONTRIBUTION} repo cap for PRs in ${month}`);
-            }
-            let prs = 0;
-            for (const repo of prRepos) {
-              if (repo.repository.nameWithOwner.startsWith(orgPrefix))
-                prs += repo.contributions.totalCount || 0;
-            }
-
             entries.push({
               login: u.login,
               yearMonth: month,
-              commits,
-              prs,
+              commits: u.c.totalCommitContributions || 0,
+              prs: u.c.totalPullRequestContributions || 0,
               reviews: u.c.totalPullRequestReviewContributions || 0,
             });
           }

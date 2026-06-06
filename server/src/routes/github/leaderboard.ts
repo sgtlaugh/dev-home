@@ -17,7 +17,7 @@ import { startPrefetch, isPrefetchRunning, stopPrefetch } from "../../services/c
 import { MAX_REPOS_PER_CONTRIBUTION, SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
-const MAX_BATCH_SIZE = 30;
+const MAX_BATCH_SIZE = 40;
 const MAX_FIELDS_PER_QUERY = 50;
 const MAX_CONCURRENT_BATCHES = 3;
 const MAX_RETRIES = 3;
@@ -37,19 +37,14 @@ type Totals = Map<string, { commits: number; prs: number; reviews: number }>;
 function buildMemberContributionsQuery(
   logins: string[],
   chunks: { from: string; to: string; alias: string }[],
+  orgId: string,
 ): string {
   const users = logins.map((login, i) => {
     const contribs = chunks
       .map(
-        (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
-        commitContributionsByRepository(maxRepositories: ${MAX_REPOS_PER_CONTRIBUTION}) {
-          repository { nameWithOwner }
-          contributions { totalCount }
-        }
-        pullRequestContributionsByRepository(maxRepositories: ${MAX_REPOS_PER_CONTRIBUTION}) {
-          repository { nameWithOwner }
-          contributions { totalCount }
-        }
+        (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}", organizationID: "${orgId}") {
+        totalCommitContributions
+        totalPullRequestContributions
         totalPullRequestReviewContributions
       }`,
       )
@@ -62,7 +57,6 @@ function buildMemberContributionsQuery(
 function parseUserData(
   userData: Record<string, any>,
   chunks: { alias: string }[],
-  orgPrefix?: string,
 ): LeaderboardEntry {
   let commits = 0,
     prs = 0,
@@ -71,24 +65,8 @@ function parseUserData(
     const c = userData[chunk.alias];
     if (!c) continue;
 
-    const commitRepos = c.commitContributionsByRepository || [];
-    if (commitRepos.length >= MAX_REPOS_PER_CONTRIBUTION) {
-      logger.warn("Leaderboard", `${userData.login} hit ${MAX_REPOS_PER_CONTRIBUTION} repo cap for commits in ${chunk.alias}, counts may be incomplete`);
-    }
-    for (const repo of commitRepos) {
-      if (orgPrefix && !repo.repository.nameWithOwner.startsWith(orgPrefix)) continue;
-      commits += repo.contributions.totalCount || 0;
-    }
-
-    const prRepos = c.pullRequestContributionsByRepository || [];
-    if (prRepos.length >= MAX_REPOS_PER_CONTRIBUTION) {
-      logger.warn("Leaderboard", `${userData.login} hit ${MAX_REPOS_PER_CONTRIBUTION} repo cap for PRs in ${chunk.alias}, counts may be incomplete`);
-    }
-    for (const repo of prRepos) {
-      if (orgPrefix && !repo.repository.nameWithOwner.startsWith(orgPrefix)) continue;
-      prs += repo.contributions.totalCount || 0;
-    }
-
+    commits += c.totalCommitContributions || 0;
+    prs += c.totalPullRequestContributions || 0;
     reviews += c.totalPullRequestReviewContributions || 0;
   }
   return { login: userData.login, avatarUrl: userData.avatarUrl, name: userData.name, commits, prs, reviews };
@@ -116,6 +94,11 @@ function monthToChunk(month: string): { from: string; to: string; alias: string 
 }
 
 
+async function fetchOrgId(org: string): Promise<string> {
+  const data = await graphql<{ organization: { id: string } }>(`query { organization(login: "${org}") { id } }`);
+  return data.organization.id;
+}
+
 async function fetchOrgMembers(org: string): Promise<string[]> {
   const cacheKey = `github:org-members:${org}`;
   const cached = apiCache.get<string[]>(cacheKey);
@@ -142,7 +125,7 @@ async function fetchBatchFromApi(
   chunks: { from: string; to: string; alias: string }[],
   batchSize: number,
   label: string,
-  orgPrefix?: string,
+  orgId: string,
 ): Promise<LeaderboardEntry[]> {
   const totalBatches = Math.ceil(members.length / batchSize);
 
@@ -151,8 +134,8 @@ async function fetchBatchFromApi(
     const tag = `${label}/batch-${index + 1}-of-${totalBatches}`;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const data = await graphql<Record<string, any>>(buildMemberContributionsQuery(logins, chunks), {}, tag);
-        return logins.map((_, j) => data[`u${j}`]).filter(Boolean).map((u) => parseUserData(u, chunks, orgPrefix));
+        const data = await graphql<Record<string, any>>(buildMemberContributionsQuery(logins, chunks, orgId), {}, tag);
+        return logins.map((_, j) => data[`u${j}`]).filter(Boolean).map((u) => parseUserData(u, chunks));
       } catch (err: any) {
         const status = err?.response?.status;
         if (status === 403 && logins.length > 1) {
@@ -160,7 +143,7 @@ async function fetchBatchFromApi(
           const results: LeaderboardEntry[] = [];
           for (const login of logins) {
             try {
-              const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks), {}, `${tag}-${login}`);
+              const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks, orgId), {}, `${tag}-${login}`);
               if (d.u0) results.push(parseUserData(d.u0, chunks));
             } catch (e: any) {
               if (e?.response?.status === 403) {
@@ -183,7 +166,7 @@ async function fetchBatchFromApi(
           const results: LeaderboardEntry[] = [];
           for (const login of logins) {
             try {
-              const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks), {}, `${tag}-${login}`);
+              const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks, orgId), {}, `${tag}-${login}`);
               if (d.u0) results.push(parseUserData(d.u0, chunks));
             } catch (e: any) {
               if (e?.response?.status === 403) {
@@ -250,6 +233,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
       stopPrefetch();
     }
 
+    const orgId = await fetchOrgId(org);
     const members = await fetchOrgMembers(org);
     const today = new Date().toISOString().split("T")[0];
     const effectiveEnd = endDate > today ? today : endDate;
@@ -283,8 +267,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
 
     for (const [month, logins] of missingByMonth) {
       const chunk = monthToChunk(month);
-      const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY)));
-      const results = await fetchBatchFromApi(logins, [chunk], batchSize, `leaderboard/${month}`, `${org}/`);
+      const results = await fetchBatchFromApi(logins, [chunk], MAX_BATCH_SIZE, `leaderboard/${month}`, orgId);
       saveContributions(org, results.map((r) => ({ login: r.login, yearMonth: month, commits: r.commits, prs: r.prs, reviews: r.reviews })));
       addToTotals(totals, results);
     }
@@ -304,8 +287,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
           const first = month === allMonths[0] ? startDate : `${month}-01`;
           const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
           const chunks = [{ from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: "p0" }];
-          const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY)));
-          const results = await fetchBatchFromApi(members, chunks, batchSize, `leaderboard/current`, `${org}/`);
+          const results = await fetchBatchFromApi(members, chunks, MAX_BATCH_SIZE, `leaderboard/current`, orgId);
           apiCache.set(cmKey, results, SHORT_CACHE_TTL);
           addToTotals(totals, results);
         }
@@ -318,8 +300,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
           const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
           return { from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: `p${i}` };
         });
-        const batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(MAX_FIELDS_PER_QUERY / chunks.length)));
-        addToTotals(totals, await fetchBatchFromApi(members, chunks, batchSize, "leaderboard/partial", `${org}/`));
+        addToTotals(totals, await fetchBatchFromApi(members, chunks, MAX_BATCH_SIZE, "leaderboard/partial", orgId));
       }
     }
 
