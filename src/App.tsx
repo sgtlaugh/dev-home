@@ -138,8 +138,53 @@ export default function App() {
               }
               if (item.group === "label") {
                 return (
-                  <div key={item.label} className="sidebar-group-label">
+                  <div
+                    key={item.label}
+                    className="sidebar-group-label"
+                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                  >
                     {item.label}
+                    {item.label === "GitHub" &&
+                      rateLimit &&
+                      (() => {
+                        const pct = rateLimit.remaining / rateLimit.limit;
+                        const color = pct > 0.5 ? "#1a7f37" : pct > 0.2 ? "#9a6700" : "#cf222e";
+                        const size = 12;
+                        const stroke = 2;
+                        const r = (size - stroke) / 2;
+                        const circ = 2 * Math.PI * r;
+                        const offset = circ * (1 - pct);
+                        return (
+                          <span
+                            className="rate-limit-indicator"
+                            title={`GitHub API: ${rateLimit.remaining}/${rateLimit.limit} remaining\nResets ${new Date(rateLimit.resetAt).toLocaleTimeString()}`}
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            <svg width={size} height={size} className="rate-limit-ring">
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={r}
+                                fill="none"
+                                stroke="var(--bs-border-color)"
+                                strokeWidth={stroke}
+                              />
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={r}
+                                fill="none"
+                                stroke={color}
+                                strokeWidth={stroke}
+                                strokeDasharray={circ}
+                                strokeDashoffset={offset}
+                                strokeLinecap="round"
+                                transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                              />
+                            </svg>
+                          </span>
+                        );
+                      })()}
                   </div>
                 );
               }
@@ -216,45 +261,6 @@ export default function App() {
                         {Math.round((Date.now() - lastRefreshTime) / 60000)}m
                       </span>
                     )}
-                    {rateLimit &&
-                      (() => {
-                        const pct = rateLimit.remaining / rateLimit.limit;
-                        const color = pct > 0.5 ? "#1a7f37" : pct > 0.2 ? "#9a6700" : "#cf222e";
-                        const size = 16;
-                        const stroke = 2.5;
-                        const r = (size - stroke) / 2;
-                        const circ = 2 * Math.PI * r;
-                        const offset = circ * (1 - pct);
-                        return (
-                          <span
-                            className="rate-limit-indicator"
-                            title={`GitHub API: ${rateLimit.remaining}/${rateLimit.limit} remaining\nResets ${new Date(rateLimit.resetAt).toLocaleTimeString()}`}
-                          >
-                            <svg width={size} height={size} className="rate-limit-ring">
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke="var(--bs-border-color)"
-                                strokeWidth={stroke}
-                              />
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke={color}
-                                strokeWidth={stroke}
-                                strokeDasharray={circ}
-                                strokeDashoffset={offset}
-                                strokeLinecap="round"
-                                transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                              />
-                            </svg>
-                          </span>
-                        );
-                      })()}
                     {(prefetch.running || prefetch.complete) &&
                       effectiveTab === "leaderboard" &&
                       (() => {
