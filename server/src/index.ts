@@ -89,6 +89,24 @@ export function startServer() {
 
   const server = app.listen(PORT, () => {
     logger.info("Server", `listening on http://localhost:${PORT}`);
+
+    // Start background prefetch for default org after startup
+    const defaultOrg = process.env.DEFAULT_ORG;
+    if (defaultOrg) {
+      setTimeout(() => {
+        import("./clients/githubApiClient").then(({ createGitHubClient }) => {
+          const github = createGitHubClient();
+          return github.get(`/orgs/${defaultOrg}/members`, { params: { per_page: 100 } });
+        }).then(({ data }) => {
+          const members = data.map((m: any) => m.login);
+          return import("./services/contributionPrefetch").then(({ startPrefetch }) =>
+            startPrefetch(defaultOrg, members)
+          );
+        }).catch((err) => {
+          logger.warn("Prefetch", `Startup prefetch skipped: ${err.message}`);
+        });
+      }, 5000); // Wait 5s for server to stabilize
+    }
   });
 
   return server;
