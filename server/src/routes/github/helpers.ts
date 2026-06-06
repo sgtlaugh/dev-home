@@ -87,6 +87,8 @@ export function mapGraphQLPr(node: any) {
     checks_status: rollup?.state || null,
     checks: contextNodes.map(mapCheckContext),
     review_status: deriveReviewStatus(node.reviews?.nodes),
+    additions: node.additions || 0,
+    deletions: node.deletions || 0,
   };
 }
 

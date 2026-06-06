@@ -24,6 +24,8 @@ export const SEARCH_PRS_QUERY = `
           body
           headRefName
           baseRefName
+          additions
+          deletions
           repository { nameWithOwner url }
           commits(last: 1) {
             nodes {
@@ -80,6 +82,8 @@ export const SEARCH_MY_PRS_QUERY = `
           body
           headRefName
           baseRefName
+          additions
+          deletions
           repository { nameWithOwner url }
           commits(last: 1) {
             nodes {
@@ -163,6 +167,8 @@ export const COMBINED_DASHBOARD_QUERY = `
           body
           headRefName
           baseRefName
+          additions
+          deletions
           repository { nameWithOwner url }
           commits(last: 1) {
             nodes {
@@ -241,6 +247,8 @@ export const COMBINED_DASHBOARD_QUERY = `
           body
           headRefName
           baseRefName
+          additions
+          deletions
           repository { nameWithOwner url }
           commits(last: 1) {
             nodes {

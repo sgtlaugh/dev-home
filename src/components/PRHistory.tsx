@@ -195,6 +195,9 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
   const closedCount = prs.filter((pr) => pr.state === "closed" && !pr.merged).length;
   const openCount = prs.filter((pr) => pr.state === "open" && !pr.merged).length;
 
+  const totalAdditions = prs.reduce((s, pr) => s + (pr.additions || 0), 0);
+  const totalDeletions = prs.reduce((s, pr) => s + (pr.deletions || 0), 0);
+
   const statCounts: Record<StateFilter, number> = {
     all: prs.length,
     merged: mergedCount,
@@ -275,6 +278,18 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
             {commitCount}
           </div>
           <div className="stat-label">Commits</div>
+        </div>
+        <div className="stat-card" style={{ backgroundColor: "rgba(26, 127, 55, 0.05)" }}>
+          <div className="stat-value" style={{ color: "#1a7f37" }}>
+            +{totalAdditions.toLocaleString()}
+          </div>
+          <div className="stat-label">Lines Added</div>
+        </div>
+        <div className="stat-card" style={{ backgroundColor: "rgba(207, 34, 46, 0.05)" }}>
+          <div className="stat-value" style={{ color: "#cf222e" }}>
+            -{totalDeletions.toLocaleString()}
+          </div>
+          <div className="stat-label">Lines Deleted</div>
         </div>
       </div>
 
