@@ -18,12 +18,12 @@ const BATCH_DELAY_MS = 2000;
 let prefetchRunning = false;
 let isLeaderboardActiveFn: (() => boolean) | null = null;
 
-let progress = { queriesDone: 0, totalQueries: 0, org: "", completedAt: 0 };
+let progress = { monthsDone: 0, totalMonths: 0, org: "", completedAt: 0 };
 
 export interface PrefetchStatus {
   running: boolean;
-  queriesDone: number;
-  totalQueries: number;
+  monthsDone: number;
+  totalMonths: number;
   org: string;
   completedAt: number;
 }
@@ -135,19 +135,23 @@ export async function startPrefetch(
       logger.info("Prefetch", `${cachedMonthsList.length} months cached for ${org}: ${recent}${suffix}`);
     }
 
+    const totalMonths = monthsToProcess.length;
+
     if (monthWork.length === 0) {
-      logger.info("Prefetch", `All ${monthsToProcess.length} months cached for ${org}, nothing to do`);
-      progress = { queriesDone: 0, totalQueries: 0, org, completedAt: Date.now() };
+      logger.info("Prefetch", `All ${totalMonths} months cached for ${org}, nothing to do`);
+      progress = { monthsDone: totalMonths, totalMonths, org, completedAt: Date.now() };
       return;
     }
 
-    progress = { queriesDone: 0, totalQueries: monthWork.reduce((s, w) => s + Math.ceil(w.missing.length / BATCH_SIZE), 0), org, completedAt: 0 };
+    progress = { monthsDone: cachedMonthsList.length, totalMonths, org, completedAt: 0 };
 
+    const totalQueries = monthWork.reduce((s, w) => s + Math.ceil(w.missing.length / BATCH_SIZE), 0);
     logger.info(
       "Prefetch",
-      `Starting for ${org}: ${monthWork.length} months to fetch, ${cachedMonthsList.length} cached, ~${progress.totalQueries} queries`,
+      `Starting for ${org}: ${monthWork.length} months to fetch, ${cachedMonthsList.length} cached, ~${totalQueries} queries`,
     );
 
+    let queriesDone = 0;
     const startTime = Date.now();
 
     for (const { month, missing } of monthWork) {
@@ -192,25 +196,27 @@ export async function startPrefetch(
           logger.error("Prefetch", `${month} batch failed: ${err}`);
         }
 
-        progress.queriesDone++;
+        queriesDone++;
         if (i + BATCH_SIZE < missing.length) {
           await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
         }
       }
 
+      progress.monthsDone++;
+
       const elapsed = (Date.now() - startTime) / 1000;
-      const rate = progress.queriesDone / (elapsed / 60);
-      const remaining = progress.totalQueries - progress.queriesDone;
+      const rate = queriesDone / (elapsed / 60);
+      const remaining = totalQueries - queriesDone;
       const etaRemaining = remaining / (rate / 60);
 
       logger.info(
         "Prefetch",
-        `${org}/${month} done (${progress.queriesDone}/${progress.totalQueries} queries, ${Math.round(rate)}/min, ETA ${formatEta(etaRemaining)})`,
+        `${org}/${month} done (${progress.monthsDone}/${totalMonths} months, ${queriesDone}/${totalQueries} queries, ${Math.round(rate)}/min, ETA ${formatEta(etaRemaining)})`,
       );
     }
 
     progress.completedAt = Date.now();
-    logger.info("Prefetch", `Completed for ${org}: ${progress.queriesDone} queries in ${formatEta((Date.now() - startTime) / 1000)}`);
+    logger.info("Prefetch", `Completed for ${org}: ${queriesDone} queries in ${formatEta((Date.now() - startTime) / 1000)}`);
   } finally {
     prefetchRunning = false;
   }

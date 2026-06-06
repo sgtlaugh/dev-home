@@ -255,19 +255,21 @@ export default function App() {
                           </span>
                         );
                       })()}
-                    {prefetch.running &&
+                    {(prefetch.running || (prefetch.complete && !prefetch.dismissed)) &&
                       (() => {
                         const pct = prefetch.percentage / 100;
+                        const done = prefetch.complete;
+                        const color = done ? "#1a7f37" : "#0969da";
                         const size = 16;
                         const stroke = 2.5;
                         const r = (size - stroke) / 2;
                         const circ = 2 * Math.PI * r;
-                        const offset = circ * (1 - pct);
+                        const offset = done ? 0 : circ * (1 - pct);
+                        const tip = done
+                          ? `${prefetch.org} caching complete (${prefetch.totalMonths} months)`
+                          : `Caching ${prefetch.org}... ${prefetch.percentage}% (${prefetch.monthsDone}/${prefetch.totalMonths} months)`;
                         return (
-                          <span
-                            className="rate-limit-indicator"
-                            title={`Caching ${prefetch.org}... ${prefetch.percentage}% (${prefetch.queriesDone}/${prefetch.totalQueries} queries)`}
-                          >
+                          <span className="rate-limit-indicator" title={tip}>
                             <svg width={size} height={size} className="rate-limit-ring">
                               <circle
                                 cx={size / 2}
@@ -282,7 +284,7 @@ export default function App() {
                                 cy={size / 2}
                                 r={r}
                                 fill="none"
-                                stroke="#0969da"
+                                stroke={color}
                                 strokeWidth={stroke}
                                 strokeDasharray={circ}
                                 strokeDashoffset={offset}

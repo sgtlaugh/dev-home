@@ -5,8 +5,8 @@ import { apiCache } from "../utils/cache";
 
 interface PrefetchStatus {
   running: boolean;
-  queriesDone: number;
-  totalQueries: number;
+  monthsDone: number;
+  totalMonths: number;
   org: string;
   completedAt: number;
 }
@@ -46,8 +46,8 @@ export function usePrefetchStatus(active: boolean) {
   }, [status?.completedAt, status?.running]);
 
   const complete = !!(status?.completedAt && !status.running);
-  const percentage = status?.totalQueries
-    ? Math.round((status.queriesDone / status.totalQueries) * 100)
+  const percentage = status?.totalMonths
+    ? Math.round((status.monthsDone / status.totalMonths) * 100)
     : 0;
 
   return {
@@ -55,8 +55,8 @@ export function usePrefetchStatus(active: boolean) {
     complete,
     dismissed,
     percentage,
-    queriesDone: status?.queriesDone ?? 0,
-    totalQueries: status?.totalQueries ?? 0,
+    monthsDone: status?.monthsDone ?? 0,
+    totalMonths: status?.totalMonths ?? 0,
     org: status?.org ?? "",
   };
 }
