@@ -185,7 +185,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
           </Card>
 
           {/* Completion Time Details */}
-          <Card>
+          <Card style={{ minHeight: "auto" }}>
             <Card.Body>
               <h6 style={{ marginBottom: "1rem", fontWeight: 600 }}>Completion Time Stats</h6>
               <div className="d-flex gap-3 flex-wrap">
