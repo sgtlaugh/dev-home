@@ -24,6 +24,8 @@ const RETRY_BASE_DELAY_MS = 3000;
 const FALLBACK_403_PAUSE_MS = 5000;
 const FALLBACK_403_PARALLEL = 5;
 
+let activeLeaderboardRequests = 0;
+
 interface LeaderboardEntry {
   login: string;
   avatarUrl: string;
@@ -222,6 +224,10 @@ function loadProfiles(members: string[]): Map<string, { avatarUrl: string; name:
 function triggerPrefetch(org: string): void {
   if (isPrefetchRunning()) return;
   setTimeout(() => {
+    if (activeLeaderboardRequests > 0) {
+      logger.info("Prefetch", `Skipping - ${activeLeaderboardRequests} leaderboard queries active`);
+      return;
+    }
     fetchOrgMembers(org)
       .then((members) => startPrefetch(org, members))
       .catch((err) => logger.error("Prefetch", `Failed: ${err}`));
@@ -241,6 +247,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     return res.json(cached);
   }
 
+  activeLeaderboardRequests++;
   try {
     const wasPrefetching = isPrefetchRunning();
     if (wasPrefetching) {
@@ -338,6 +345,8 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("Leaderboard", `Failed: ${err}`);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
+  } finally {
+    activeLeaderboardRequests--;
   }
 });
 
