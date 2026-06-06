@@ -89,12 +89,6 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
           </div>
           <div className="stat-label">Story Points</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: "#8250df" }}>
-            {metrics?.averageCompletionTime.mean || "0h"}
-          </div>
-          <div className="stat-label">Avg Time</div>
-        </div>
         <div
           className="stat-card"
           title={`Recent half vs older half (by ${metrics && metrics.totalStoryPoints > 0 ? "story points" : "task count"})`}
@@ -179,39 +173,6 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
               </Card.Body>
             </Card>
           )}
-
-          {/* Completion Time Details */}
-          <Card className="mb-4" style={{ minHeight: "auto" }}>
-            <Card.Body>
-              <h6 style={{ marginBottom: "1rem", fontWeight: 600 }}>Completion Time Stats</h6>
-              <div className="d-flex gap-3 flex-wrap">
-                <div className="stat-card">
-                  <div className="stat-value" style={{ color: "#1a7f37", fontSize: "1.5rem" }}>
-                    {metrics.averageCompletionTime.mean}
-                  </div>
-                  <div className="stat-label">Mean</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value" style={{ color: "#0969da", fontSize: "1.5rem" }}>
-                    {metrics.averageCompletionTime.median}
-                  </div>
-                  <div className="stat-label">Median</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value" style={{ color: "#8250df", fontSize: "1.5rem" }}>
-                    {metrics.averageCompletionTime.fastest}
-                  </div>
-                  <div className="stat-label">Fastest</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value" style={{ color: "#cf222e", fontSize: "1.5rem" }}>
-                    {metrics.averageCompletionTime.slowest}
-                  </div>
-                  <div className="stat-label">Slowest</div>
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
 
           {/* Completed Issues */}
           {completedIssues.length > 0 && (
