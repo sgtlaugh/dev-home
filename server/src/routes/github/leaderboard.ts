@@ -102,7 +102,7 @@ async function fetchOrgId(org: string): Promise<string> {
   return data.organization.id;
 }
 
-async function fetchOrgMembers(org: string): Promise<string[]> {
+export async function fetchOrgMembers(org: string): Promise<string[]> {
   const cacheKey = `github:org-members:${org}`;
   const cached = apiCache.get<string[]>(cacheKey);
   if (cached) return cached;

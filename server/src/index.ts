@@ -94,15 +94,12 @@ export function startServer() {
     const defaultOrg = process.env.DEFAULT_ORG;
     if (defaultOrg) {
       setTimeout(() => {
-        import("./clients/githubApiClient").then(({ createGitHubClient }) => {
-          const github = createGitHubClient();
-          return github.get(`/orgs/${defaultOrg}/members`, { params: { per_page: 100 } });
-        }).then(({ data }) => {
-          const members = data.map((m: any) => m.login);
-          return import("./services/contributionPrefetch").then(({ startPrefetch }) =>
-            startPrefetch(defaultOrg, members)
-          );
-        }).catch((err) => {
+        Promise.all([
+          import("./routes/github/leaderboard"),
+          import("./services/contributionPrefetch")
+        ]).then(([{ fetchOrgMembers }, { startPrefetch }]) =>
+          fetchOrgMembers(defaultOrg).then(members => startPrefetch(defaultOrg, members))
+        ).catch((err) => {
           logger.warn("Prefetch", `Startup prefetch skipped: ${err.message}`);
         });
       }, 5000); // Wait 5s for server to stabilize
