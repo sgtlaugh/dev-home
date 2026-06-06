@@ -133,72 +133,70 @@ async function fetchBatchFromApi(
   const fetchOne = async (index: number): Promise<LeaderboardEntry[]> => {
     const logins = members.slice(index * batchSize, (index + 1) * batchSize);
     const tag = `${label}/batch-${index + 1}-of-${totalBatches}`;
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        const data = await graphql<Record<string, any>>(buildMemberContributionsQuery(logins, chunks, orgId), {}, tag);
-        return logins.map((_, j) => data[`u${j}`]).filter(Boolean).map((u) => parseUserData(u, chunks));
-      } catch (err: any) {
-        const status = err?.response?.status;
-        if (status === 403 && logins.length > 1) {
-          logger.warn("Leaderboard", `${tag} got 403, pausing ${FALLBACK_403_PAUSE_MS}ms then falling back to parallel single-user`);
-          await new Promise((r) => setTimeout(r, FALLBACK_403_PAUSE_MS));
-          const results: LeaderboardEntry[] = [];
-          for (let i = 0; i < logins.length; i += FALLBACK_403_PARALLEL) {
-            const batch = logins.slice(i, i + FALLBACK_403_PARALLEL);
-            const batchResults = await Promise.all(
-              batch.map(async (login) => {
-                try {
-                  const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks, orgId), {}, `${tag}-${login}`);
-                  return d.u0 ? parseUserData(d.u0, chunks) : null;
-                } catch (e: any) {
-                  if (e?.response?.status === 403) {
-                    logger.warn("Leaderboard", `${tag}-${login} skipped (403)`);
-                    return null;
-                  }
-                  logger.error("Leaderboard", `${tag}-${login} failed: ${e}`);
-                  return null;
-                }
-              })
-            );
-            results.push(...batchResults.filter(Boolean) as LeaderboardEntry[]);
+
+    const tryBatch = async (users: string[], subTag: string): Promise<LeaderboardEntry[]> => {
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const data = await graphql<Record<string, any>>(buildMemberContributionsQuery(users, chunks, orgId), {}, subTag);
+          return users.map((_, j) => data[`u${j}`]).filter(Boolean).map((u) => parseUserData(u, chunks));
+        } catch (err: any) {
+          const status = err?.response?.status;
+          if (status === 403 && users.length > 1) {
+            logger.warn("Leaderboard", `${subTag} got 403, pausing ${FALLBACK_403_PAUSE_MS}ms then falling back to parallel single-user`);
+            await new Promise((r) => setTimeout(r, FALLBACK_403_PAUSE_MS));
+            return await fallbackToSingles(users, subTag);
           }
-          return results;
-        }
-        if (status === 502 && attempt < MAX_RETRIES) {
-          const delay = RETRY_BASE_DELAY_MS * (attempt + 1);
-          logger.warn("Leaderboard", `${tag} got ${status}, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`);
-          await new Promise((r) => setTimeout(r, delay));
-          continue;
-        }
-        if (err?.message?.includes("Resource limits") && logins.length > 1) {
-          logger.warn("Leaderboard", `${tag} resource limit, falling back to parallel single-user`);
-          const results: LeaderboardEntry[] = [];
-          for (let i = 0; i < logins.length; i += FALLBACK_403_PARALLEL) {
-            const batch = logins.slice(i, i + FALLBACK_403_PARALLEL);
-            const batchResults = await Promise.all(
-              batch.map(async (login) => {
-                try {
-                  const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks, orgId), {}, `${tag}-${login}`);
-                  return d.u0 ? parseUserData(d.u0, chunks) : null;
-                } catch (e: any) {
-                  if (e?.response?.status === 403) {
-                    logger.warn("Leaderboard", `${tag}-${login} skipped (403)`);
-                    return null;
-                  }
-                  logger.error("Leaderboard", `${tag}-${login} failed: ${e}`);
-                  return null;
-                }
-              })
-            );
-            results.push(...batchResults.filter(Boolean) as LeaderboardEntry[]);
+          if (status === 502 && attempt < MAX_RETRIES) {
+            const delay = RETRY_BASE_DELAY_MS * (attempt + 1);
+            logger.warn("Leaderboard", `${subTag} got ${status}, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`);
+            await new Promise((r) => setTimeout(r, delay));
+            continue;
           }
-          return results;
+          if (err?.message?.includes("Resource limits") && users.length > 5) {
+            logger.warn("Leaderboard", `${subTag} resource limit, splitting batch (${users.length} → ${Math.floor(users.length / 2)})`);
+            const mid = Math.floor(users.length / 2);
+            const [a, b] = await Promise.all([
+              tryBatch(users.slice(0, mid), `${subTag}-split1`),
+              tryBatch(users.slice(mid), `${subTag}-split2`)
+            ]);
+            return [...a, ...b];
+          }
+          if (err?.message?.includes("Resource limits") && users.length <= 5) {
+            logger.warn("Leaderboard", `${subTag} resource limit (small batch), falling back to parallel single-user`);
+            return await fallbackToSingles(users, subTag);
+          }
+          logger.error("Leaderboard", `${subTag} failed: ${err}`);
+          return [];
         }
-        logger.error("Leaderboard", `${tag} failed: ${err}`);
-        return [];
       }
-    }
-    return [];
+      return [];
+    };
+
+    const fallbackToSingles = async (users: string[], baseTag: string): Promise<LeaderboardEntry[]> => {
+      const results: LeaderboardEntry[] = [];
+      for (let i = 0; i < users.length; i += FALLBACK_403_PARALLEL) {
+        const batch = users.slice(i, i + FALLBACK_403_PARALLEL);
+        const batchResults = await Promise.all(
+          batch.map(async (login) => {
+            try {
+              const d = await graphql<Record<string, any>>(buildMemberContributionsQuery([login], chunks, orgId), {}, `${baseTag}-${login}`);
+              return d.u0 ? parseUserData(d.u0, chunks) : null;
+            } catch (e: any) {
+              if (e?.response?.status === 403) {
+                logger.warn("Leaderboard", `${baseTag}-${login} skipped (403)`);
+                return null;
+              }
+              logger.error("Leaderboard", `${baseTag}-${login} failed: ${e}`);
+              return null;
+            }
+          })
+        );
+        results.push(...batchResults.filter(Boolean) as LeaderboardEntry[]);
+      }
+      return results;
+    };
+
+    return tryBatch(logins, tag);
   };
 
   const entries: LeaderboardEntry[] = [];
