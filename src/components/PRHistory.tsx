@@ -531,27 +531,49 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
           }
         />
       ) : (
-        <div className="activity-timeline">
-          {Array.from(groupedPrs.entries()).map(([dateLabel, datePRs]) => (
-            <div key={dateLabel} className="activity-section">
-              <div className="activity-date-label">
-                {dateLabel}
-                <Badge
-                  bg="secondary"
-                  pill
-                  style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
-                >
-                  {datePRs.length}
-                </Badge>
+        <>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "1rem",
+              paddingBottom: "1rem",
+              borderBottom: "1px solid #d1d9e0",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 600 }}>Pull Requests</h3>
+            <Badge bg="secondary" pill style={{ fontSize: "0.75rem" }}>
+              {filteredPrs.length}
+            </Badge>
+            {stateFilter !== "all" && (
+              <span style={{ fontSize: "0.85rem", color: "#656d76", marginLeft: "0.5rem" }}>
+                ({stateFilter})
+              </span>
+            )}
+          </div>
+          <div className="activity-timeline">
+            {Array.from(groupedPrs.entries()).map(([dateLabel, datePRs]) => (
+              <div key={dateLabel} className="activity-section">
+                <div className="activity-date-label">
+                  {dateLabel}
+                  <Badge
+                    bg="secondary"
+                    pill
+                    style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
+                  >
+                    {datePRs.length}
+                  </Badge>
+                </div>
+                <div className="activity-list">
+                  {datePRs.map((pr) => (
+                    <PRCard key={pr.id} pr={pr} onClick={() => setSelectedPR(pr)} />
+                  ))}
+                </div>
               </div>
-              <div className="activity-list">
-                {datePRs.map((pr) => (
-                  <PRCard key={pr.id} pr={pr} onClick={() => setSelectedPR(pr)} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       <DescriptionModal
