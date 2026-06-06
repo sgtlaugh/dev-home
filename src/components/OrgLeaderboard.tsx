@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
-import { useUserOrgs, useOrgLeaderboard } from "../hooks/useOrgLeaderboard";
+import { useUserOrgs, useOrgLeaderboard, usePrefetchStatus } from "../hooks/useOrgLeaderboard";
 import { DateRangePicker } from "./DateRangePicker";
 
 type DateMode = "month" | "year" | "custom";
@@ -82,6 +82,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
     return { startDate: customStart, endDate: customEnd };
   }, [mode, year, month, customStart, customEnd]);
 
+  const prefetch = usePrefetchStatus(active);
   const { members, loading, error } = useOrgLeaderboard(
     active && !validationError,
     org,
@@ -284,7 +285,9 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
         <div className="d-flex flex-column align-items-center py-5">
           <Spinner animation="border" variant="secondary" />
           <div className="text-secondary-custom mt-3" style={{ fontSize: "0.875rem" }}>
-            Loading leaderboard... This may take a while for large organizations or date ranges.
+            {prefetch.running
+              ? `Loading leaderboard... Org caching in progress (${prefetch.percentage}%). Queries will be faster once complete.`
+              : "Loading leaderboard... This may take a while for large organizations or date ranges."}
           </div>
         </div>
       )}

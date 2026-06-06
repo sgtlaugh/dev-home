@@ -255,7 +255,7 @@ export default function App() {
                           </span>
                         );
                       })()}
-                    {(prefetch.running || (prefetch.complete && !prefetch.dismissed)) &&
+                    {(prefetch.running || prefetch.complete) &&
                       (() => {
                         const pct = prefetch.percentage / 100;
                         const done = prefetch.complete;
@@ -269,29 +269,42 @@ export default function App() {
                           ? `${prefetch.org} caching complete (${prefetch.totalMonths} months)`
                           : `Caching ${prefetch.org}... ${prefetch.percentage}% (${prefetch.monthsDone}/${prefetch.totalMonths} months)`;
                         return (
-                          <span className="rate-limit-indicator" title={tip}>
-                            <svg width={size} height={size} className="rate-limit-ring">
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke="var(--bs-border-color)"
-                                strokeWidth={stroke}
-                              />
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke={color}
-                                strokeWidth={stroke}
-                                strokeDasharray={circ}
-                                strokeDashoffset={offset}
-                                strokeLinecap="round"
-                                transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                              />
-                            </svg>
+                          <span className="d-flex align-items-center gap-1">
+                            <span className="rate-limit-indicator" title={tip}>
+                              <svg width={size} height={size} className="rate-limit-ring">
+                                <circle
+                                  cx={size / 2}
+                                  cy={size / 2}
+                                  r={r}
+                                  fill="none"
+                                  stroke="var(--bs-border-color)"
+                                  strokeWidth={stroke}
+                                />
+                                <circle
+                                  cx={size / 2}
+                                  cy={size / 2}
+                                  r={r}
+                                  fill="none"
+                                  stroke={color}
+                                  strokeWidth={stroke}
+                                  strokeDasharray={circ}
+                                  strokeDashoffset={offset}
+                                  strokeLinecap="round"
+                                  transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                                />
+                              </svg>
+                            </span>
+                            {done && (
+                              <span
+                                style={{
+                                  fontSize: "0.7rem",
+                                  color: "#1a7f37",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                ✓ Org caching done
+                              </span>
+                            )}
                           </span>
                         );
                       })()}
