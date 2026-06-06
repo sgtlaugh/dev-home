@@ -116,30 +116,6 @@ export const SEARCH_MY_PRS_QUERY = `
               submittedAt
             }
           }
-          comments(last: 50) {
-            nodes {
-              databaseId
-              url
-              body
-              createdAt
-              updatedAt
-              author { login avatarUrl }
-            }
-          }
-          reviewThreads(last: 50) {
-            nodes {
-              comments(last: 10) {
-                nodes {
-                  databaseId
-                  url
-                  body
-                  createdAt
-                  updatedAt
-                  author { login avatarUrl }
-                }
-              }
-            }
-          }
         }
       }
     }
@@ -199,30 +175,6 @@ export const COMBINED_DASHBOARD_QUERY = `
               state
               author { login avatarUrl }
               submittedAt
-            }
-          }
-          comments(last: 50) {
-            nodes {
-              databaseId
-              url
-              body
-              createdAt
-              updatedAt
-              author { login avatarUrl }
-            }
-          }
-          reviewThreads(last: 50) {
-            nodes {
-              comments(last: 10) {
-                nodes {
-                  databaseId
-                  url
-                  body
-                  createdAt
-                  updatedAt
-                  author { login avatarUrl }
-                }
-              }
             }
           }
         }
