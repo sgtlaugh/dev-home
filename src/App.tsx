@@ -12,8 +12,6 @@ import {
   IconAt,
   IconGitPullRequest,
   IconEye,
-  IconChevronsLeft,
-  IconChevronsRight,
   IconCalendarStats,
   IconHistory,
   IconChartBar,
@@ -46,16 +44,6 @@ import { apiCache } from "./utils/cache";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("summary");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    return localStorage.getItem("dev-home-sidebar-collapsed") === "true";
-  });
-
-  const toggleSidebar = () => {
-    const next = !sidebarCollapsed;
-    setSidebarCollapsed(next);
-    localStorage.setItem("dev-home-sidebar-collapsed", String(next));
-  };
-
   const [currentMonthPRsCount, setCurrentMonthPRsCount] = useState(0);
   const {
     configured,
@@ -112,7 +100,7 @@ export default function App() {
       <ErrorBoundary>
         <div className="app-body">
           {/* Sidebar navigation */}
-          <nav className={`sidebar${sidebarCollapsed ? " collapsed" : ""}`}>
+          <nav className="sidebar">
             <div className="sidebar-header" />
             {[
               { key: "summary", label: "Overview", icon: IconLayoutDashboard },
@@ -242,13 +230,6 @@ export default function App() {
                 </button>
               );
             })}
-            <button
-              className="sidebar-toggle"
-              onClick={toggleSidebar}
-              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {sidebarCollapsed ? <IconChevronsRight size={16} /> : <IconChevronsLeft size={16} />}
-            </button>
           </nav>
 
           {/* Main content panel */}
