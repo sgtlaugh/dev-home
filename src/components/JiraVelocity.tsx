@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { IconChartBar } from "@tabler/icons-react";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
@@ -6,32 +6,46 @@ import Spinner from "react-bootstrap/Spinner";
 import { useJiraVelocity } from "../hooks/useJiraVelocity";
 import { EmptyState } from "./EmptyState";
 
-type DateMode = "30d" | "60d" | "90d" | "custom";
+type Preset = "30d" | "90d" | "6mo" | "1y";
+
+const PRESETS: { key: Preset; label: string }[] = [
+  { key: "30d", label: "30 Days" },
+  { key: "90d", label: "90 Days" },
+  { key: "6mo", label: "6 Months" },
+  { key: "1y", label: "1 Year" },
+];
 
 export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
-  const [mode, setMode] = useState<DateMode>("30d");
-  const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState("");
-
-  const getDateRange = (): { start: string; end: string } => {
-    const now = new Date();
-    const toDate = now.toISOString().split("T")[0];
-
-    if (mode === "custom") {
-      return { start: customStart, end: customEnd };
+  const [preset, setPreset] = useState<Preset>(() => {
+    try {
+      const stored = localStorage.getItem("jira-velocity:preset");
+      if (stored && ["30d", "90d", "6mo", "1y"].includes(stored)) return stored as Preset;
+    } catch {
+      /* ignore */
     }
+    return "30d";
+  });
 
-    const days = mode === "30d" ? 30 : mode === "60d" ? 60 : 90;
-    const fromDate = new Date(now);
-    fromDate.setDate(fromDate.getDate() - days);
-    return {
-      start: fromDate.toISOString().split("T")[0],
-      end: toDate,
-    };
-  };
+  React.useEffect(() => {
+    try {
+      localStorage.setItem("jira-velocity:preset", preset);
+    } catch {
+      /* ignore */
+    }
+  }, [preset]);
 
-  const range = getDateRange();
-  const { metrics, loading, error } = useJiraVelocity(range.start, range.end, active);
+  const { startDate, endDate } = useMemo(() => {
+    const now = new Date();
+    const end = now.toISOString().split("T")[0];
+    const from = new Date(now);
+    if (preset === "30d") from.setDate(from.getDate() - 30);
+    else if (preset === "90d") from.setDate(from.getDate() - 90);
+    else if (preset === "6mo") from.setMonth(from.getMonth() - 6);
+    else from.setFullYear(from.getFullYear() - 1);
+    return { startDate: from.toISOString().split("T")[0], endDate: end };
+  }, [preset]);
+
+  const { metrics, loading, error } = useJiraVelocity(startDate, endDate, active);
 
   const trendColor =
     metrics?.velocity.trend === "improving"
@@ -77,7 +91,10 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
           </div>
           <div className="stat-label">Avg Time</div>
         </div>
-        <div className="stat-card" title="Second half of range vs first half">
+        <div
+          className="stat-card"
+          title={`Recent half vs older half (by ${metrics && metrics.totalStoryPoints > 0 ? "story points" : "task count"})`}
+        >
           <div className="stat-value" style={{ color: trendColor }}>
             {trendArrow}
             {Math.abs(metrics?.velocity.trendPercentage || 0).toFixed(0)}%
@@ -89,60 +106,16 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
       {/* Controls */}
       <Card className="controls-card mb-4">
         <Card.Body>
-          <div className="d-flex gap-3 align-items-center flex-wrap">
-            <div className="segmented-control">
+          <div className="segmented-control">
+            {PRESETS.map((p) => (
               <button
-                className={`segmented-btn ${mode === "30d" ? "active" : ""}`}
-                onClick={() => setMode("30d")}
+                key={p.key}
+                className={`segmented-btn ${preset === p.key ? "active" : ""}`}
+                onClick={() => setPreset(p.key)}
               >
-                30 Days
+                {p.label}
               </button>
-              <button
-                className={`segmented-btn ${mode === "60d" ? "active" : ""}`}
-                onClick={() => setMode("60d")}
-              >
-                60 Days
-              </button>
-              <button
-                className={`segmented-btn ${mode === "90d" ? "active" : ""}`}
-                onClick={() => setMode("90d")}
-              >
-                90 Days
-              </button>
-              <button
-                className={`segmented-btn ${mode === "custom" ? "active" : ""}`}
-                onClick={() => setMode("custom")}
-              >
-                Custom
-              </button>
-            </div>
-
-            {mode === "custom" && (
-              <>
-                <label style={{ marginBottom: 0 }}>
-                  <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
-                    From:
-                  </span>
-                  <input
-                    type="date"
-                    value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
-                    className="filter-input"
-                  />
-                </label>
-                <label style={{ marginBottom: 0 }}>
-                  <span style={{ fontWeight: 500, marginRight: "0.5rem", fontSize: "0.8125rem" }}>
-                    To:
-                  </span>
-                  <input
-                    type="date"
-                    value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
-                    className="filter-input"
-                  />
-                </label>
-              </>
-            )}
+            ))}
           </div>
         </Card.Body>
       </Card>
@@ -185,13 +158,27 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {metrics.completionsByWeek.map((week) => (
-                    <tr key={week.weekRange}>
-                      <td style={{ fontWeight: 500 }}>{week.weekRange}</td>
-                      <td>{week.count}</td>
-                      <td>{week.storyPoints}</td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    const weeks = metrics.completionsByWeek;
+                    const mid = Math.ceil(weeks.length / 2);
+                    return weeks.map((week, i) => (
+                      <tr
+                        key={week.weekRange}
+                        style={{
+                          backgroundColor:
+                            weeks.length >= 2
+                              ? i < mid
+                                ? "rgba(9, 105, 218, 0.04)"
+                                : "rgba(130, 80, 223, 0.04)"
+                              : undefined,
+                        }}
+                      >
+                        <td style={{ fontWeight: 500 }}>{week.weekRange}</td>
+                        <td>{week.count}</td>
+                        <td>{week.storyPoints}</td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </Table>
             </Card.Body>

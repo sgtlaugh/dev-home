@@ -411,7 +411,10 @@ function calculateVelocityMetrics(
     completionsByWeekMap.set(weekKey, entry);
   }
 
-  const allWeeks = generateWeekKeysInRange(startDate, endDate);
+  let allWeeks = generateWeekKeysInRange(startDate, endDate);
+  if (allWeeks.length % 2 !== 0 && allWeeks.length > 1) {
+    allWeeks = allWeeks.slice(1);
+  }
   const completionsByWeek = allWeeks
     .sort((a, b) => b.localeCompare(a))
     .map((weekKey) => {
@@ -443,11 +446,13 @@ function calculateVelocityMetrics(
   let trendPercentage = 0;
   if (completionsByWeek.length >= 2) {
     const midpoint = Math.ceil(completionsByWeek.length / 2);
-    const secondHalf = completionsByWeek.slice(midpoint).reduce((sum, w) => sum + w.count, 0);
-    const firstHalf = completionsByWeek.slice(0, midpoint).reduce((sum, w) => sum + w.count, 0);
+    const useSP = totalStoryPoints > 0;
+    const metric = (w: { count: number; storyPoints: number }) => useSP ? w.storyPoints : w.count;
+    const recentHalf = completionsByWeek.slice(0, midpoint).reduce((sum, w) => sum + metric(w), 0);
+    const olderHalf = completionsByWeek.slice(midpoint).reduce((sum, w) => sum + metric(w), 0);
 
-    if (firstHalf > 0) {
-      trendPercentage = ((secondHalf - firstHalf) / firstHalf) * 100;
+    if (olderHalf > 0) {
+      trendPercentage = ((recentHalf - olderHalf) / olderHalf) * 100;
       if (trendPercentage > 10) trend = "improving";
       else if (trendPercentage < -10) trend = "declining";
     }
