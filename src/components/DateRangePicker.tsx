@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { CustomDateInputs } from "./CustomDateInputs";
 
 interface DateRangePickerProps {
@@ -30,6 +30,7 @@ export function DateRangePicker({
   const [inputStart, setInputStart] = useState(initialStart);
   const [inputEnd, setInputEnd] = useState(initialEnd);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const applyPreset = useCallback(
     (preset: string) => {
@@ -83,6 +84,13 @@ export function DateRangePicker({
     },
     [inputStart, inputEnd, onDateChange, onValidationError],
   );
+
+  useEffect(() => {
+    if (!hasInitialized && !initialStart && !initialEnd) {
+      applyPreset("30d");
+      setHasInitialized(true);
+    }
+  }, [hasInitialized, initialStart, initialEnd, applyPreset]);
 
   return (
     <div>
