@@ -137,21 +137,20 @@ export default function App() {
                 return <div key={`sep-${idx}`} className="sidebar-separator" />;
               }
               if (item.group === "label") {
+                const size = 12;
+                const stroke = 2;
+                const r = (size - stroke) / 2;
                 return (
                   <div
                     key={item.label}
                     className="sidebar-group-label"
-                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                    style={{ display: "flex", alignItems: "center", gap: "12px", lineHeight: 1 }}
                   >
-                    {item.label}
                     {item.label === "GitHub" &&
                       rateLimit &&
                       (() => {
                         const pct = rateLimit.remaining / rateLimit.limit;
                         const color = pct > 0.5 ? "#1a7f37" : pct > 0.2 ? "#9a6700" : "#cf222e";
-                        const size = 12;
-                        const stroke = 2;
-                        const r = (size - stroke) / 2;
                         const circ = 2 * Math.PI * r;
                         const offset = circ * (1 - pct);
                         return (
@@ -185,6 +184,29 @@ export default function App() {
                           </span>
                         );
                       })()}
+                    {item.label === "JIRA" && (
+                      <span style={{ display: "flex", alignItems: "center" }}>
+                        <svg width={size} height={size} className="rate-limit-ring">
+                          <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={r}
+                            fill="none"
+                            stroke="var(--bs-border-color)"
+                            strokeWidth={stroke}
+                          />
+                          <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={r}
+                            fill="none"
+                            stroke="#0969da"
+                            strokeWidth={stroke}
+                          />
+                        </svg>
+                      </span>
+                    )}
+                    {item.label}
                   </div>
                 );
               }
