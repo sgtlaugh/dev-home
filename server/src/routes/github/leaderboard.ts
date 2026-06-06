@@ -18,11 +18,9 @@ import { MAX_REPOS_PER_CONTRIBUTION, SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../
 
 const router = Router();
 const MAX_BATCH_SIZE = 35;
-const MAX_FIELDS_PER_QUERY = 50;
-const MAX_CONCURRENT_BATCHES = 3;
+const MAX_CONCURRENT_BATCHES = 2;
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 3000;
-const BATCH_DELAY_MS = 5000;
 const FALLBACK_403_PAUSE_MS = 5000;
 const FALLBACK_403_PARALLEL = 5;
 
@@ -208,10 +206,6 @@ async function fetchBatchFromApi(
   for (let i = 0; i < indices.length; i += MAX_CONCURRENT_BATCHES) {
     const results = await Promise.all(indices.slice(i, i + MAX_CONCURRENT_BATCHES).map(fetchOne));
     entries.push(...results.flat());
-    if (i + MAX_CONCURRENT_BATCHES < indices.length) {
-      const jitter = Math.random() * 500;
-      await new Promise((r) => setTimeout(r, BATCH_DELAY_MS + jitter));
-    }
   }
   saveProfiles(entries.map((e) => ({ login: e.login, name: e.name, avatarUrl: e.avatarUrl })));
   return entries;
