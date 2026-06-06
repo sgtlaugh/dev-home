@@ -13,7 +13,7 @@ import {
   getCachedProfiles,
   saveProfiles,
 } from "../../services/contributionCache";
-import { startPrefetch, isPrefetchRunning, stopPrefetch } from "../../services/contributionPrefetch";
+import { startPrefetch, isPrefetchRunning, registerLeaderboardCheck } from "../../services/contributionPrefetch";
 import { MAX_REPOS_PER_CONTRIBUTION, SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
@@ -25,6 +25,12 @@ const FALLBACK_403_PAUSE_MS = 5000;
 const FALLBACK_403_PARALLEL = 5;
 
 let activeLeaderboardRequests = 0;
+
+export function isLeaderboardActive(): boolean {
+  return activeLeaderboardRequests > 0;
+}
+
+registerLeaderboardCheck(isLeaderboardActive);
 
 interface LeaderboardEntry {
   login: string;
@@ -221,19 +227,6 @@ function loadProfiles(members: string[]): Map<string, { avatarUrl: string; name:
   return profiles;
 }
 
-function triggerPrefetch(org: string): void {
-  if (isPrefetchRunning()) return;
-  setTimeout(() => {
-    if (activeLeaderboardRequests > 0) {
-      logger.info("Prefetch", `Skipping - ${activeLeaderboardRequests} leaderboard queries active`);
-      return;
-    }
-    fetchOrgMembers(org)
-      .then((members) => startPrefetch(org, members))
-      .catch((err) => logger.error("Prefetch", `Failed: ${err}`));
-  }, 30000);
-}
-
 router.get("/org-leaderboard", async (req: Request, res: Response) => {
   const { org, startDate, endDate } = req.query as Record<string, string | undefined>;
   if (!org || !startDate || !endDate) {
@@ -242,19 +235,10 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
 
   const cacheKey = `github:org-leaderboard:${org}:${startDate}:${endDate}`;
   const cached = apiCache.get(cacheKey);
-  if (cached) {
-    triggerPrefetch(org);
-    return res.json(cached);
-  }
+  if (cached) return res.json(cached);
 
   activeLeaderboardRequests++;
   try {
-    const wasPrefetching = isPrefetchRunning();
-    if (wasPrefetching) {
-      logger.info("Leaderboard", "Pausing prefetch for leaderboard calculation");
-      stopPrefetch();
-    }
-
     const orgId = await fetchOrgId(org);
     const members = await fetchOrgMembers(org);
     const today = new Date().toISOString().split("T")[0];
@@ -338,10 +322,11 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     logger.info("Leaderboard", `${entries.length} members for ${org} (${startDate} to ${effectiveEnd})`);
     res.json(responseData);
 
-    if (wasPrefetching) {
-      logger.info("Leaderboard", "Resuming prefetch");
+    if (!isPrefetchRunning()) {
+      fetchOrgMembers(org)
+        .then((m) => startPrefetch(org, m))
+        .catch((err) => logger.error("Prefetch", `Failed: ${err}`));
     }
-    triggerPrefetch(org);
   } catch (err) {
     logger.error("Leaderboard", `Failed: ${err}`);
     res.status(500).json({ error: "Failed to fetch leaderboard" });

@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, shell, Menu, clipboard } from "electron";
 import path from "path";
 import http from "http";
 import { getSettings, setSettings, isConfigured } from "./store";
-import { createServer } from "../server/src/index";
+import { createServer, scheduleStartupPrefetch } from "../server/src/index";
 
 declare const __API_PORT__: string;
 
@@ -16,7 +16,7 @@ async function startBackendServer() {
     const dotenv = (await import("dotenv")).default;
     dotenv.config({ path: path.resolve(__dirname, "../.env") });
   } else {
-    process.env.DEV_HOME_DB_PATH = path.join(app.getPath("userData"), "notes.db");
+    process.env.DEV_HOME_DB_PATH = path.join(app.getPath("userData"), "dev-home.db");
   }
 
   const defaultPort = parseInt(__API_PORT__, 10);
@@ -30,6 +30,7 @@ async function startBackendServer() {
 
   httpServer = expressApp.listen(resolvedPort, () => {
     console.log(`[server] listening on http://localhost:${resolvedPort}`);
+    scheduleStartupPrefetch();
   });
 
   httpServer.on("error", (err) => {

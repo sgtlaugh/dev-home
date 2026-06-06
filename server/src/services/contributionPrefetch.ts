@@ -1,7 +1,7 @@
 import { graphql } from "../clients/githubGraphqlClient";
 import { createGitHubClient } from "../clients/githubApiClient";
 import { apiCache } from "../utils/cache";
-import { MAX_REPOS_PER_CONTRIBUTION, LONG_CACHE_TTL } from "../utils/constants";
+import { LONG_CACHE_TTL } from "../utils/constants";
 import { logger } from "../utils/logger";
 import {
   getMonthsBetween,
@@ -13,8 +13,14 @@ import {
 } from "./contributionCache";
 
 const BATCH_SIZE = 35;
+const BATCH_DELAY_MS = 2000;
 
 let prefetchRunning = false;
+let isLeaderboardActiveFn: (() => boolean) | null = null;
+
+export function registerLeaderboardCheck(fn: () => boolean): void {
+  isLeaderboardActiveFn = fn;
+}
 
 function buildMonthQuery(logins: string[], yearMonth: string, orgId: string): string {
   const [y, m] = yearMonth.split("-").map(Number);
@@ -62,6 +68,14 @@ async function getOrgCreatedMonth(org: string): Promise<string> {
   }
 }
 
+async function waitForLeaderboard(): Promise<void> {
+  if (!isLeaderboardActiveFn) return;
+  while (isLeaderboardActiveFn()) {
+    logger.info("Prefetch", "Paused - leaderboard query active");
+    await new Promise((r) => setTimeout(r, 5000));
+  }
+}
+
 export function isPrefetchRunning(): boolean {
   return prefetchRunning;
 }
@@ -79,6 +93,8 @@ export async function startPrefetch(
   const currentMonth = getCurrentYearMonth();
 
   try {
+    await waitForLeaderboard();
+
     const data = await graphql<{ organization: { id: string } }>(`query { organization(login: "${org}") { id } }`);
     const orgId = data.organization.id;
 
@@ -121,15 +137,10 @@ export async function startPrefetch(
     const startTime = Date.now();
 
     for (const { month, missing } of monthWork) {
-      if (!prefetchRunning) {
-        logger.info("Prefetch", "Stopped");
-        return;
-      }
-
       logger.info("Prefetch", `${org}/${month}: ${missing.length} members to fetch`);
 
       for (let i = 0; i < missing.length; i += BATCH_SIZE) {
-        if (!prefetchRunning) return;
+        await waitForLeaderboard();
 
         const batch = missing.slice(i, i + BATCH_SIZE);
         const query = buildMonthQuery(batch, month, orgId);
@@ -168,6 +179,9 @@ export async function startPrefetch(
         }
 
         queriesDone++;
+        if (i + BATCH_SIZE < missing.length) {
+          await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+        }
       }
 
       const elapsed = (Date.now() - startTime) / 1000;
@@ -185,8 +199,4 @@ export async function startPrefetch(
   } finally {
     prefetchRunning = false;
   }
-}
-
-export function stopPrefetch(): void {
-  prefetchRunning = false;
 }

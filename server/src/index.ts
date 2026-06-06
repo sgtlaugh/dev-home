@@ -1,17 +1,20 @@
 import cors from "cors";
 import express, { Request, Response } from "express";
 import "express-async-errors";
-import { validateEnv } from "./config";
+import { validateEnv, isConfigured } from "./config";
+import { createGitHubClient } from "./clients/githubApiClient";
 import { closeDb, getDb } from "./db";
 import activityRoutes from "./routes/activity";
 import configRoutes from "./routes/config";
 import githubRoutes from "./routes/github";
 import jiraRoutes, { resetJiraCache } from "./routes/jira";
 import notesRoutes from "./routes/notes";
+import { fetchOrgMembers } from "./routes/github/leaderboard";
+import { clearProfiles } from "./services/contributionCache";
+import { startPrefetch } from "./services/contributionPrefetch";
 import { errorHandler } from "./utils/errors";
 import { apiCache } from "./utils/cache";
 import { logger } from "./utils/logger";
-import { clearProfiles } from "./services/contributionCache";
 
 export function createServer() {
   const app = express();
@@ -89,24 +92,34 @@ export function startServer() {
 
   const server = app.listen(PORT, () => {
     logger.info("Server", `listening on http://localhost:${PORT}`);
-
-    // Start background prefetch for default org after startup
-    const defaultOrg = process.env.DEFAULT_ORG;
-    if (defaultOrg) {
-      setTimeout(() => {
-        Promise.all([
-          import("./routes/github/leaderboard"),
-          import("./services/contributionPrefetch")
-        ]).then(([{ fetchOrgMembers }, { startPrefetch }]) =>
-          fetchOrgMembers(defaultOrg).then(members => startPrefetch(defaultOrg, members))
-        ).catch((err) => {
-          logger.warn("Prefetch", `Startup prefetch skipped: ${err.message}`);
-        });
-      }, 5000); // Wait 5s for server to stabilize
-    }
+    scheduleStartupPrefetch();
   });
 
   return server;
+}
+
+export function scheduleStartupPrefetch(): void {
+  setTimeout(async () => {
+    if (!isConfigured()) {
+      logger.info("Prefetch", "Not configured yet, skipping startup prefetch");
+      return;
+    }
+    try {
+      const github = createGitHubClient();
+      const { data: orgs } = await github.get("/user/orgs", { params: { per_page: 100 } });
+      if (orgs.length === 0) {
+        logger.info("Prefetch", "No orgs found, skipping");
+        return;
+      }
+      logger.info("Prefetch", `Found ${orgs.length} orgs: ${orgs.map((o: any) => o.login).join(", ")}`);
+      for (const org of orgs) {
+        const members = await fetchOrgMembers(org.login);
+        await startPrefetch(org.login, members);
+      }
+    } catch (err: any) {
+      logger.warn("Prefetch", `Startup prefetch failed: ${err.message}`);
+    }
+  }, 5000);
 }
 
 // Graceful shutdown — close SQLite connection
