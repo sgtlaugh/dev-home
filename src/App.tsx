@@ -135,8 +135,23 @@ export default function App() {
                     style={{ display: "flex", alignItems: "center", gap: "12px", lineHeight: 1 }}
                   >
                     {item.label === "GitHub" &&
-                      rateLimit &&
                       (() => {
+                        if (!rateLimit) {
+                          return (
+                            <span style={{ display: "flex", alignItems: "center" }}>
+                              <svg width={size} height={size} className="rate-limit-ring">
+                                <circle
+                                  cx={size / 2}
+                                  cy={size / 2}
+                                  r={r}
+                                  fill="none"
+                                  stroke="var(--bs-border-color)"
+                                  strokeWidth={stroke}
+                                />
+                              </svg>
+                            </span>
+                          );
+                        }
                         const pct = rateLimit.remaining / rateLimit.limit;
                         const color = pct > 0.5 ? "#1a7f37" : pct > 0.2 ? "#9a6700" : "#cf222e";
                         const circ = 2 * Math.PI * r;
