@@ -21,6 +21,7 @@ export const PRStats: React.FC<PRStatsProps> = ({
 }) => {
   const totalLines = totalAdditions + totalDeletions;
   const addRatio = totalLines > 0 ? (totalAdditions / totalLines) * 100 : 0;
+  const noData = counts.all === 0 && totalLines === 0;
 
   return (
     <>
@@ -127,34 +128,49 @@ export const PRStats: React.FC<PRStatsProps> = ({
               display: "flex",
             }}
           >
-            <div
-              style={{
-                width: `${addRatio}%`,
-                backgroundColor: "#1a7f37",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.7rem",
-                color: "white",
-                fontWeight: 600,
-              }}
-            >
-              {addRatio > 20 && `${Math.round(addRatio)}%`}
-            </div>
-            <div
-              style={{
-                width: `${100 - addRatio}%`,
-                backgroundColor: "#cf222e",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.7rem",
-                color: "white",
-                fontWeight: 600,
-              }}
-            >
-              {100 - addRatio > 20 && `${Math.round(100 - addRatio)}%`}
-            </div>
+            {noData ? (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: "#d1d9e0",
+                  borderRadius: "4px",
+                }}
+              />
+            ) : (
+              <>
+                <div
+                  style={{
+                    width: `${addRatio}%`,
+                    backgroundColor: "#1a7f37",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.7rem",
+                    color: "white",
+                    fontWeight: 600,
+                    transition: "width 0.4s ease",
+                  }}
+                >
+                  {addRatio > 20 && `${Math.round(addRatio)}%`}
+                </div>
+                <div
+                  style={{
+                    width: `${100 - addRatio}%`,
+                    backgroundColor: "#cf222e",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.7rem",
+                    color: "white",
+                    fontWeight: 600,
+                    transition: "width 0.4s ease",
+                  }}
+                >
+                  {100 - addRatio > 20 && `${Math.round(100 - addRatio)}%`}
+                </div>
+              </>
+            )}
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
