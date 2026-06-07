@@ -29,34 +29,36 @@ export const PRStats: React.FC<PRStatsProps> = ({
       <div
         className="stat-card clickable"
         style={{
-          background: "linear-gradient(135deg, #0969da 0%, #033a99 100%)",
+          background: "linear-gradient(135deg, #24292f 0%, #32383f 100%)",
           color: "white",
           padding: "0.75rem 1.25rem",
           borderRadius: "12px",
           marginBottom: "0.75rem",
           cursor: "pointer",
-          boxShadow: "0 4px 16px rgba(9, 105, 218, 0.2)",
+          boxShadow: "0 2px 12px rgba(0, 0, 0, 0.12)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
         }}
         onClick={() => onToggleFilter("all")}
       >
-        <div style={{ textAlign: "right", flex: 1 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
           <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2 }}>{counts.all}</div>
-          <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>Pull Requests</div>
+          <div style={{ fontSize: "0.75rem", opacity: 0.7 }}>Pull Requests</div>
         </div>
         <div
           style={{
             width: "1px",
             height: "32px",
-            backgroundColor: "rgba(255,255,255,0.2)",
+            backgroundColor: "rgba(255,255,255,0.15)",
             margin: "0 1.25rem",
           }}
         />
-        <div style={{ textAlign: "left", flex: 1 }}>
+        <div
+          style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}
+        >
           <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2 }}>{commitCount}</div>
-          <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>Commits</div>
+          <div style={{ fontSize: "0.75rem", opacity: 0.7 }}>Commits</div>
         </div>
       </div>
 
