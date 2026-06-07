@@ -18,12 +18,12 @@ type StateFilter = "all" | "open" | "merged" | "closed";
 
 const MIN_YEAR = 2000;
 
-interface PRHistoryProps {
+interface ContributionsProps {
   onCountChange?: (count: number) => void;
   active?: boolean;
 }
 
-export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = true }) => {
+export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, active = true }) => {
   const now = new Date();
   const [mode, setMode] = useState<DateMode>("month");
   const [year, setYear] = useState(now.getFullYear());

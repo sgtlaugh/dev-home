@@ -107,12 +107,12 @@ export async function fetchUserJoinDate(signal?: AbortSignal): Promise<string> {
   return date;
 }
 
-export async function fetchPeerActivity(signal?: AbortSignal): Promise<ActivityItem[]> {
-  const cacheKey = "github:peer-activity";
+export async function fetchTeamActivity(signal?: AbortSignal): Promise<ActivityItem[]> {
+  const cacheKey = "github:team-activity";
   const cached = apiCache.get<ActivityItem[]>(cacheKey);
   if (cached) return cached;
 
-  const { data } = await withRetry(() => apiClient.get("/github/peer-activity", { signal }));
+  const { data } = await withRetry(() => apiClient.get("/github/team-activity", { signal }));
   const activities = data.activities || [];
   apiCache.set(cacheKey, activities);
   return activities;

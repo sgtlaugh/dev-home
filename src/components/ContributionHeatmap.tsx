@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { GitHubPR } from "../types";
-import { DateMode } from "./PRHistory";
+import { DateMode } from "./Contributions";
 
 function getHeatmapLevel(count: number, inRange: boolean): number {
   if (!inRange) return 0;

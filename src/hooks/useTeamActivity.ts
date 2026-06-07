@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchPeerActivity } from "../services/github";
+import { fetchTeamActivity } from "../services/github";
 import { ActivityItem } from "../services/activity";
 
-export function usePeerActivity(active: boolean) {
+export function useTeamActivity(active: boolean) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,13 +16,13 @@ export function usePeerActivity(active: boolean) {
     setError(null);
 
     try {
-      const data = await fetchPeerActivity(abortRef.current.signal);
+      const data = await fetchTeamActivity(abortRef.current.signal);
       setActivities(data);
     } catch (err: any) {
       if (err.name !== "AbortError") {
-        const msg = err.message || "Failed to fetch peer activity";
+        const msg = err.message || "Failed to fetch team activity";
         setError(msg);
-        console.error("PeerActivity:", msg);
+        console.error("TeamActivity:", msg);
       }
     } finally {
       setLoading(false);

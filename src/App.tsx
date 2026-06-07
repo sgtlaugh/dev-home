@@ -30,14 +30,14 @@ import { NoteEditorModal } from "./components/NoteEditorModal";
 import { SettingsView } from "./components/SettingsView";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FindInPage } from "./components/FindInPage";
-import { PRHistory } from "./components/PRHistory";
+import { Contributions } from "./components/Contributions";
 import { Activity } from "./components/Activity";
 import { JiraActivity } from "./components/JiraActivity";
 import { JiraVelocity } from "./components/JiraVelocity";
-import { PeerActivity } from "./components/PeerActivity";
+import { TeamActivity } from "./components/TeamActivity";
 import { OrgLeaderboard } from "./components/OrgLeaderboard";
 import { useActivity } from "./hooks/useActivity";
-import { usePeerActivity } from "./hooks/usePeerActivity";
+import { useTeamActivity } from "./hooks/useTeamActivity";
 import { useGitHubRateLimit } from "./hooks/useGitHubRateLimit";
 import { usePrefetchStatus } from "./hooks/useOrgLeaderboard";
 import { apiCache } from "./utils/cache";
@@ -82,7 +82,7 @@ export default function App() {
     loading: activityLoading,
     refresh: refreshActivity,
   } = useActivity(configured);
-  const { activities: peerActivities, refresh: refreshPeerActivity } = usePeerActivity(configured);
+  const { activities: teamActivities, refresh: refreshTeamActivity } = useTeamActivity(configured);
   const { rateLimit } = useGitHubRateLimit(configured);
   const prefetch = usePrefetchStatus(configured);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
@@ -107,11 +107,11 @@ export default function App() {
               { group: "separator" },
               { group: "label", label: "GitHub" },
               { key: "activity", label: "Activity", icon: IconHistory },
-              { key: "peers", label: "Collaborators", icon: IconUsers },
-              { key: "pr-history", label: "Contributions", icon: IconCalendarStats },
+              { key: "contributions", label: "Contributions", icon: IconCalendarStats },
               { key: "leaderboard", label: "Leaderboard", icon: IconTrophy },
               { key: "prs", label: "Pull Requests", icon: IconGitPullRequest },
-              { key: "reviews", label: "Reviews", icon: IconEye },
+              { key: "reviews", label: "Review Requests", icon: IconEye },
+              { key: "peers", label: "Team Activity", icon: IconUsers },
               { group: "separator" },
               { group: "label", label: "JIRA" },
               { key: "jira-activity", label: "Activity", icon: IconHistory },
@@ -217,12 +217,12 @@ export default function App() {
               const countMap: Record<string, number | undefined> = {
                 prs: openPRs.length,
                 reviews: reviewRequests.length,
-                peers: peerActivities.length,
+                peers: teamActivities.length,
                 jira: jiraIssues.length,
                 mentions: jiraComments.length,
                 activity: activities.filter((a) => a.type === "github").length,
                 "jira-activity": activities.filter((a) => a.type === "jira").length,
-                "pr-history": currentMonthPRsCount,
+                contributions: currentMonthPRsCount,
                 notes: unresolvedNotes.length,
               };
               const count = item.key ? countMap[item.key] : undefined;
@@ -353,7 +353,7 @@ export default function App() {
                             refresh(),
                             refreshNotes(),
                             refreshActivity(),
-                            refreshPeerActivity(),
+                            refreshTeamActivity(),
                           ]);
                           setToast("Refreshed successfully");
                         } catch {
@@ -437,10 +437,10 @@ export default function App() {
                       jiraBaseUrl={jiraBaseUrl}
                     />
                   )}
-                  {effectiveTab === "pr-history" && (
-                    <PRHistory
+                  {effectiveTab === "contributions" && (
+                    <Contributions
                       onCountChange={setCurrentMonthPRsCount}
-                      active={effectiveTab === "pr-history"}
+                      active={effectiveTab === "contributions"}
                     />
                   )}
                   {effectiveTab === "leaderboard" && (
@@ -455,7 +455,7 @@ export default function App() {
                   {effectiveTab === "activity" && (
                     <Activity activities={activities} loading={activityLoading} />
                   )}
-                  {effectiveTab === "peers" && <PeerActivity active={effectiveTab === "peers"} />}
+                  {effectiveTab === "peers" && <TeamActivity active={effectiveTab === "peers"} />}
                   {effectiveTab === "jira-activity" && (
                     <JiraActivity activities={activities} loading={activityLoading} />
                   )}

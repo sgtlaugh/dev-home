@@ -5,7 +5,7 @@ import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import { ACTIVITY_LOOKBACK_DAYS, COMMENT_PREVIEW_LENGTH } from "../../utils/constants";
 import { monthsAgo, mapGraphQLPr, isBot } from "./helpers";
-import { SEARCH_PRS_QUERY, SEARCH_PEER_ACTIVITY_QUERY } from "./queries";
+import { SEARCH_PRS_QUERY, SEARCH_TEAM_ACTIVITY_QUERY } from "./queries";
 
 const router = Router();
 
@@ -51,11 +51,11 @@ router.get("/reviews", async (_req: Request, res: Response) => {
 });
 
 /**
- * GET /api/github/peer-activity
+ * GET /api/github/team-activity
  * Fetch reviews and comments from peers on user's PRs and involved PRs.
  */
-router.get("/peer-activity", async (req: Request, res: Response) => {
-  const cacheKey = "github:peer-activity";
+router.get("/team-activity", async (req: Request, res: Response) => {
+  const cacheKey = "github:team-activity";
   const cached = apiCache.get(cacheKey);
   if (cached) return res.json(cached);
 
@@ -64,23 +64,23 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
     const username = config.githubUsername;
 
     const [myPRsResult, involvedPRsResult] = await Promise.all([
-      graphql<{ search: { nodes: any[] } }>(SEARCH_PEER_ACTIVITY_QUERY, {
+      graphql<{ search: { nodes: any[] } }>(SEARCH_TEAM_ACTIVITY_QUERY, {
         query: `author:${username} type:pr updated:>=${monthsAgo(
           Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
         )}`,
         first: 100,
-      }, "peer-activity/my-prs"),
-      graphql<{ search: { nodes: any[] } }>(SEARCH_PEER_ACTIVITY_QUERY, {
+      }, "team-activity/my-prs"),
+      graphql<{ search: { nodes: any[] } }>(SEARCH_TEAM_ACTIVITY_QUERY, {
         query: `involves:${username} -author:${username} type:pr updated:>=${monthsAgo(
           Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
         )}`,
         first: 100,
-      }, "peer-activity/involved-prs"),
+      }, "team-activity/involved-prs"),
     ]);
 
     const myPRNodes = myPRsResult.search.nodes || [];
     const involvedPRNodes = involvedPRsResult.search.nodes || [];
-    logger.info("PeerActivity", `myPRs: ${myPRNodes.length}, involvedPRs: ${involvedPRNodes.length}`);
+    logger.info("TeamActivity", `myPRs: ${myPRNodes.length}, involvedPRs: ${involvedPRNodes.length}`);
 
     const seen = new Set<string>();
     const allPRNodes: any[] = [];
@@ -210,7 +210,7 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
     logger.info(
-      "PeerActivity",
+      "TeamActivity",
       `found ${activities.length} peer activities from ${allPRNodes.length} PRs`,
     );
 
@@ -219,8 +219,8 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
     res.json(responseData);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("PeerActivity", message);
-    res.status(500).json({ error: "Failed to fetch peer activity" });
+    logger.error("TeamActivity", message);
+    res.status(500).json({ error: "Failed to fetch team activity" });
   }
 });
 

@@ -1,10 +1,10 @@
 import React from "react";
-import { usePeerActivity } from "../hooks/usePeerActivity";
+import { useTeamActivity } from "../hooks/useTeamActivity";
 import { useConfig } from "../hooks/useConfig";
 import { ActivityTimeline } from "./ActivityTimeline";
 
-export const PeerActivity: React.FC<{ active: boolean }> = ({ active }) => {
-  const { activities, loading } = usePeerActivity(active);
+export const TeamActivity: React.FC<{ active: boolean }> = ({ active }) => {
+  const { activities, loading } = useTeamActivity(active);
   const { githubUsername } = useConfig();
 
   return (

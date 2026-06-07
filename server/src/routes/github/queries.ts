@@ -122,8 +122,8 @@ export const SEARCH_MY_PRS_QUERY = `
   }
 `;
 
-export const SEARCH_PEER_ACTIVITY_QUERY = `
-  query SearchPeerActivity($query: String!, $first: Int!) {
+export const SEARCH_TEAM_ACTIVITY_QUERY = `
+  query SearchTeamActivity($query: String!, $first: Int!) {
     search(query: $query, type: ISSUE, first: $first) {
       nodes {
         ... on PullRequest {
