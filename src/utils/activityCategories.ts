@@ -27,12 +27,6 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
     match: (a) => a.includes("Changes Requested"),
   },
   {
-    label: "Comments",
-    color: "#0969da",
-    darkColor: "#0550ae",
-    match: (a) => a.includes("Comment"),
-  },
-  {
     label: "Created ticket",
     color: "#1a7f37",
     darkColor: "#116329",
@@ -43,6 +37,12 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
     color: "#8250df",
     darkColor: "#6639ba",
     match: (a) => a.includes("Changed status"),
+  },
+  {
+    label: "Comments",
+    color: "#0969da",
+    darkColor: "#0550ae",
+    match: (a) => a.includes("Comment"),
   },
 ];
 
