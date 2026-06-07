@@ -1303,6 +1303,43 @@ a,
   gap: 8px;
 }
 
+/* --- PR List Table --- */
+
+.pr-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.pr-list-table th {
+  padding: 6px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #656d76;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #d1d9e0;
+  text-align: left;
+}
+
+.pr-list-table td {
+  padding: 8px;
+  vertical-align: middle;
+  border-bottom: 1px solid #d1d9e033;
+}
+
+.pr-table-row:hover {
+  background-color: #f6f8fa;
+}
+
+[data-theme="dark"] .pr-table-row:hover {
+  background-color: #161b22;
+}
+
+[data-theme="dark"] .pr-list-table td {
+  border-bottom-color: #30363d33;
+}
+
 .activity-item {
   display: flex;
   gap: 14px;

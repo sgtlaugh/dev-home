@@ -10,7 +10,7 @@ import { DescriptionModal } from "./DescriptionModal";
 import { RepoBreakdown } from "./RepoBreakdown";
 import { ContributionHeatmap } from "./ContributionHeatmap";
 import { DateRangePicker } from "./DateRangePicker";
-import { PRCard } from "./PRCard";
+import { PRListTable } from "./PRListTable";
 import { PRStats } from "./PRStats";
 
 export type DateMode = "month" | "year" | "custom";
@@ -343,27 +343,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
               </span>
             )}
           </div>
-          <div className="activity-timeline">
-            {Array.from(groupedPrs.entries()).map(([dateLabel, datePRs]) => (
-              <div key={dateLabel} className="activity-section">
-                <div className="activity-date-label">
-                  {dateLabel}
-                  <Badge
-                    bg="secondary"
-                    pill
-                    style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
-                  >
-                    {datePRs.length}
-                  </Badge>
-                </div>
-                <div className="activity-list">
-                  {datePRs.map((pr) => (
-                    <PRCard key={pr.id} pr={pr} onClick={() => setSelectedPR(pr)} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <PRListTable prs={filteredPrs} onPRClick={setSelectedPR} />
         </>
       )}
 
