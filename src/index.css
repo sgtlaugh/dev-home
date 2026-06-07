@@ -354,12 +354,13 @@ a:hover {
 }
 
 .table > thead > tr > th {
-  border-bottom: 1px solid #d1d9e0;
-  color: #656d76;
+  border-bottom: 2px solid #d1d9e0;
+  background-color: #f6f8fa;
+  color: #59636e;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   padding: 8px 12px;
   white-space: nowrap;
 }
