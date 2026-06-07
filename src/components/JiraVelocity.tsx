@@ -99,7 +99,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
   }, [completedIssues]);
 
   return (
-    <div style={{ padding: "1rem" }}>
+    <div>
       {/* Hero Stats */}
       <div
         style={{

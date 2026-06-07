@@ -177,7 +177,7 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
   };
 
   return (
-    <div style={{ padding: "1rem" }}>
+    <div>
       <PRStats
         counts={counts}
         commitCount={commitCount}
