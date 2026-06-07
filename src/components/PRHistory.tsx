@@ -3,6 +3,8 @@ import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import Card from "react-bootstrap/Card";
 import { IconGitPullRequest, IconGitMerge } from "@tabler/icons-react";
+import { List } from "react-window";
+import type { RowComponentProps } from "react-window";
 import { GitHubPR } from "../types";
 import { fetchPRsByDateRange, fetchCommitCount, fetchUserJoinDate } from "../services/github";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
@@ -12,9 +14,18 @@ import { DescriptionModal } from "./DescriptionModal";
 import { RepoBreakdown } from "./RepoBreakdown";
 import { ContributionHeatmap } from "./ContributionHeatmap";
 import { DateRangePicker } from "./DateRangePicker";
+import {
+  VIRTUAL_LIST_ROW_HEIGHT,
+  VIRTUAL_LIST_HEADER_HEIGHT,
+  VIRTUAL_LIST_HEIGHT,
+} from "../utils/constants";
 
 export type DateMode = "month" | "year" | "custom";
 type StateFilter = "all" | "open" | "merged" | "closed";
+
+type VirtualListItem =
+  | { type: "header"; dateLabel: string; count: number }
+  | { type: "pr"; pr: GitHubPR };
 
 const MIN_YEAR = 2000;
 
@@ -235,6 +246,17 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
     return groups;
   }, [filteredPrs]);
 
+  const virtualListItems = useMemo(() => {
+    const items: VirtualListItem[] = [];
+    for (const [dateLabel, datePRs] of Array.from(groupedPrs.entries())) {
+      items.push({ type: "header", dateLabel, count: datePRs.length });
+      for (const pr of datePRs) {
+        items.push({ type: "pr", pr });
+      }
+    }
+    return items;
+  }, [groupedPrs]);
+
   const toggleFilter = (key: StateFilter) => {
     setStateFilter(stateFilter === key ? "all" : key);
   };
@@ -252,6 +274,41 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
 
   const totalLines = totalAdditions + totalDeletions;
   const addRatio = totalLines > 0 ? (totalAdditions / totalLines) * 100 : 0;
+
+  const rowHeight = useCallback(
+    (index: number) => {
+      const item = virtualListItems[index];
+      return item.type === "header" ? VIRTUAL_LIST_HEADER_HEIGHT : VIRTUAL_LIST_ROW_HEIGHT;
+    },
+    [virtualListItems],
+  );
+
+  interface CustomRowProps {
+    items: VirtualListItem[];
+    onPRClick: (pr: GitHubPR) => void;
+  }
+
+  const VirtualRow = ({ index, style, items, onPRClick }: RowComponentProps & CustomRowProps) => {
+    const item = items[index];
+    return (
+      <div style={style}>
+        {item.type === "header" ? (
+          <div className="activity-date-label">
+            {item.dateLabel}
+            <Badge
+              bg="secondary"
+              pill
+              style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
+            >
+              {item.count}
+            </Badge>
+          </div>
+        ) : (
+          <PRCard pr={item.pr} onClick={() => onPRClick(item.pr)} />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ padding: "1rem" }}>
@@ -552,26 +609,16 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
               </span>
             )}
           </div>
-          <div className="activity-timeline">
-            {Array.from(groupedPrs.entries()).map(([dateLabel, datePRs]) => (
-              <div key={dateLabel} className="activity-section">
-                <div className="activity-date-label">
-                  {dateLabel}
-                  <Badge
-                    bg="secondary"
-                    pill
-                    style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
-                  >
-                    {datePRs.length}
-                  </Badge>
-                </div>
-                <div className="activity-list">
-                  {datePRs.map((pr) => (
-                    <PRCard key={pr.id} pr={pr} onClick={() => setSelectedPR(pr)} />
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div
+            className="activity-timeline"
+            style={{ height: `${VIRTUAL_LIST_HEIGHT}px`, overflow: "auto" }}
+          >
+            <List
+              rowCount={virtualListItems.length}
+              rowHeight={rowHeight}
+              rowComponent={VirtualRow}
+              rowProps={{ items: virtualListItems, onPRClick: setSelectedPR }}
+            />
           </div>
         </>
       )}
