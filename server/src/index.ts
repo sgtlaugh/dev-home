@@ -59,13 +59,16 @@ export function createServer() {
     const db = getDb();
     const contributions = db.prepare("SELECT COUNT(*) as cnt FROM org_contributions").get() as { cnt: number };
     const profiles = db.prepare("SELECT COUNT(*) as cnt FROM github_profiles").get() as { cnt: number };
+    const userContribs = db.prepare("SELECT COUNT(*) as cnt FROM user_contribution_cache").get() as { cnt: number };
+    const prMonths = db.prepare("SELECT COUNT(*) as cnt FROM user_contribution_cache WHERE prs_json IS NOT NULL").get() as { cnt: number };
+    const commitMonths = db.prepare("SELECT COUNT(*) as cnt FROM user_contribution_cache WHERE commit_count IS NOT NULL").get() as { cnt: number };
     res.json({
       apiCache: apiCache.size(),
       contributions: contributions.cnt,
       profiles: profiles.cnt,
+      userContributions: { total: userContribs.cnt, prMonths: prMonths.cnt, commitMonths: commitMonths.cnt },
     });
   });
-
   app.post("/api/cache/purge", (_req: Request, res: Response) => {
     apiCache.clear();
     clearProfiles();
@@ -103,6 +106,13 @@ export function scheduleStartupPrefetch(): void {
     if (!isConfigured()) {
       logger.info("Prefetch", "Not configured yet, skipping startup prefetch");
       return;
+    }
+    try {
+      // Pre-warm contributions cache (PRs + commits) first
+      const { prefetchContributions } = await import("./services/contributionsPrefetch");
+      await prefetchContributions();
+    } catch (err: any) {
+      logger.warn("Prefetch", `Contributions prefetch failed: ${err.message}`);
     }
     try {
       const github = createGitHubClient();
