@@ -5,7 +5,7 @@ import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import { ACTIVITY_LOOKBACK_DAYS, COMMENT_PREVIEW_LENGTH } from "../../utils/constants";
 import { monthsAgo, mapGraphQLPr, isBot } from "./helpers";
-import { SEARCH_PRS_QUERY, SEARCH_MY_PRS_QUERY } from "./queries";
+import { SEARCH_PRS_QUERY, SEARCH_PEER_ACTIVITY_QUERY } from "./queries";
 
 const router = Router();
 
@@ -64,13 +64,13 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
     const username = config.githubUsername;
 
     const [myPRsResult, involvedPRsResult] = await Promise.all([
-      graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
+      graphql<{ search: { nodes: any[] } }>(SEARCH_PEER_ACTIVITY_QUERY, {
         query: `author:${username} type:pr updated:>=${monthsAgo(
           Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
         )}`,
         first: 100,
       }, "peer-activity/my-prs"),
-      graphql<{ search: { nodes: any[] } }>(SEARCH_MY_PRS_QUERY, {
+      graphql<{ search: { nodes: any[] } }>(SEARCH_PEER_ACTIVITY_QUERY, {
         query: `involves:${username} -author:${username} type:pr updated:>=${monthsAgo(
           Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
         )}`,
@@ -119,9 +119,24 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
       for (const review of pr.reviews?.nodes || []) {
         const login = review.author?.login;
         if (!login || login === username || isBot(login)) continue;
-        if (review.state !== "APPROVED" && review.state !== "CHANGES_REQUESTED") continue;
 
-        const action = review.state === "APPROVED" ? "Approved PR" : "Changes Requested";
+        let action: string;
+        let commentBody: string | undefined;
+
+        if (review.state === "APPROVED") {
+          action = "Approved PR";
+        } else if (review.state === "CHANGES_REQUESTED") {
+          action = "Changes Requested";
+        } else if (review.state === "COMMENTED") {
+          // Only show COMMENTED reviews if they have a body (review-level comment)
+          const body = review.body?.trim() || "";
+          if (!body) continue;
+          action = "Commented on PR";
+          const trimmed = body.slice(0, COMMENT_PREVIEW_LENGTH);
+          commentBody = trimmed + (body.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
+        } else {
+          continue;
+        }
 
         activities.push({
           id: `peer-review-${pr.number}-${login}-${review.submittedAt}`,
@@ -135,6 +150,7 @@ router.get("/peer-activity", async (req: Request, res: Response) => {
             actor: { login, avatar_url: review.author.avatarUrl },
             repo: repoName,
             prState,
+            commentBody,
           },
         });
       }

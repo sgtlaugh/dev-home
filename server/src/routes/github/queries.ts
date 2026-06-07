@@ -122,6 +122,57 @@ export const SEARCH_MY_PRS_QUERY = `
   }
 `;
 
+export const SEARCH_PEER_ACTIVITY_QUERY = `
+  query SearchPeerActivity($query: String!, $first: Int!) {
+    search(query: $query, type: ISSUE, first: $first) {
+      nodes {
+        ... on PullRequest {
+          number
+          title
+          url
+          state
+          merged
+          mergedAt
+          mergedBy { login avatarUrl }
+          repository { nameWithOwner }
+          reviews(last: 50) {
+            nodes {
+              state
+              body
+              author { login avatarUrl }
+              submittedAt
+            }
+          }
+          comments(last: 50) {
+            nodes {
+              databaseId
+              body
+              createdAt
+              updatedAt
+              url
+              author { login avatarUrl }
+            }
+          }
+          reviewThreads(last: 30) {
+            nodes {
+              comments(last: 20) {
+                nodes {
+                  databaseId
+                  body
+                  createdAt
+                  updatedAt
+                  url
+                  author { login avatarUrl }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 export const COMBINED_DASHBOARD_QUERY = `
   query CombinedDashboard($myPRsQuery: String!, $reviewsQuery: String!, $first: Int!) {
     myPRs: search(query: $myPRsQuery, type: ISSUE, first: $first) {
