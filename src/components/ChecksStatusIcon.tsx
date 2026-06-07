@@ -21,8 +21,8 @@ export const STATUS_CONFIG: Record<
   TIMED_OUT: { icon: IconCircleX, color: "#cf222e", title: "Timed out" },
 };
 
-export const ChecksStatusIcon: React.FC<{ status: string | null }> = ({ status }) => {
-  if (!status) return null;
+export const ChecksStatusIcon: React.FC<{ status?: string | null }> = ({ status }) => {
+  if (!status) return <IconCircleMinus size={14} stroke={1.8} color="#959da5" title="No checks" />;
   const config = STATUS_CONFIG[status];
   if (!config) return null;
   const Icon = config.icon;

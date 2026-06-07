@@ -153,7 +153,7 @@ function ItemRow({
             {badge}
           </Badge>
         )}
-        {checksStatus && <ChecksStatusIcon status={checksStatus} />}
+        {checksStatus !== undefined && <ChecksStatusIcon status={checksStatus} />}
       </div>
     </div>
   );
