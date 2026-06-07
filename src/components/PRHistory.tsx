@@ -412,6 +412,7 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
                 rowComponent={VirtualRow}
                 rowProps={virtualRowProps}
                 defaultHeight={VIRTUAL_LIST_HEIGHT}
+                overscanCount={5}
                 style={{ flexGrow: 0 }}
               />
             ) : (
