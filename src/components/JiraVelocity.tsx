@@ -6,7 +6,6 @@ import Spinner from "react-bootstrap/Spinner";
 import { useJiraVelocity } from "../hooks/useJiraVelocity";
 import { EmptyState } from "./EmptyState";
 import { VelocityChart } from "./VelocityChart";
-import { Timestamp } from "./Timestamp";
 
 type Preset = "30d" | "90d" | "6mo" | "1y";
 
@@ -95,7 +94,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
             {loading ? "—" : metrics?.totalCompleted || 0}
           </div>
           <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>
-            Completed
+            Completed Issues
           </div>
         </div>
         <div
@@ -185,7 +184,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
       {!loading && !error && metrics && metrics.totalCompleted > 0 && (
         <>
           {/* Velocity Chart */}
-          <Card className="mb-4">
+          <Card className="mb-4" style={{ minHeight: "auto" }}>
             <Card.Body style={{ paddingBottom: "0.5rem" }}>
               <h6 style={{ marginBottom: "0.5rem", fontWeight: 600 }}>Weekly Velocity</h6>
               <VelocityChart
@@ -233,12 +232,12 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                   <table className="table" style={{ fontSize: "0.8125rem" }}>
                     <thead>
                       <tr>
-                        <th>Key</th>
-                        <th>Summary</th>
-                        <th>Type</th>
-                        <th>SP</th>
-                        <th>Time</th>
-                        <th>Resolved</th>
+                        <th title="JIRA ticket identifier">Ticket</th>
+                        <th title="Issue summary">Summary</th>
+                        <th title="Issue type (Bug, Story, Task, etc.)">Type</th>
+                        <th title="Story points assigned to this issue">SP</th>
+                        <th title="Days from creation to resolution">Time</th>
+                        <th title="Date the issue was resolved">Resolved</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -263,8 +262,17 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                               ? "<1d"
                               : `${Math.ceil(issue.completionDays)}d`}
                           </td>
-                          <td>
-                            <Timestamp timestamp={issue.resolutiondate} />
+                          <td style={{ whiteSpace: "nowrap" }}>
+                            {(() => {
+                              const d = new Date(issue.resolutiondate);
+                              const short = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                              const full = `${short} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                              return (
+                                <span className="activity-time" title={full}>
+                                  {short}
+                                </span>
+                              );
+                            })()}
                           </td>
                         </tr>
                       ))}
