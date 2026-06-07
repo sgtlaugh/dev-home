@@ -184,35 +184,36 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
       {/* Content */}
       {!loading && !error && metrics && metrics.totalCompleted > 0 && (
         <>
-          {/* Velocity Charts */}
+          {/* Velocity Chart */}
           <Card className="mb-4">
-            <Card.Body>
-              <h6 style={{ marginBottom: "0.75rem", fontWeight: 600 }}>Issues Completed</h6>
+            <Card.Body style={{ paddingBottom: "0.5rem" }}>
+              <h6 style={{ marginBottom: "0.5rem", fontWeight: 600 }}>Weekly Velocity</h6>
               <VelocityChart
-                weeks={metrics.completionsByWeek.map((w) => ({
-                  weekRange: w.weekRange,
-                  value: w.count,
-                }))}
-                color="#0969da"
-                label="Completed"
+                series={[
+                  {
+                    data: metrics.completionsByWeek.map((w) => ({
+                      weekRange: w.weekRange,
+                      value: w.count,
+                    })),
+                    color: "#0969da",
+                    label: "Issues",
+                  },
+                  ...(metrics.totalStoryPoints > 0
+                    ? [
+                        {
+                          data: metrics.completionsByWeek.map((w) => ({
+                            weekRange: w.weekRange,
+                            value: w.storyPoints,
+                          })),
+                          color: "#1a7f37",
+                          label: "Story Points",
+                        },
+                      ]
+                    : []),
+                ]}
               />
             </Card.Body>
           </Card>
-          {metrics.totalStoryPoints > 0 && (
-            <Card className="mb-4">
-              <Card.Body>
-                <h6 style={{ marginBottom: "0.75rem", fontWeight: 600 }}>Story Points</h6>
-                <VelocityChart
-                  weeks={metrics.completionsByWeek.map((w) => ({
-                    weekRange: w.weekRange,
-                    value: w.storyPoints,
-                  }))}
-                  color="#1a7f37"
-                  label="Story Points"
-                />
-              </Card.Body>
-            </Card>
-          )}
 
           {/* Completed Issues */}
           {completedIssues.length > 0 && (

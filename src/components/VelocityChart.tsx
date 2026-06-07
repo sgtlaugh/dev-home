@@ -5,18 +5,34 @@ interface WeekData {
   value: number;
 }
 
-interface VelocityChartProps {
-  weeks: WeekData[];
+interface Series {
+  data: WeekData[];
   color: string;
   label: string;
 }
 
-const PADDING = { top: 16, right: 16, bottom: 48, left: 40 };
+interface VelocityChartProps {
+  weeks?: WeekData[];
+  color?: string;
+  label?: string;
+  series?: Series[];
+}
 
-export const VelocityChart: React.FC<VelocityChartProps> = ({ weeks, color, label }) => {
+const PADDING = { top: 12, right: 16, bottom: 28, left: 36 };
+
+export const VelocityChart: React.FC<VelocityChartProps> = ({
+  weeks,
+  color,
+  label,
+  series: seriesProp,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
+
+  const series: Series[] =
+    seriesProp || (weeks && color && label ? [{ data: weeks, color, label }] : []);
+  const multiSeries = series.length > 1;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -29,20 +45,44 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({ weeks, color, labe
     return () => observer.disconnect();
   }, []);
 
-  const reversed = [...weeks].reverse();
-  const height = 160;
+  const primaryData = [...(series[0]?.data || [])].reverse();
+  const height = 150;
   const chartW = width - PADDING.left - PADDING.right;
   const chartH = height - PADDING.top - PADDING.bottom;
 
-  const maxVal = Math.max(1, ...reversed.map((w) => w.value));
+  const allValues = series.flatMap((s) => s.data.map((w) => w.value));
+  const maxVal = Math.max(1, ...allValues);
   const yTicks = getYTicks(maxVal);
   const yMax = yTicks[yTicks.length - 1];
 
-  const groupW = chartW / reversed.length;
-  const barW = Math.min(groupW * 0.6, 28);
+  const groupW = chartW / primaryData.length;
+  const totalBarW = Math.min(groupW * 0.7, multiSeries ? 36 : 28);
+  const singleBarW = multiSeries ? totalBarW / series.length : totalBarW;
+  const barGap = multiSeries ? 2 : 0;
 
   return (
     <div ref={containerRef} style={{ width: "100%", position: "relative" }}>
+      {/* Legend for multi-series */}
+      {multiSeries && (
+        <div
+          style={{ display: "flex", gap: "1rem", justifyContent: "center", marginBottom: "0.4rem" }}
+        >
+          {series.map((s) => (
+            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 2,
+                  backgroundColor: s.color,
+                  opacity: 0.85,
+                }}
+              />
+              <span style={{ fontSize: "0.7rem", color: "#656d76" }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <svg width={width} height={height} style={{ display: "block" }}>
         {/* Y-axis grid lines + labels */}
         {yTicks.map((tick) => {
@@ -66,43 +106,58 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({ weeks, color, labe
         })}
 
         {/* Bars */}
-        {reversed.map((week, i) => {
+        {primaryData.map((week, i) => {
           const cx = PADDING.left + groupW * i + groupW / 2;
-          const barH = (week.value / yMax) * chartH;
-          const isZero = week.value === 0;
-          const displayH = isZero ? 3 : barH;
 
           return (
             <g key={i}>
-              <rect
-                x={cx - barW / 2}
-                y={PADDING.top + chartH - displayH}
-                width={barW}
-                height={displayH}
-                rx={2}
-                fill={color}
-                opacity={isZero ? 0.25 : 0.85}
-                onMouseEnter={(e) =>
-                  setTooltip({
-                    x: e.clientX,
-                    y: e.clientY,
-                    content: `${week.weekRange}\n${label}: ${week.value}`,
-                  })
-                }
-                onMouseLeave={() => setTooltip(null)}
-                style={{ cursor: "default" }}
-              />
+              {series.map((s, si) => {
+                const reversedData = [...s.data].reverse();
+                const val = reversedData[i]?.value || 0;
+                const barH = (val / yMax) * chartH;
+                const isZero = val === 0;
+                const displayH = isZero ? 2 : barH;
+                const barX = multiSeries
+                  ? cx - totalBarW / 2 + si * (singleBarW + barGap)
+                  : cx - singleBarW / 2;
+
+                return (
+                  <rect
+                    key={s.label}
+                    x={barX}
+                    y={PADDING.top + chartH - displayH}
+                    width={singleBarW - barGap}
+                    height={displayH}
+                    rx={2}
+                    fill={s.color}
+                    opacity={isZero ? 0.2 : 0.85}
+                    onMouseEnter={(e) => {
+                      const lines = series.map((ss, ssi) => {
+                        const rv = [...ss.data].reverse();
+                        return `${ss.label}: ${rv[i]?.value || 0}`;
+                      });
+                      setTooltip({
+                        x: e.clientX,
+                        y: e.clientY,
+                        content: `${week.weekRange}\n${lines.join("\n")}`,
+                      });
+                    }}
+                    onMouseLeave={() => setTooltip(null)}
+                    style={{ cursor: "default", transition: "height 0.3s ease, y 0.3s ease" }}
+                  />
+                );
+              })}
 
               {/* X-axis label */}
               <text
                 x={cx}
-                y={height - PADDING.bottom + 14}
+                y={height - PADDING.bottom + 12}
                 textAnchor="middle"
                 fontSize={9}
                 fill="#656d76"
                 transform={
-                  reversed.length > 8
-                    ? `rotate(-30, ${cx}, ${height - PADDING.bottom + 14})`
+                  primaryData.length > 8
+                    ? `rotate(-30, ${cx}, ${height - PADDING.bottom + 12})`
                     : undefined
                 }
               >
