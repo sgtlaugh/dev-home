@@ -1,11 +1,9 @@
-import React, { useState } from "react";
-import Table from "react-bootstrap/Table";
+import React from "react";
 import Spinner from "react-bootstrap/Spinner";
 import { IconChecklist } from "@tabler/icons-react";
 import { JiraIssue } from "../types";
 import { StatusBadge } from "./StatusBadge";
 import { EmptyState } from "./EmptyState";
-import { DescriptionModal } from "./DescriptionModal";
 
 interface JiraTasksProps {
   issues: JiraIssue[];
@@ -14,10 +12,10 @@ interface JiraTasksProps {
 }
 
 export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading, baseUrl }) => {
-  const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
   const issues = [...rawIssues].sort(
     (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime(),
   );
+  const jiraBase = baseUrl?.replace(/\/+$/, "") || "";
 
   if (loading && rawIssues.length === 0) {
     return (
@@ -38,28 +36,26 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
   }
 
   return (
-    <>
-      <Table hover>
+    <div style={{ overflowX: "auto" }}>
+      <table className="table" style={{ fontSize: "0.8125rem" }}>
         <thead>
           <tr>
-            <th style={{ width: 32 }} />
-            <th>Key</th>
-            <th>Summary</th>
-            <th>Status</th>
-            <th>Project</th>
+            <th style={{ width: 32 }} title="Priority" />
+            <th title="JIRA ticket identifier">Ticket</th>
+            <th title="Issue summary">Summary</th>
+            <th title="Current issue status">Status</th>
+            <th title="Project the issue belongs to">Project</th>
           </tr>
         </thead>
         <tbody>
           {issues.map((issue) => {
-            const browseUrl = baseUrl
-              ? `${baseUrl.replace(/\/$/, "")}/browse/${issue.key}`
-              : `#${issue.key}`;
+            const browseUrl = jiraBase ? `${jiraBase}/browse/${issue.key}` : "";
 
             return (
               <tr
                 key={issue.key}
-                onClick={() => setSelectedIssue(issue)}
-                style={{ cursor: "pointer" }}
+                style={{ cursor: jiraBase ? "pointer" : undefined }}
+                onClick={() => jiraBase && window.open(browseUrl, "_blank")}
               >
                 <td>
                   {issue.priority?.iconUrl && (
@@ -70,21 +66,23 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
                     />
                   )}
                 </td>
-                <td>
-                  <a
-                    href={browseUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ fontWeight: 500, whiteSpace: "nowrap" }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {issue.key}
-                  </a>
+                <td style={{ whiteSpace: "nowrap", fontWeight: 500 }}>
+                  {jiraBase ? (
+                    <a
+                      href={browseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="activity-title"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {issue.key}
+                    </a>
+                  ) : (
+                    issue.key
+                  )}
                 </td>
-                <td>
-                  <span className="text-truncate-custom d-block" style={{ maxWidth: 420 }}>
-                    {issue.summary}
-                  </span>
+                <td style={{ maxWidth: 420 }}>
+                  <div className="text-truncate-custom">{issue.summary}</div>
                 </td>
                 <td>
                   <StatusBadge
@@ -99,20 +97,7 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
             );
           })}
         </tbody>
-      </Table>
-
-      <DescriptionModal
-        show={!!selectedIssue}
-        onHide={() => setSelectedIssue(null)}
-        title={selectedIssue ? `${selectedIssue.key}: ${selectedIssue.summary}` : ""}
-        subtitle={selectedIssue?.project.name}
-        description={selectedIssue?.description || ""}
-        url={
-          selectedIssue && baseUrl
-            ? `${baseUrl.replace(/\/$/, "")}/browse/${selectedIssue.key}`
-            : undefined
-        }
-      />
-    </>
+      </table>
+    </div>
   );
 };
