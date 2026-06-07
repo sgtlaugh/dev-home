@@ -24,14 +24,19 @@ import {
   groupActivitiesByDate,
   CollapsedActivity,
 } from "../utils/activityUtils";
-import { ActivityBarChart } from "./ActivityBarChart";
+import { categorizeAction, ACTION_CATEGORIES } from "../utils/activityCategories";
+import { ActivityBarChart, computeStreak } from "./ActivityBarChart";
 
 interface ActivityTimelineProps {
   activities: ActivityItem[];
   loading: boolean;
   emptyMessage: string;
   currentUsername?: string;
-  dailyCounts?: { date: string; count: number }[];
+  dailyCounts?: {
+    date: string;
+    count: number;
+    segments: { category: string; count: number; color: string }[];
+  }[];
 }
 
 function getActivityIcon(item: ActivityItem) {
@@ -58,30 +63,6 @@ function getPrState(collapsed: CollapsedActivity): string | undefined {
     if (action.metadata?.prState) return action.metadata.prState;
   }
   return undefined;
-}
-
-interface ActionCategory {
-  label: string;
-  color: string;
-  match: (action: string) => boolean;
-}
-
-const ACTION_CATEGORIES: ActionCategory[] = [
-  { label: "Approved", color: "#8250df", match: (a) => a.includes("Approved") },
-  { label: "Changes Requested", color: "#9a6700", match: (a) => a.includes("Changes Requested") },
-  { label: "Comments", color: "#0969da", match: (a) => a.includes("Comment") },
-  { label: "Commits", color: "#1a7f37", match: (a) => a.includes("Committed") },
-  { label: "Created", color: "#1a7f37", match: (a) => a === "Created PR" },
-  { label: "Merged", color: "#8250df", match: (a) => a === "Merged PR" },
-  { label: "Created ticket", color: "#1a7f37", match: (a) => a.includes("Created ticket") },
-  { label: "Changed status", color: "#8250df", match: (a) => a.includes("Changed status") },
-];
-
-function categorizeAction(action: string): string {
-  for (const cat of ACTION_CATEGORIES) {
-    if (cat.match(action)) return cat.label;
-  }
-  return "Other";
 }
 
 function ExpandableSection({
@@ -223,7 +204,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
 
   return (
     <div className="activity-timeline">
-      {/* Action type filters with counts */}
+      {/* Action type filters with counts + streak */}
       {stats.length > 1 && (
         <div className="activity-filters">
           {stats.map((s) => (
@@ -240,6 +221,13 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
               <span className="activity-filter-count">{s.count}</span>
             </button>
           ))}
+          {dailyCounts &&
+            (() => {
+              const streak = computeStreak(dailyCounts);
+              return streak > 0 ? (
+                <span className="activity-streak-badge">{streak} day streak</span>
+              ) : null;
+            })()}
         </div>
       )}
 
@@ -266,7 +254,9 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
       )}
 
       {/* Bar chart */}
-      {dailyCounts && dailyCounts.length > 0 && <ActivityBarChart dailyCounts={dailyCounts} />}
+      {dailyCounts && dailyCounts.length > 0 && (
+        <ActivityBarChart dailyCounts={dailyCounts} activities={activities} />
+      )}
 
       {/* Timeline */}
       {Array.from(groupedActivities.entries()).map(
