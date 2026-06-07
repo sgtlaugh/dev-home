@@ -143,7 +143,7 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
 
   return (
     <div>
-      {/* Stats Donut */}
+      {/* Stats Donut + My Stats */}
       {(() => {
         const total = totalCommits + totalPRs + totalReviews;
         const memberCount = loading ? 0 : members.length;
@@ -166,91 +166,143 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
           return { ...seg, dashArray, dashOffset };
         });
 
+        const me =
+          !loading && githubUsername ? sorted.find((m) => m.login === githubUsername) : null;
+        const myRank = me ? sorted.findIndex((m) => m.login === githubUsername) + 1 : null;
+        const myStats = me
+          ? [
+              { label: "Commits", value: me.commits, color: "#1a7f37", max: maxCommits },
+              { label: "PRs", value: me.prs, color: "#0969da", max: maxPRs },
+              { label: "Reviews", value: me.reviews, color: "#8250df", max: maxReviews },
+            ]
+          : [];
+
         return (
           <div
-            className="stat-card"
             style={{
               display: "flex",
-              alignItems: "center",
-              gap: "1.5rem",
-              padding: "1rem 1.5rem",
+              gap: "0.75rem",
               marginBottom: "0.75rem",
             }}
           >
-            <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-              <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-                {total === 0 ? (
-                  <circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    fill="none"
-                    stroke="#d1d9e0"
-                    strokeWidth={strokeWidth}
-                  />
-                ) : (
-                  arcs.map((arc) => (
+            {/* Org Totals */}
+            <div
+              className="stat-card"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1.5rem",
+                padding: "1rem 1.5rem",
+                flex: 1,
+              }}
+            >
+              <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+                <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+                  {total === 0 ? (
                     <circle
-                      key={arc.label}
                       cx={size / 2}
                       cy={size / 2}
                       r={radius}
                       fill="none"
-                      stroke={arc.color}
+                      stroke="#d1d9e0"
                       strokeWidth={strokeWidth}
-                      strokeDasharray={arc.dashArray}
-                      strokeDashoffset={arc.dashOffset}
-                      style={{
-                        transition: "stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease",
-                      }}
                     />
-                  ))
-                )}
-              </svg>
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+                  ) : (
+                    arcs.map((arc) => (
+                      <circle
+                        key={arc.label}
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="none"
+                        stroke={arc.color}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={arc.dashArray}
+                        strokeDashoffset={arc.dashOffset}
+                        style={{
+                          transition: "stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease",
+                        }}
+                      />
+                    ))
+                  )}
+                </svg>
                 <div
                   style={{
-                    fontSize: total > 999999 ? "0.7rem" : total > 9999 ? "0.85rem" : "1.1rem",
-                    fontWeight: 700,
-                    lineHeight: 1.2,
-                    color: "#24292f",
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  {total.toLocaleString()}
-                </div>
-                <div
-                  style={{
-                    fontSize: "0.6rem",
-                    color: "#656d76",
-                    fontWeight: 500,
-                    letterSpacing: "0.03em",
-                  }}
-                >
-                  Total
+                  <div
+                    style={{
+                      fontSize: total > 999999 ? "0.7rem" : total > 9999 ? "0.85rem" : "1.1rem",
+                      fontWeight: 700,
+                      lineHeight: 1.2,
+                      color: "#24292f",
+                    }}
+                  >
+                    {total.toLocaleString()}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.6rem",
+                      color: "#656d76",
+                      fontWeight: 500,
+                      letterSpacing: "0.03em",
+                    }}
+                  >
+                    Total
+                  </div>
                 </div>
               </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
-              {segments.map((seg) => (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
+                {segments.map((seg) => (
+                  <div
+                    key={seg.label}
+                    style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+                  >
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        backgroundColor: seg.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: "0.8rem",
+                        color: "#656d76",
+                        minWidth: 60,
+                        width: 60,
+                        textAlign: "left",
+                      }}
+                    >
+                      {seg.label}
+                    </span>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                      {seg.value.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
                 <div
-                  key={seg.label}
-                  style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    marginTop: "0.3rem",
+                  }}
                 >
                   <div
                     style={{
                       width: 10,
                       height: 10,
                       borderRadius: "50%",
-                      backgroundColor: seg.color,
+                      backgroundColor: "#656d76",
                       flexShrink: 0,
                     }}
                   />
@@ -263,46 +315,103 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                       textAlign: "left",
                     }}
                   >
-                    {seg.label}
+                    Members
                   </span>
                   <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
-                    {seg.value.toLocaleString()}
+                    {memberCount.toLocaleString()}
                   </span>
                 </div>
-              ))}
+              </div>
+            </div>
+
+            {/* My Stats */}
+            {me && myRank && (
               <div
+                className="stat-card"
                 style={{
+                  flex: 1,
+                  padding: "1rem 1.5rem",
                   display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  marginTop: "0.3rem",
+                  flexDirection: "column",
+                  background:
+                    "linear-gradient(135deg, rgba(9, 105, 218, 0.04) 0%, rgba(130, 80, 223, 0.04) 100%)",
+                  borderColor: "rgba(9, 105, 218, 0.15)",
                 }}
               >
                 <div
                   style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    backgroundColor: "#656d76",
-                    flexShrink: 0,
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: "0.8rem",
-                    color: "#656d76",
-                    minWidth: 60,
-                    width: 60,
-                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                    marginBottom: "0.75rem",
                   }}
                 >
-                  Members
-                </span>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
-                  {memberCount.toLocaleString()}
-                </span>
+                  <img
+                    src={me.avatarUrl}
+                    alt={me.login}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      border: "2px solid #0969da",
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#24292f" }}>
+                      {me.name || me.login}
+                    </div>
+                    <div style={{ fontSize: "0.65rem", color: "#656d76" }}>
+                      Rank <span style={{ fontWeight: 700, color: "#0969da" }}>#{myRank}</span> of{" "}
+                      {memberCount}
+                    </div>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.6rem",
+                    flex: 1,
+                    justifyContent: "center",
+                  }}
+                >
+                  {myStats.map((stat) => (
+                    <div key={stat.label}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: "3px",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.75rem", color: "#656d76" }}>{stat.label}</span>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>
+                          {stat.value.toLocaleString()}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          height: 6,
+                          backgroundColor: "#f0f0f0",
+                          borderRadius: 3,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${(stat.value / stat.max) * 100}%`,
+                            backgroundColor: stat.color,
+                            borderRadius: 3,
+                            transition: "width 0.4s ease",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         );
       })()}
