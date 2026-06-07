@@ -122,7 +122,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
 }) => {
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
-  const [activeActor, setActiveActor] = useState<string | null>(null);
+  const [activeActors, setActiveActors] = useState<Set<string>>(new Set());
 
   const stats = useMemo(() => {
     const counts = new Map<string, number>();
@@ -154,11 +154,11 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
     if (activeFilters.size > 0) {
       result = result.filter((a) => activeFilters.has(categorizeAction(a.action)));
     }
-    if (activeActor) {
-      result = result.filter((a) => a.metadata?.actor?.login === activeActor);
+    if (activeActors.size > 0) {
+      result = result.filter((a) => a.metadata?.actor && activeActors.has(a.metadata.actor.login));
     }
     return result;
-  }, [activities, activeFilters, activeActor]);
+  }, [activities, activeFilters, activeActors]);
 
   const groupedActivities = useMemo(
     () => groupActivitiesByDate(filteredActivities),
@@ -249,8 +249,15 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
           {uniqueActors.map((actor) => (
             <button
               key={actor.login}
-              className={`activity-actor-chip${activeActor === actor.login ? " active" : ""}`}
-              onClick={() => setActiveActor(activeActor === actor.login ? null : actor.login)}
+              className={`activity-actor-chip${activeActors.has(actor.login) ? " active" : ""}`}
+              onClick={() =>
+                setActiveActors((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(actor.login)) next.delete(actor.login);
+                  else next.add(actor.login);
+                  return next;
+                })
+              }
             >
               <img src={actor.avatar_url} alt={actor.login} />@{actor.login}
             </button>
