@@ -564,6 +564,21 @@ a:hover {
   color: #656d76;
 }
 
+.badge-status-dark {
+  background-color: rgba(87, 96, 106, 0.12);
+  color: #57606a;
+}
+
+.badge-status-indigo {
+  background-color: rgba(79, 70, 229, 0.1);
+  color: #4f46e5;
+}
+
+.badge-status-coral {
+  background-color: rgba(227, 121, 92, 0.1);
+  color: #e3795c;
+}
+
 .badge-status-blue {
   background-color: rgba(8, 96, 202, 0.15);
   color: #0860ca;

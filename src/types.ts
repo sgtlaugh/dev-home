@@ -32,6 +32,8 @@ export interface JiraIssue {
   updated: string;
   self: string;
   description: string;
+  issueType?: string;
+  storyPoints?: number;
   fields: Record<string, any>;
 }
 

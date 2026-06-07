@@ -5,9 +5,18 @@ interface StatusBadgeProps {
   colorName: string;
 }
 
-function getBadgeClass(colorName: string): string {
-  const normalized = colorName.toLowerCase();
+const STATUS_NAME_COLORS: Record<string, string> = {
+  "In Progress": "badge-status-dark",
+  "Code Review": "badge-status-indigo",
+  "Product Review": "badge-status-coral",
+  Done: "badge-status-green",
+};
 
+function getBadgeClass(colorName: string, statusName: string): string {
+  const nameOverride = STATUS_NAME_COLORS[statusName];
+  if (nameOverride) return nameOverride;
+
+  const normalized = colorName.toLowerCase();
   switch (normalized) {
     case "blue-gray":
     case "new":
@@ -27,7 +36,7 @@ function getBadgeClass(colorName: string): string {
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ statusName, colorName }) => {
-  const badgeClass = getBadgeClass(colorName);
+  const badgeClass = getBadgeClass(colorName, statusName);
 
   return <span className={`badge ${badgeClass}`}>{statusName}</span>;
 };

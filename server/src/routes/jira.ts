@@ -161,7 +161,8 @@ router.get("/issues", async (_req: Request, res: Response) => {
   const jira = createJiraClient();
 
   const jql = `assignee = "${config.jiraEmail}" AND resolution = Unresolved AND statusCategory != Done AND updated >= -90d ORDER BY updated DESC`;
-  const fields = ["summary", "status", "priority", "assignee", "project", "updated", "description"];
+  const spField = await getStoryPointsFieldId();
+  const fields = ["summary", "status", "priority", "assignee", "project", "updated", "description", "issuetype", ...(spField ? [spField] : [])];
 
   const { data } = await jira.post("/search/jql", { jql, fields, maxResults: 50 });
 
@@ -189,6 +190,8 @@ router.get("/issues", async (_req: Request, res: Response) => {
     updated: issue.fields?.updated,
     self: issue.self,
     description: adfToMarkdown(issue.fields?.description),
+    issueType: issue.fields?.issuetype?.name || "Task",
+    storyPoints: spField ? (Number(issue.fields?.[spField]) || 0) : 0,
   }));
 
   const result = { issues };
