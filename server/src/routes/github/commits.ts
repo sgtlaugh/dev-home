@@ -4,7 +4,7 @@ import { createGitHubClient } from "../../clients/githubApiClient";
 import { graphql } from "../../clients/githubGraphqlClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
-import { LONG_CACHE_TTL, RECENT_ACTIVITY_MONTHS } from "../../utils/constants";
+import { LONG_CACHE_TTL, CACHE_FRESHNESS_MONTHS } from "../../utils/constants";
 import { fetchUserRepos, fetchUserJoinDate, gateStartDate } from "./helpers";
 import {
   getMonthsBetween,
@@ -127,14 +127,14 @@ router.get("/commits-search", async (req: Request, res: Response) => {
 
     // Fork check: only check recent 3 months (forks rarely active in old ranges)
     let forkCount = 0;
-    const forkRange = getRecentRangeBounds(startDate, endDate, RECENT_ACTIVITY_MONTHS);
+    const forkRange = getRecentRangeBounds(startDate, endDate, CACHE_FRESHNESS_MONTHS);
 
     if (forkRange) {
       const effectiveStart = await gateStartDate(github, config.githubUsername, forkRange.start);
       const since = `${effectiveStart}T00:00:00Z`;
       const until = `${forkRange.end}T23:59:59Z`;
 
-      logger.info("Commits", `Fork check: ${effectiveStart}..${forkRange.end} (recent ${RECENT_ACTIVITY_MONTHS} months only)`);
+      logger.info("Commits", `Fork check: ${effectiveStart}..${forkRange.end} (recent ${CACHE_FRESHNESS_MONTHS} months only)`);
 
       // Split fork check into yearly chunks to avoid >1 year contributionsCollection limit
       const startYear = parseInt(effectiveStart.slice(0, 4), 10);
@@ -214,7 +214,7 @@ router.get("/commits-search", async (req: Request, res: Response) => {
 
       if (forkCount > 0) logger.info("Commits", `Forks: ${forkCount} from ${forkRepos.length} repos`);
     } else {
-      logger.info("Commits", `Skipping fork check (range end ${endDate} > ${RECENT_ACTIVITY_MONTHS} months ago)`);
+      logger.info("Commits", `Skipping fork check (range end ${endDate} > ${CACHE_FRESHNESS_MONTHS} months ago)`);
     }
 
     const totalCount = contribCount + forkCount;

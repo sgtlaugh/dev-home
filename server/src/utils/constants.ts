@@ -7,5 +7,5 @@ export const MAX_REPOS_PER_CONTRIBUTION = 100;
 export const SHORT_CACHE_TTL = 15 * 60 * 1000;
 export const LONG_CACHE_TTL = 24 * 60 * 60 * 1000;
 
-// Data older than this is considered stable (PRs won't change, forks inactive) and cached permanently
-export const RECENT_ACTIVITY_MONTHS = 3;
+// Months within this window are always re-fetched; older months are cached permanently in SQLite
+export const CACHE_FRESHNESS_MONTHS = 1;

@@ -13,7 +13,7 @@ import {
   gateStartDate,
 } from "./helpers";
 import { SEARCH_MY_PRS_QUERY } from "./queries";
-import { LONG_CACHE_TTL, RECENT_ACTIVITY_MONTHS } from "../../utils/constants";
+import { LONG_CACHE_TTL, CACHE_FRESHNESS_MONTHS } from "../../utils/constants";
 import {
   getMonthsBetween,
   getCurrentYearMonth,
@@ -99,7 +99,7 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   const currentMonth = getCurrentYearMonth();
   const allMonths = getMonthsBetween(startDate, endDate);
   const cacheableMonths = allMonths.filter(
-    (m) => isFullMonth(startDate, endDate, m) && isOlderThanMonths(m, RECENT_ACTIVITY_MONTHS),
+    (m) => isFullMonth(startDate, endDate, m) && isOlderThanMonths(m, CACHE_FRESHNESS_MONTHS),
   );
   const uncacheableMonths = allMonths.filter((m) => !cacheableMonths.includes(m));
 
