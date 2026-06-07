@@ -75,29 +75,69 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
 
   return (
     <div style={{ padding: "1rem" }}>
-      {/* Summary Stats */}
-      <div className="d-flex gap-2 mb-4 flex-wrap">
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: "#0969da" }}>
-            {metrics?.totalCompleted || 0}
+      {/* Hero Stats */}
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          marginBottom: "0.75rem",
+        }}
+      >
+        <div
+          className="stat-card"
+          style={{
+            flex: 1,
+            textAlign: "center",
+            backgroundColor: "rgba(9, 105, 218, 0.05)",
+          }}
+        >
+          <div style={{ fontSize: "1.35rem", fontWeight: 600, color: "#0969da" }}>
+            {loading ? "—" : metrics?.totalCompleted || 0}
           </div>
-          <div className="stat-label">Completed</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: "#e3795c" }}>
-            {metrics?.totalStoryPoints || 0}
+          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>
+            Completed
           </div>
-          <div className="stat-label">Story Points</div>
         </div>
         <div
           className="stat-card"
+          style={{
+            flex: 1,
+            textAlign: "center",
+            backgroundColor: "rgba(227, 121, 92, 0.05)",
+          }}
+        >
+          <div style={{ fontSize: "1.35rem", fontWeight: 600, color: "#e3795c" }}>
+            {loading ? "—" : metrics?.totalStoryPoints || 0}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>
+            Story Points
+          </div>
+        </div>
+        <div
+          className="stat-card"
+          style={{
+            flex: 1,
+            textAlign: "center",
+          }}
           title={`Recent half vs older half (by ${metrics && metrics.totalStoryPoints > 0 ? "story points" : "task count"})`}
         >
-          <div className="stat-value" style={{ color: trendColor }}>
-            {trendArrow}
-            {Math.abs(metrics?.velocity.trendPercentage || 0).toFixed(0)}%
+          <div
+            style={{
+              fontSize: "1.35rem",
+              fontWeight: 600,
+              color: loading ? "#656d76" : trendColor,
+            }}
+          >
+            {loading ? (
+              "—"
+            ) : (
+              <>
+                {trendArrow}
+                {Math.abs(metrics?.velocity.trendPercentage || 0).toFixed(0)}%
+              </>
+            )}
           </div>
-          <div className="stat-label">Trend</div>
+          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>Trend</div>
         </div>
       </div>
 
