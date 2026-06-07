@@ -19,7 +19,7 @@ router.get("/reviews", async (_req: Request, res: Response) => {
   if (cached) return res.json(cached);
 
   const config = getConfig();
-  const q = `review-requested:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
+  const q = `involves:${config.githubUsername} -author:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
 
   let result;
   try {

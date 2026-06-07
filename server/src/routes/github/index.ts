@@ -28,7 +28,7 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
 
   const config = getConfig();
   const myPRsQuery = `author:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
-  const reviewsQuery = `review-requested:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
+  const reviewsQuery = `involves:${config.githubUsername} -author:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
 
   let result;
   try {
