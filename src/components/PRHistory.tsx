@@ -18,6 +18,7 @@ import {
   VIRTUAL_LIST_ROW_HEIGHT,
   VIRTUAL_LIST_HEADER_HEIGHT,
   VIRTUAL_LIST_HEIGHT,
+  VIRTUAL_LIST_THRESHOLD,
 } from "../utils/constants";
 
 export type DateMode = "month" | "year" | "custom";
@@ -283,32 +284,51 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
     [virtualListItems],
   );
 
+  const useVirtualization = virtualListItems.length > VIRTUAL_LIST_THRESHOLD;
+
+  const totalHeight = useMemo(() => {
+    if (!useVirtualization) return 0;
+    let height = 0;
+    for (const item of virtualListItems) {
+      height += item.type === "header" ? VIRTUAL_LIST_HEADER_HEIGHT : VIRTUAL_LIST_ROW_HEIGHT;
+    }
+    return Math.min(height, VIRTUAL_LIST_HEIGHT);
+  }, [virtualListItems, useVirtualization]);
+
   interface CustomRowProps {
     items: VirtualListItem[];
     onPRClick: (pr: GitHubPR) => void;
   }
 
-  const VirtualRow = ({ index, style, items, onPRClick }: RowComponentProps & CustomRowProps) => {
-    const item = items[index];
-    return (
-      <div style={style}>
-        {item.type === "header" ? (
-          <div className="activity-date-label">
-            {item.dateLabel}
-            <Badge
-              bg="secondary"
-              pill
-              style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
-            >
-              {item.count}
-            </Badge>
-          </div>
-        ) : (
-          <PRCard pr={item.pr} onClick={() => onPRClick(item.pr)} />
-        )}
-      </div>
-    );
-  };
+  const VirtualRow = useCallback(
+    ({ index, style, items, onPRClick }: RowComponentProps & CustomRowProps) => {
+      const item = items[index];
+      return (
+        <div style={style}>
+          {item.type === "header" ? (
+            <div className="activity-date-label">
+              {item.dateLabel}
+              <Badge
+                bg="secondary"
+                pill
+                style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
+              >
+                {item.count}
+              </Badge>
+            </div>
+          ) : (
+            <PRCard pr={item.pr} onClick={() => onPRClick(item.pr)} />
+          )}
+        </div>
+      );
+    },
+    [],
+  );
+
+  const virtualRowProps = useMemo(
+    () => ({ items: virtualListItems, onPRClick: setSelectedPR }),
+    [virtualListItems],
+  );
 
   return (
     <div style={{ padding: "1rem" }}>
@@ -609,16 +629,38 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
               </span>
             )}
           </div>
-          <div
-            className="activity-timeline"
-            style={{ height: `${VIRTUAL_LIST_HEIGHT}px`, overflow: "auto" }}
-          >
-            <List
-              rowCount={virtualListItems.length}
-              rowHeight={rowHeight}
-              rowComponent={VirtualRow}
-              rowProps={{ items: virtualListItems, onPRClick: setSelectedPR }}
-            />
+          <div className="activity-timeline">
+            {useVirtualization ? (
+              <List
+                key={virtualListItems.length}
+                rowCount={virtualListItems.length}
+                rowHeight={rowHeight}
+                rowComponent={VirtualRow}
+                rowProps={virtualRowProps}
+                defaultHeight={totalHeight}
+                style={{ maxHeight: totalHeight, flexGrow: 0 }}
+              />
+            ) : (
+              Array.from(groupedPrs.entries()).map(([dateLabel, datePRs]) => (
+                <div key={dateLabel} className="activity-section">
+                  <div className="activity-date-label">
+                    {dateLabel}
+                    <Badge
+                      bg="secondary"
+                      pill
+                      style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
+                    >
+                      {datePRs.length}
+                    </Badge>
+                  </div>
+                  <div className="activity-list">
+                    {datePRs.map((pr) => (
+                      <PRCard key={pr.id} pr={pr} onClick={() => setSelectedPR(pr)} />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </>
       )}
