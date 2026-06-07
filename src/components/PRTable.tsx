@@ -125,6 +125,13 @@ const PRCard: React.FC<PRCardProps> = ({ pr, variant, onClick }) => {
           <span className="branch-tag" style={{ fontSize: "0.65rem" }}>
             {pr.base.ref}
           </span>
+          {(pr.additions > 0 || pr.deletions > 0) && (
+            <span style={{ fontSize: "0.65rem", color: "#656d76" }}>
+              <span style={{ color: "#1a7f37", fontWeight: 600 }}>+{pr.additions}</span>
+              {" / "}
+              <span style={{ color: "#cf222e", fontWeight: 600 }}>-{pr.deletions}</span>
+            </span>
+          )}
         </div>
         {preview && (
           <div
