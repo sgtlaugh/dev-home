@@ -131,20 +131,32 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
   }, [prs]);
 
   const [sortAsc, setSortAsc] = useState(false);
+  const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
+
+  const toggleRepo = useCallback((repo: string) => {
+    setSelectedRepos((prev) => {
+      const next = new Set(prev);
+      if (next.has(repo)) next.delete(repo);
+      else next.add(repo);
+      return next;
+    });
+  }, []);
 
   const filteredPrs = useMemo(() => {
     const filtered = prs.filter((pr) => {
-      if (stateFilter === "all") return true;
-      if (stateFilter === "merged") return pr.merged;
-      if (stateFilter === "open") return pr.state === "open" && !pr.merged;
-      if (stateFilter === "closed") return pr.state === "closed" && !pr.merged;
+      if (stateFilter !== "all") {
+        if (stateFilter === "merged" && !pr.merged) return false;
+        if (stateFilter === "open" && (pr.state !== "open" || pr.merged)) return false;
+        if (stateFilter === "closed" && (pr.state !== "closed" || pr.merged)) return false;
+      }
+      if (selectedRepos.size > 0 && !selectedRepos.has(pr.repo_full_name)) return false;
       return true;
     });
     const dir = sortAsc ? 1 : -1;
     return [...filtered].sort(
       (a, b) => dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
     );
-  }, [prs, stateFilter, sortAsc]);
+  }, [prs, stateFilter, sortAsc, selectedRepos]);
 
   const toggleFilter = useCallback(
     (key: StateFilter) => {
@@ -175,7 +187,9 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
         onToggleFilter={toggleFilter}
       />
 
-      {prs.length > 0 && <RepoBreakdown prs={filteredPrs.length > 0 ? filteredPrs : prs} />}
+      {prs.length > 0 && (
+        <RepoBreakdown prs={prs} selectedRepos={selectedRepos} onToggleRepo={toggleRepo} />
+      )}
 
       {prs.length > 0 && (
         <ContributionHeatmap

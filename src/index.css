@@ -1881,19 +1881,18 @@ a,
   margin-top: 8px;
 }
 
-.repo-bar-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.7rem;
-  color: #656d76;
+.repo-bar-legend-pill {
+  font-size: 0.65rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1.5px solid;
+  transition: background-color 150ms ease, color 150ms ease, opacity 150ms ease;
+  user-select: none;
 }
 
-.repo-bar-legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.repo-bar-legend-pill:hover {
+  opacity: 0.8;
 }
 
 /* ============================================
