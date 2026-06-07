@@ -39,22 +39,45 @@ interface SummaryViewProps {
   onOpenNote: (note: Note) => void;
 }
 
+const SECTION_COLORS: Record<string, string> = {
+  prs: "#1a7f37",
+  reviews: "#8250df",
+  jira: "#0969da",
+  notifications: "#e3795c",
+  notes: "#656d76",
+};
+
 interface SectionProps {
   icon: React.ReactNode;
   title: string;
   count: number;
   children: React.ReactNode;
+  accent: string;
   onSeeMore?: () => void;
   headerAction?: React.ReactNode;
   loading?: boolean;
 }
 
-function Section({ icon, title, count, children, onSeeMore, headerAction, loading }: SectionProps) {
+function Section({
+  icon,
+  title,
+  count,
+  children,
+  accent,
+  onSeeMore,
+  headerAction,
+  loading,
+}: SectionProps) {
   return (
-    <Card className="h-100 summary-card">
+    <Card className="h-100 summary-card" style={{ borderLeft: `3px solid ${accent}` }}>
       <Card.Body className="p-0">
         <div className="section-header px-3 pt-3 mb-0">
-          {icon}
+          <span
+            className="section-icon-bg"
+            style={{ backgroundColor: `${accent}15`, color: accent }}
+          >
+            {icon}
+          </span>
           <span>{title}</span>
           {count > 0 && (
             <Badge bg="" className="badge-status-neutral" style={{ fontSize: "0.625rem" }}>
@@ -185,6 +208,48 @@ function statusBadgeClass(colorName: string, statusName?: string): string {
   return STATUS_CATEGORY_CLASSES[colorName] || "badge-status-neutral";
 }
 
+function HeroStats({
+  prCount,
+  reviewCount,
+  jiraCount,
+  notifCount,
+  noteCount,
+  onNavigate,
+}: {
+  prCount: number;
+  reviewCount: number;
+  jiraCount: number;
+  notifCount: number;
+  noteCount: number;
+  onNavigate: (tab: string) => void;
+}) {
+  const stats = [
+    { label: "Open PRs", count: prCount, color: SECTION_COLORS.prs, tab: "prs" },
+    { label: "Reviews", count: reviewCount, color: SECTION_COLORS.reviews, tab: "reviews" },
+    { label: "JIRA Tasks", count: jiraCount, color: SECTION_COLORS.jira, tab: "jira" },
+    {
+      label: "Notifications",
+      count: notifCount,
+      color: SECTION_COLORS.notifications,
+      tab: "mentions",
+    },
+    { label: "Notes", count: noteCount, color: SECTION_COLORS.notes, tab: "notes" },
+  ];
+
+  return (
+    <div className="summary-hero-bar">
+      {stats.map((s) => (
+        <div key={s.label} className="summary-hero-stat" onClick={() => onNavigate(s.tab)}>
+          <div className="summary-hero-count" style={{ color: s.color }}>
+            {s.count}
+          </div>
+          <div className="summary-hero-label">{s.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export const SummaryView: React.FC<SummaryViewProps> = ({
   jiraIssues,
   jiraComments,
@@ -243,6 +308,15 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
 
   return (
     <>
+      <HeroStats
+        prCount={openPRs.length}
+        reviewCount={reviewRequests.length}
+        jiraCount={jiraIssues.length}
+        notifCount={jiraComments.length}
+        noteCount={notes.length}
+        onNavigate={onNavigate}
+      />
+
       <Row className="g-3">
         <Col md="9" className="d-flex flex-column">
           <Row className="g-2 flex-grow-1">
@@ -251,6 +325,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 icon={<IconGitPullRequest size={13} stroke={1.8} />}
                 title="Open Pull Requests"
                 count={openPRs.length}
+                accent={SECTION_COLORS.prs}
                 onSeeMore={openPRs.length > 5 ? () => onNavigate("prs") : undefined}
                 loading={openPRsLoading}
               >
@@ -278,6 +353,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 icon={<IconSubtask size={13} stroke={1.8} />}
                 title="JIRA Tasks"
                 count={jiraIssues.length}
+                accent={SECTION_COLORS.jira}
                 onSeeMore={jiraIssues.length > 5 ? () => onNavigate("jira") : undefined}
                 loading={jiraIssuesLoading}
               >
@@ -310,6 +386,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 icon={<IconEye size={13} stroke={1.8} />}
                 title="Review Requests"
                 count={reviewRequests.length}
+                accent={SECTION_COLORS.reviews}
                 onSeeMore={reviewRequests.length > 5 ? () => onNavigate("reviews") : undefined}
                 loading={reviewRequestsLoading}
               >
@@ -336,6 +413,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 icon={<IconAt size={13} stroke={1.8} />}
                 title="JIRA Notifications"
                 count={jiraComments.length}
+                accent={SECTION_COLORS.notifications}
                 onSeeMore={jiraComments.length > 5 ? () => onNavigate("mentions") : undefined}
                 loading={jiraCommentsLoading}
               >
@@ -361,6 +439,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             icon={<IconNote size={13} stroke={1.8} />}
             title="Notes"
             count={notes.length}
+            accent={SECTION_COLORS.notes}
             onSeeMore={notes.length > 10 ? () => onNavigate("notes") : undefined}
             loading={notesLoading}
             headerAction={
@@ -376,17 +455,28 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             }
           >
             {topNotes.length > 0 ? (
-              topNotes.map((note) => (
-                <ItemRow
-                  key={note.id}
-                  url={getReferenceUrl(note, jiraBase) || "#"}
-                  title={getNoteDisplayTitle(note)}
-                  subtitle=""
-                  time={note.created_at}
-                  onClick={() => onOpenNote(note)}
-                  hideTime={true}
-                />
-              ))
+              <div className="summary-notes-grid">
+                {topNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="summary-note-chip"
+                    onClick={() => onOpenNote(note)}
+                    title={getNoteDisplayTitle(note)}
+                  >
+                    <span className="summary-note-chip-text">{getNoteDisplayTitle(note)}</span>
+                    <button
+                      className="summary-note-resolve"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onResolveNote(note.id);
+                      }}
+                      title="Resolve"
+                    >
+                      <IconCheck size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             ) : (
               <EmptyRow text="No notes" />
             )}

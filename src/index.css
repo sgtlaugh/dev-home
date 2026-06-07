@@ -71,6 +71,47 @@ a:hover {
   flex-direction: column;
 }
 
+/* --- Summary Hero Stats --- */
+.summary-hero-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #24292f 0%, #32383f 100%);
+  border-radius: 12px;
+  padding: 0.6rem 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.summary-hero-stat {
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background-color 150ms ease;
+}
+
+.summary-hero-stat:last-child {
+  border-right: none;
+}
+
+.summary-hero-stat:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.summary-hero-count {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.summary-hero-label {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2px;
+}
+
+/* --- Summary Cards --- */
 .summary-card {
   transition: box-shadow 150ms ease, border-color 150ms ease;
 }
@@ -78,6 +119,75 @@ a:hover {
 .summary-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border-color: #d1d9e0;
+}
+
+/* --- Section Icon Background --- */
+.section-icon-bg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* --- Note Chips --- */
+.summary-notes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px 8px;
+}
+
+.summary-note-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background-color: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.summary-note-chip:hover {
+  background-color: #eaeef2;
+  border-color: #bcc3cd;
+}
+
+.summary-note-chip-text {
+  flex: 1;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #24292f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.summary-note-resolve {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid #d1d9e0;
+  background: transparent;
+  color: #656d76;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 120ms ease;
+  padding: 0;
+}
+
+.summary-note-resolve:hover {
+  background-color: #1a7f37;
+  border-color: #1a7f37;
+  color: white;
 }
 
 .card-header {
