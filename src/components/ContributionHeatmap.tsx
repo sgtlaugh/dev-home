@@ -22,9 +22,10 @@ function getHeatmapDisplayRange(
   }
   if (mode === "month") {
     const start = new Date(year, month - 1, 1);
-    const yearBack = new Date(start);
-    yearBack.setFullYear(yearBack.getFullYear() - 1);
-    return { start: yearBack, end: new Date(year, month, 0) };
+    const yearForward = new Date(start);
+    yearForward.setFullYear(yearForward.getFullYear() + 1);
+    yearForward.setDate(yearForward.getDate() - 1);
+    return { start, end: yearForward };
   }
   if (prDates.length === 0) return { start: new Date(), end: new Date() };
   const minDate = new Date(Math.min(...prDates));
@@ -32,9 +33,11 @@ function getHeatmapDisplayRange(
   const rangeMs = maxDate.getTime() - minDate.getTime();
   const oneYearMs = 365.25 * 24 * 60 * 60 * 1000;
 
-  // Show at least 1 year
   if (rangeMs < oneYearMs) {
-    return { start: minDate, end: new Date(minDate.getTime() + oneYearMs) };
+    const yearForward = new Date(minDate);
+    yearForward.setFullYear(yearForward.getFullYear() + 1);
+    yearForward.setDate(yearForward.getDate() - 1);
+    return { start: minDate, end: yearForward };
   }
   return { start: minDate, end: maxDate };
 }
