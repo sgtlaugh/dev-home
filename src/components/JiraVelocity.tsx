@@ -4,6 +4,7 @@ import Badge from "react-bootstrap/Badge";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import { useJiraVelocity } from "../hooks/useJiraVelocity";
+import { useConfig } from "../hooks/useConfig";
 import { EmptyState } from "./EmptyState";
 import { VelocityChart } from "./VelocityChart";
 
@@ -34,6 +35,8 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
     return "30d";
   });
   const [showAllIssues, setShowAllIssues] = useState(false);
+  const { jiraBaseUrl } = useConfig();
+  const jiraBase = jiraBaseUrl?.replace(/\/+$/, "") || "";
 
   React.useEffect(() => {
     try {
@@ -242,7 +245,13 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                     </thead>
                     <tbody>
                       {visibleIssues.map((issue) => (
-                        <tr key={issue.key}>
+                        <tr
+                          key={issue.key}
+                          style={{ cursor: jiraBase ? "pointer" : undefined }}
+                          onClick={() =>
+                            jiraBase && window.open(`${jiraBase}/browse/${issue.key}`, "_blank")
+                          }
+                        >
                           <td style={{ whiteSpace: "nowrap", fontWeight: 500 }}>{issue.key}</td>
                           <td style={{ maxWidth: 300 }}>
                             <div className="text-truncate-custom">{issue.summary}</div>
