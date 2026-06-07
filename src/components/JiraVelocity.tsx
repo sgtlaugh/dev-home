@@ -24,6 +24,13 @@ const TYPE_COLORS: Record<string, string> = {
   "Sub-task": "badge-status-neutral",
 };
 
+const TYPE_BAR_COLORS: Record<string, string> = {
+  Bug: "#cf222e",
+  Story: "#1a7f37",
+  Task: "#0969da",
+  "Sub-task": "#656d76",
+};
+
 export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
   const [preset, setPreset] = useState<Preset>(() => {
     try {
@@ -74,6 +81,22 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
     metrics?.velocity.trendPercentage && metrics.velocity.trendPercentage > 0 ? "↑" : "↓";
 
   const visibleIssues = showAllIssues ? completedIssues : completedIssues.slice(0, 10);
+
+  const typeBreakdown = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const issue of completedIssues) {
+      counts.set(issue.type, (counts.get(issue.type) || 0) + 1);
+    }
+    const total = completedIssues.length;
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([type, count]) => ({
+        type,
+        count,
+        pct: total > 0 ? (count / total) * 100 : 0,
+        color: TYPE_BAR_COLORS[type] || "#656d76",
+      }));
+  }, [completedIssues]);
 
   return (
     <div style={{ padding: "1rem" }}>
@@ -142,6 +165,49 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
           <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>Trend</div>
         </div>
       </div>
+
+      {/* Type Breakdown */}
+      {typeBreakdown.length > 0 && !loading && (
+        <div style={{ marginBottom: "0.75rem" }}>
+          <div
+            style={{
+              height: 8,
+              borderRadius: 4,
+              overflow: "hidden",
+              display: "flex",
+            }}
+          >
+            {typeBreakdown.map((t) => (
+              <div
+                key={t.type}
+                style={{
+                  width: `${t.pct}%`,
+                  backgroundColor: t.color,
+                  transition: "width 0.4s ease",
+                }}
+                title={`${t.type}: ${t.count} (${Math.round(t.pct)}%)`}
+              />
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.4rem", flexWrap: "wrap" }}>
+            {typeBreakdown.map((t) => (
+              <div key={t.type} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <div
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    backgroundColor: t.color,
+                  }}
+                />
+                <span style={{ fontSize: "0.7rem", color: "#656d76" }}>
+                  {t.type} ({t.count})
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <Card className="controls-card mb-4">
@@ -252,7 +318,21 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                             jiraBase && window.open(`${jiraBase}/browse/${issue.key}`, "_blank")
                           }
                         >
-                          <td style={{ whiteSpace: "nowrap", fontWeight: 500 }}>{issue.key}</td>
+                          <td style={{ whiteSpace: "nowrap", fontWeight: 500 }}>
+                            {jiraBase ? (
+                              <a
+                                href={`${jiraBase}/browse/${issue.key}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="activity-title"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {issue.key}
+                              </a>
+                            ) : (
+                              issue.key
+                            )}
+                          </td>
                           <td style={{ maxWidth: 300 }}>
                             <div className="text-truncate-custom">{issue.summary}</div>
                           </td>

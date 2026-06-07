@@ -60,6 +60,32 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
   const singleBarW = multiSeries ? totalBarW / series.length : totalBarW;
   const barGap = multiSeries ? 2 : 0;
 
+  // Find peak week index for primary series
+  const peakIdx = primaryData.reduce(
+    (best, w, i) => (w.value > primaryData[best].value ? i : best),
+    0,
+  );
+  const hasPeak = primaryData.length > 2 && primaryData[peakIdx].value > 0;
+
+  // Moving average (3-week window) for primary series
+  const movingAvg = primaryData.map((_, i) => {
+    let sum = 0;
+    let count = 0;
+    for (let j = Math.max(0, i - 1); j <= Math.min(primaryData.length - 1, i + 1); j++) {
+      sum += primaryData[j].value;
+      count++;
+    }
+    return sum / count;
+  });
+
+  const trendPoints = movingAvg
+    .map((avg, i) => {
+      const cx = PADDING.left + groupW * i + groupW / 2;
+      const y = PADDING.top + chartH - (avg / yMax) * chartH;
+      return `${cx},${y}`;
+    })
+    .join(" ");
+
   return (
     <div ref={containerRef} style={{ width: "100%", position: "relative" }}>
       {/* Legend for multi-series */}
@@ -108,9 +134,22 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
         {/* Bars */}
         {primaryData.map((week, i) => {
           const cx = PADDING.left + groupW * i + groupW / 2;
+          const isPeak = hasPeak && i === peakIdx;
 
           return (
             <g key={i}>
+              {/* Peak highlight glow */}
+              {isPeak && (
+                <rect
+                  x={PADDING.left + groupW * i + 2}
+                  y={PADDING.top}
+                  width={groupW - 4}
+                  height={chartH}
+                  rx={4}
+                  fill={series[0].color}
+                  opacity={0.06}
+                />
+              )}
               {series.map((s, si) => {
                 const reversedData = [...s.data].reverse();
                 const val = reversedData[i]?.value || 0;
@@ -130,16 +169,16 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
                     height={displayH}
                     rx={2}
                     fill={s.color}
-                    opacity={isZero ? 0.2 : 0.85}
+                    opacity={isZero ? 0.2 : isPeak && si === 0 ? 1 : 0.85}
                     onMouseEnter={(e) => {
-                      const lines = series.map((ss, ssi) => {
+                      const lines = series.map((ss) => {
                         const rv = [...ss.data].reverse();
                         return `${ss.label}: ${rv[i]?.value || 0}`;
                       });
                       setTooltip({
                         x: e.clientX,
                         y: e.clientY,
-                        content: `${week.weekRange}\n${lines.join("\n")}`,
+                        content: `${week.weekRange}${isPeak ? " ★ Best" : ""}\n${lines.join("\n")}`,
                       });
                     }}
                     onMouseLeave={() => setTooltip(null)}
@@ -154,7 +193,8 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
                 y={height - PADDING.bottom + 12}
                 textAnchor="middle"
                 fontSize={9}
-                fill="#656d76"
+                fill={isPeak ? series[0].color : "#656d76"}
+                fontWeight={isPeak ? 600 : 400}
                 transform={
                   primaryData.length > 8
                     ? `rotate(-30, ${cx}, ${height - PADDING.bottom + 12})`
@@ -166,6 +206,19 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
             </g>
           );
         })}
+
+        {/* Moving average trend line */}
+        {primaryData.length > 2 && (
+          <polyline
+            points={trendPoints}
+            fill="none"
+            stroke={series[0].color}
+            strokeWidth={1.5}
+            strokeDasharray="4,3"
+            opacity={0.5}
+            style={{ transition: "all 0.3s ease" }}
+          />
+        )}
 
         {/* Baseline */}
         <line
