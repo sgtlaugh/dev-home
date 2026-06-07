@@ -1265,34 +1265,43 @@ a,
 }
 
 .activity-hour-heatmap {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .activity-hour-grid {
   display: flex;
-  gap: 1px;
-  height: 20px;
+  align-items: flex-end;
+  gap: 2px;
+  height: 40px;
 }
 
-.activity-hour-cell {
-  flex: 1;
-  border-radius: 2px;
+.activity-hour-bar {
+  width: 100%;
+  background-color: #0969da;
+  border-radius: 2px 2px 0 0;
+  opacity: 0.65;
+  transition: opacity 150ms ease;
+}
+
+.activity-hour-bar:hover {
+  opacity: 1;
+}
+
+.activity-hour-bar-max {
+  background-color: #0550ae;
+  opacity: 1;
+}
+
+.activity-hour-labels {
   position: relative;
-  transition: background-color 150ms ease;
-  cursor: default;
+  height: 14px;
+  margin-top: 3px;
+  font-size: 0.45rem;
+  color: #8b949e;
 }
 
-.activity-hour-cell:hover {
-  outline: 1px solid #0969da;
-}
-
-.activity-hour-tick {
+.activity-hour-labels span {
   position: absolute;
-  top: 100%;
-  left: 0;
-  font-size: 0.55rem;
-  color: #656d76;
-  margin-top: 2px;
   white-space: nowrap;
 }
 

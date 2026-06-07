@@ -100,7 +100,6 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts,
 
   return (
     <div className="activity-bar-chart">
-      {/* Stacked bar chart */}
       <div className="activity-bar-chart-bars">
         {dailyCounts.map((day) => {
           const isToday = day.date === today;
@@ -170,27 +169,40 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts,
         ))}
       </div>
 
-      {/* Time-of-day heatmap */}
+      {/* Time-of-day bar chart */}
       {hourCounts && maxHour > 0 && (
         <div className="activity-hour-heatmap">
           <div className="activity-hour-grid">
             {hourCounts.map((count, hour) => {
-              const intensity = count / maxHour;
               const label = String(hour).padStart(2, "0");
+              const isEmpty = count === 0;
+              const isMax = count === maxHour;
               return (
-                <div
-                  key={hour}
-                  className="activity-hour-cell"
-                  style={{
-                    backgroundColor:
-                      count === 0 ? "#f0f0f0" : `rgba(9, 105, 218, ${0.15 + intensity * 0.85})`,
-                  }}
-                  title={`${label}:00 — ${count} activit${count === 1 ? "y" : "ies"}`}
-                >
-                  {hour % 6 === 0 && <span className="activity-hour-tick">{label}</span>}
+                <div key={hour} className="activity-bar-wrapper">
+                  <div
+                    className={`activity-hour-bar${isEmpty ? " activity-bar-empty-segment" : ""}${isMax ? " activity-hour-bar-max" : ""}`}
+                    style={
+                      isEmpty ? undefined : { height: `${Math.max((count / maxHour) * 100, 12)}%` }
+                    }
+                    title={`${count} activit${count === 1 ? "y" : "ies"} during ${label}:00-${String((hour + 1) % 24).padStart(2, "0")}:00`}
+                  />
                 </div>
               );
             })}
+          </div>
+          <div className="activity-hour-labels">
+            {hourCounts.map((_, hour) => (
+              <span
+                key={hour}
+                style={{
+                  position: "absolute",
+                  left: `${((hour + 0.5) / 24) * 100}%`,
+                  transform: "translateX(-50%)",
+                }}
+              >
+                {String(hour).padStart(2, "0")}:00
+              </span>
+            ))}
           </div>
         </div>
       )}
