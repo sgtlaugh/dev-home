@@ -3,8 +3,6 @@ import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import Card from "react-bootstrap/Card";
 import { IconGitPullRequest } from "@tabler/icons-react";
-import { List, useDynamicRowHeight } from "react-window";
-import type { RowComponentProps } from "react-window";
 import { GitHubPR } from "../types";
 import { fetchPRsByDateRange, fetchCommitCount, fetchUserJoinDate } from "../services/github";
 import { EmptyState } from "./EmptyState";
@@ -14,23 +12,9 @@ import { ContributionHeatmap } from "./ContributionHeatmap";
 import { DateRangePicker } from "./DateRangePicker";
 import { PRCard } from "./PRCard";
 import { PRStats } from "./PRStats";
-import {
-  VIRTUAL_LIST_ROW_HEIGHT,
-  VIRTUAL_LIST_HEIGHT,
-  VIRTUAL_LIST_THRESHOLD,
-} from "../utils/constants";
 
 export type DateMode = "month" | "year" | "custom";
 type StateFilter = "all" | "open" | "merged" | "closed";
-
-type VirtualListItem =
-  | { type: "header"; dateLabel: string; count: number }
-  | { type: "pr"; pr: GitHubPR };
-
-interface VirtualRowProps {
-  items: VirtualListItem[];
-  onPRClick: (pr: GitHubPR) => void;
-}
 
 const MIN_YEAR = 2000;
 
@@ -51,28 +35,6 @@ function getDateKey(timestamp: string): string {
     day: "numeric",
     ...(isCurrentYear ? {} : { year: "numeric" }),
   });
-}
-
-function VirtualRow({ index, style, items, onPRClick }: RowComponentProps<VirtualRowProps>) {
-  const item = items[index];
-  return (
-    <div style={style}>
-      {item.type === "header" ? (
-        <div className="activity-date-label">
-          {item.dateLabel}
-          <Badge
-            bg="secondary"
-            pill
-            style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
-          >
-            {item.count}
-          </Badge>
-        </div>
-      ) : (
-        <PRCard pr={item.pr} onClick={() => onPRClick(item.pr)} />
-      )}
-    </div>
-  );
 }
 
 export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = true }) => {
@@ -205,17 +167,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
     return groups;
   }, [filteredPrs]);
 
-  const virtualListItems = useMemo(() => {
-    const items: VirtualListItem[] = [];
-    for (const [dateLabel, datePRs] of Array.from(groupedPrs.entries())) {
-      items.push({ type: "header", dateLabel, count: datePRs.length });
-      for (const pr of datePRs) {
-        items.push({ type: "pr", pr });
-      }
-    }
-    return items;
-  }, [groupedPrs]);
-
   const toggleFilter = useCallback(
     (key: StateFilter) => {
       setStateFilter(stateFilter === key ? "all" : key);
@@ -233,18 +184,6 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
     if (mode === "year") return year.toString();
     return startDate && endDate ? `${startDate} to ${endDate}` : "Custom Range";
   };
-
-  const useVirtualization = virtualListItems.length > VIRTUAL_LIST_THRESHOLD;
-
-  const dynamicRowHeight = useDynamicRowHeight({
-    defaultRowHeight: VIRTUAL_LIST_ROW_HEIGHT,
-    key: virtualListItems.length,
-  });
-
-  const virtualRowProps = useMemo(
-    () => ({ items: virtualListItems, onPRClick: setSelectedPR }),
-    [virtualListItems],
-  );
 
   return (
     <div style={{ padding: "1rem" }}>
@@ -405,37 +344,25 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
             )}
           </div>
           <div className="activity-timeline">
-            {useVirtualization ? (
-              <List
-                rowCount={virtualListItems.length}
-                rowHeight={dynamicRowHeight}
-                rowComponent={VirtualRow}
-                rowProps={virtualRowProps}
-                defaultHeight={VIRTUAL_LIST_HEIGHT}
-                overscanCount={5}
-                style={{ flexGrow: 0 }}
-              />
-            ) : (
-              Array.from(groupedPrs.entries()).map(([dateLabel, datePRs]) => (
-                <div key={dateLabel} className="activity-section">
-                  <div className="activity-date-label">
-                    {dateLabel}
-                    <Badge
-                      bg="secondary"
-                      pill
-                      style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
-                    >
-                      {datePRs.length}
-                    </Badge>
-                  </div>
-                  <div className="activity-list">
-                    {datePRs.map((pr) => (
-                      <PRCard key={pr.id} pr={pr} onClick={() => setSelectedPR(pr)} />
-                    ))}
-                  </div>
+            {Array.from(groupedPrs.entries()).map(([dateLabel, datePRs]) => (
+              <div key={dateLabel} className="activity-section">
+                <div className="activity-date-label">
+                  {dateLabel}
+                  <Badge
+                    bg="secondary"
+                    pill
+                    style={{ fontSize: "0.7rem", marginLeft: "8px", verticalAlign: "middle" }}
+                  >
+                    {datePRs.length}
+                  </Badge>
                 </div>
-              ))
-            )}
+                <div className="activity-list">
+                  {datePRs.map((pr) => (
+                    <PRCard key={pr.id} pr={pr} onClick={() => setSelectedPR(pr)} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </>
       )}

@@ -1,6 +1,1 @@
 export const ACTIVITY_LOOKBACK_DAYS = 30;
-
-// Virtual scrolling configuration
-export const VIRTUAL_LIST_ROW_HEIGHT = 90;
-export const VIRTUAL_LIST_HEIGHT = 600;
-export const VIRTUAL_LIST_THRESHOLD = 100;
