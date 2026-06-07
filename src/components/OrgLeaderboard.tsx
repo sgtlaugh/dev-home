@@ -143,33 +143,169 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
 
   return (
     <div>
-      {/* Stats + Search */}
-      <div className="d-flex gap-2 mb-3">
-        <div className="stat-card" style={{ backgroundColor: "rgba(26, 127, 55, 0.05)" }}>
-          <div className="stat-value" style={{ color: "#1a7f37" }}>
-            {totalCommits.toLocaleString()}
+      {/* Stats Donut */}
+      {(() => {
+        const total = totalCommits + totalPRs + totalReviews;
+        const memberCount = loading ? 0 : members.length;
+        const segments = [
+          { label: "Commits", value: totalCommits, color: "#1a7f37" },
+          { label: "PRs", value: totalPRs, color: "#0969da" },
+          { label: "Reviews", value: totalReviews, color: "#8250df" },
+        ];
+        const size = 100;
+        const strokeWidth = 14;
+        const radius = (size - strokeWidth) / 2;
+        const circ = 2 * Math.PI * radius;
+
+        let accumulated = 0;
+        const arcs = segments.map((seg) => {
+          const pct = total > 0 ? seg.value / total : 0;
+          const dashArray = `${circ * pct} ${circ * (1 - pct)}`;
+          const dashOffset = -circ * accumulated;
+          accumulated += pct;
+          return { ...seg, dashArray, dashOffset };
+        });
+
+        return (
+          <div
+            className="stat-card"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "1.5rem",
+              padding: "1rem 1.5rem",
+              marginBottom: "0.75rem",
+            }}
+          >
+            <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+              <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+                {total === 0 ? (
+                  <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    fill="none"
+                    stroke="#d1d9e0"
+                    strokeWidth={strokeWidth}
+                  />
+                ) : (
+                  arcs.map((arc) => (
+                    <circle
+                      key={arc.label}
+                      cx={size / 2}
+                      cy={size / 2}
+                      r={radius}
+                      fill="none"
+                      stroke={arc.color}
+                      strokeWidth={strokeWidth}
+                      strokeDasharray={arc.dashArray}
+                      strokeDashoffset={arc.dashOffset}
+                      style={{
+                        transition: "stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease",
+                      }}
+                    />
+                  ))
+                )}
+              </svg>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: total > 999999 ? "0.7rem" : total > 9999 ? "0.85rem" : "1.1rem",
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                    color: "#24292f",
+                  }}
+                >
+                  {total.toLocaleString()}
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.6rem",
+                    color: "#656d76",
+                    fontWeight: 500,
+                    letterSpacing: "0.03em",
+                  }}
+                >
+                  Total
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
+              {segments.map((seg) => (
+                <div
+                  key={seg.label}
+                  style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+                >
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      backgroundColor: seg.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: "0.8rem",
+                      color: "#656d76",
+                      minWidth: 60,
+                      width: 60,
+                      textAlign: "left",
+                    }}
+                  >
+                    {seg.label}
+                  </span>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                    {seg.value.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginTop: "0.3rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    backgroundColor: "#656d76",
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "0.8rem",
+                    color: "#656d76",
+                    minWidth: 60,
+                    width: 60,
+                    textAlign: "left",
+                  }}
+                >
+                  Members
+                </span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                  {memberCount.toLocaleString()}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="stat-label">Commits</div>
-        </div>
-        <div className="stat-card" style={{ backgroundColor: "rgba(9, 105, 218, 0.05)" }}>
-          <div className="stat-value" style={{ color: "#0969da" }}>
-            {totalPRs.toLocaleString()}
-          </div>
-          <div className="stat-label">PRs</div>
-        </div>
-        <div className="stat-card" style={{ backgroundColor: "rgba(130, 80, 223, 0.05)" }}>
-          <div className="stat-value" style={{ color: "#8250df" }}>
-            {totalReviews.toLocaleString()}
-          </div>
-          <div className="stat-label">Reviews</div>
-        </div>
-        <div className="stat-card" style={{ backgroundColor: "rgba(88, 166, 255, 0.05)" }}>
-          <div className="stat-value" style={{ color: "#656d76" }}>
-            {loading ? 0 : members.length}
-          </div>
-          <div className="stat-label">Members</div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Controls */}
       <Card className="controls-card mb-3">
