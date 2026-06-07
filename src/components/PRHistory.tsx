@@ -23,20 +23,6 @@ interface PRHistoryProps {
   active?: boolean;
 }
 
-function getDateKey(timestamp: string): string {
-  const hoursAgo = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60);
-  if (hoursAgo < 24) return "Today";
-  if (hoursAgo < 48) return "Yesterday";
-  const date = new Date(timestamp);
-  const today = new Date();
-  const isCurrentYear = date.getFullYear() === today.getFullYear();
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    ...(isCurrentYear ? {} : { year: "numeric" }),
-  });
-}
-
 export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = true }) => {
   const now = new Date();
   const [mode, setMode] = useState<DateMode>("month");
@@ -144,28 +130,21 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
     };
   }, [prs]);
 
+  const [sortAsc, setSortAsc] = useState(false);
+
   const filteredPrs = useMemo(() => {
-    return prs.filter((pr) => {
+    const filtered = prs.filter((pr) => {
       if (stateFilter === "all") return true;
       if (stateFilter === "merged") return pr.merged;
       if (stateFilter === "open") return pr.state === "open" && !pr.merged;
       if (stateFilter === "closed") return pr.state === "closed" && !pr.merged;
       return true;
     });
-  }, [prs, stateFilter]);
-
-  const groupedPrs = useMemo(() => {
-    const sorted = [...filteredPrs].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    const dir = sortAsc ? 1 : -1;
+    return [...filtered].sort(
+      (a, b) => dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
     );
-    const groups = new Map<string, GitHubPR[]>();
-    for (const pr of sorted) {
-      const key = getDateKey(pr.created_at);
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(pr);
-    }
-    return groups;
-  }, [filteredPrs]);
+  }, [prs, stateFilter, sortAsc]);
 
   const toggleFilter = useCallback(
     (key: StateFilter) => {
@@ -343,7 +322,12 @@ export const PRHistory: React.FC<PRHistoryProps> = ({ onCountChange, active = tr
               </span>
             )}
           </div>
-          <PRListTable prs={filteredPrs} onPRClick={setSelectedPR} />
+          <PRListTable
+            prs={filteredPrs}
+            onPRClick={setSelectedPR}
+            sortAsc={sortAsc}
+            onToggleSort={() => setSortAsc((v) => !v)}
+          />
         </>
       )}
 
