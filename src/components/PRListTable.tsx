@@ -67,20 +67,6 @@ const PRRow = memo(function PRRow({
       >
         {index}
       </td>
-      <td style={{ width: 28, paddingRight: 0, color: iconColor }}>
-        {pr.merged ? <IconGitMerge size={14} /> : <IconGitPullRequest size={14} />}
-      </td>
-      <td style={{ width: 90 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          {statusBadge(pr)}
-          {pr.draft && (
-            <Badge bg="" className="badge-status-neutral" style={{ fontSize: "0.55rem" }}>
-              Draft
-            </Badge>
-          )}
-          <ChecksStatusIcon status={pr.checks_status} />
-        </div>
-      </td>
       <td>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
           <a
@@ -108,7 +94,21 @@ const PRRow = memo(function PRRow({
             <span className="branch-tag" style={{ fontSize: "0.6rem" }}>
               {pr.base.ref}
             </span>
+            <span style={{ color: iconColor, display: "flex", alignItems: "center" }}>
+              {pr.merged ? <IconGitMerge size={12} /> : <IconGitPullRequest size={12} />}
+            </span>
           </div>
+        </div>
+      </td>
+      <td style={{ width: 90 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "-6px" }}>
+          {statusBadge(pr)}
+          {pr.draft && (
+            <Badge bg="" className="badge-status-neutral" style={{ fontSize: "0.55rem" }}>
+              Draft
+            </Badge>
+          )}
+          <ChecksStatusIcon status={pr.checks_status} />
         </div>
       </td>
       <td style={{ whiteSpace: "nowrap", width: 90 }}>
@@ -126,9 +126,8 @@ export const PRListTable: React.FC<PRListTableProps> = ({ prs, onPRClick }) => {
       <thead>
         <tr>
           <th style={{ width: 28 }} />
-          <th style={{ width: 28 }} />
-          <th style={{ width: 90 }}>Status</th>
           <th>Pull Request</th>
+          <th style={{ width: 90 }}>Status</th>
           <th style={{ width: 90 }}>Date</th>
         </tr>
       </thead>
