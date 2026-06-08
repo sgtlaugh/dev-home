@@ -32,7 +32,16 @@ const STATUS_NAME_BAR_COLORS: Record<string, string> = {
   "Code Review": "#4f46e5",
   "Product Review": "#e3795c",
   Done: "#1a7f37",
+  "Won't Fix": "#8b3a2a",
 };
+
+const STATUS_ORDER: string[] = [
+  "In Progress",
+  "Code Review",
+  "Product Review",
+  "Done",
+  "Won't Fix",
+];
 
 interface JiraTasksProps {
   issues: JiraIssue[];
@@ -61,7 +70,11 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
     }
     const total = issues.length;
     return Array.from(counts.entries())
-      .sort((a, b) => b[1].count - a[1].count)
+      .sort((a, b) => {
+        const ai = STATUS_ORDER.indexOf(a[0]);
+        const bi = STATUS_ORDER.indexOf(b[0]);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      })
       .map(([name, { count, color }]) => ({
         name,
         count,

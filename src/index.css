@@ -579,6 +579,11 @@ a:hover {
   color: #e3795c;
 }
 
+.badge-status-brown {
+  background-color: rgba(139, 58, 42, 0.1);
+  color: #8b3a2a;
+}
+
 .badge-status-blue {
   background-color: rgba(8, 96, 202, 0.15);
   color: #0860ca;

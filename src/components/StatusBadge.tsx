@@ -10,6 +10,7 @@ const STATUS_NAME_COLORS: Record<string, string> = {
   "Code Review": "badge-status-indigo",
   "Product Review": "badge-status-coral",
   Done: "badge-status-green",
+  "Won't Fix": "badge-status-brown",
 };
 
 function getBadgeClass(colorName: string, statusName: string): string {
