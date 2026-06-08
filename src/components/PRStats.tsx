@@ -29,13 +29,13 @@ export const PRStats: React.FC<PRStatsProps> = ({
       <div
         className="stat-card clickable"
         style={{
-          background: "linear-gradient(135deg, #24292f 0%, #32383f 100%)",
-          color: "white",
+          background: "#f6f8fa",
+          border: "1px solid #d1d9e0",
+          color: "#1f2328",
           padding: "0.75rem 1.25rem",
           borderRadius: "12px",
           marginBottom: "0.75rem",
           cursor: "pointer",
-          boxShadow: "0 2px 12px rgba(0, 0, 0, 0.12)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -43,22 +43,26 @@ export const PRStats: React.FC<PRStatsProps> = ({
         onClick={() => onToggleFilter("all")}
       >
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2 }}>{counts.all}</div>
-          <div style={{ fontSize: "0.75rem", opacity: 0.7 }}>Pull Requests</div>
+          <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2, color: "#6639a6" }}>
+            {counts.all}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "#656d76" }}>Pull Requests</div>
         </div>
         <div
           style={{
             width: "1px",
             height: "32px",
-            backgroundColor: "rgba(255,255,255,0.15)",
+            backgroundColor: "#d1d9e0",
             margin: "0 1.25rem",
           }}
         />
         <div
           style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}
         >
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2 }}>{commitCount}</div>
-          <div style={{ fontSize: "0.75rem", opacity: 0.7 }}>Commits</div>
+          <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2, color: "#1a7f37" }}>
+            {commitCount}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "#656d76" }}>Commits</div>
         </div>
       </div>
 
