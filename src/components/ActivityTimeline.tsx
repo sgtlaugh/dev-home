@@ -27,46 +27,13 @@ import {
 import { categorizeAction, ACTION_CATEGORIES } from "../utils/activityCategories";
 import { ActivityBarChart, computeStreak } from "./ActivityBarChart";
 import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
+import { getLocalDateString, getLocalDateMinusDays } from "../utils/dateUtils";
 
 interface ActivityTimelineProps {
   activities: ActivityItem[];
   loading: boolean;
   emptyMessage: string;
   currentUsername?: string;
-}
-
-function getLocalDateString(timestamp: string): string {
-  const date = new Date(timestamp);
-  return (
-    date.getFullYear() +
-    "-" +
-    String(date.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(date.getDate()).padStart(2, "0")
-  );
-}
-
-function getLocalDateForRange(): string {
-  const d = new Date();
-  return (
-    d.getFullYear() +
-    "-" +
-    String(d.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(d.getDate()).padStart(2, "0")
-  );
-}
-
-function getLocalDateMinusDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return (
-    d.getFullYear() +
-    "-" +
-    String(d.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(d.getDate()).padStart(2, "0")
-  );
 }
 
 function getActivityIcon(item: ActivityItem) {

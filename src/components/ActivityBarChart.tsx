@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ACTION_CATEGORIES } from "../utils/activityCategories";
+import { getLocalDateString } from "../utils/dateUtils";
 
 interface Segment {
   category: string;
@@ -48,7 +49,7 @@ function getMonthLabels(days: DailyCount[]): { label: string; index: number }[] 
 }
 
 export function computeStreak(days: { count: number; date: string }[]): number {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalDateString();
   const lastIdx = days.length - 1;
   let startIdx = lastIdx;
   if (days[lastIdx]?.date === today && days[lastIdx]?.count === 0) {
@@ -88,7 +89,7 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts,
   if (dailyCounts.length === 0) return null;
 
   const maxCount = Math.max(...dailyCounts.map((d) => d.count), 1);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalDateString();
 
   const formatDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split("-");
