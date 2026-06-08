@@ -6,6 +6,7 @@ import { JiraIssue } from "../types";
 import { StatusBadge } from "./StatusBadge";
 import { EmptyState } from "./EmptyState";
 import { DateControls } from "./DateControls";
+import { formatLocalDate, formatLocalDateTime } from "../utils/dateUtils";
 
 function hashHue(name: string): number {
   let hash = 0;
@@ -205,8 +206,8 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
             {filteredIssues.map((issue) => {
               const browseUrl = jiraBase ? `${jiraBase}/browse/${issue.key}` : "";
               const updatedDate = new Date(issue.updated);
-              const short = `${updatedDate.getFullYear()}-${String(updatedDate.getMonth() + 1).padStart(2, "0")}-${String(updatedDate.getDate()).padStart(2, "0")}`;
-              const full = `${short} ${String(updatedDate.getHours()).padStart(2, "0")}:${String(updatedDate.getMinutes()).padStart(2, "0")}`;
+              const short = formatLocalDate(updatedDate);
+              const full = formatLocalDateTime(updatedDate);
 
               return (
                 <tr
