@@ -182,9 +182,9 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts,
                 <div key={hour} className="activity-bar-wrapper">
                   <div
                     className={`activity-hour-bar${isEmpty ? " activity-bar-empty-segment" : ""}${isMax ? " activity-hour-bar-max" : ""}`}
-                    style={
-                      isEmpty ? undefined : { height: `${Math.max((count / maxHour) * 100, 12)}%` }
-                    }
+                    style={{
+                      height: isEmpty ? "4px" : `${Math.max((count / maxHour) * 100, 12)}%`,
+                    }}
                     title={`${count} activit${count === 1 ? "y" : "ies"} during ${label}:00-${String((hour + 1) % 24).padStart(2, "0")}:00`}
                   />
                 </div>
