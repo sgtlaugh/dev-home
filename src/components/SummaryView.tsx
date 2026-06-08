@@ -19,6 +19,7 @@ import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
 import { DescriptionModal } from "./DescriptionModal";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
 import { Timestamp } from "./Timestamp";
+import { StatusBadge } from "./StatusBadge";
 
 interface SummaryViewProps {
   jiraIssues: JiraIssue[];
@@ -114,7 +115,7 @@ interface ItemRowProps {
   title: string;
   subtitle: string;
   time: string;
-  badge?: string;
+  badge?: string | React.ReactNode;
   badgeClass?: string;
   checksStatus?: string | null;
   onClick?: () => void;
@@ -167,7 +168,7 @@ function ItemRow({
             <Timestamp timestamp={time} />
           </div>
         )}
-        {badge && (
+        {badge && typeof badge === "string" ? (
           <Badge
             bg=""
             className={badgeClass || "badge-status-neutral"}
@@ -175,7 +176,9 @@ function ItemRow({
           >
             {badge}
           </Badge>
-        )}
+        ) : badge ? (
+          badge
+        ) : null}
         {checksStatus !== undefined && <ChecksStatusIcon status={checksStatus} />}
       </div>
     </div>
@@ -188,24 +191,6 @@ function EmptyRow({ text }: { text: string }) {
       {text}
     </div>
   );
-}
-
-const STATUS_CATEGORY_CLASSES: Record<string, string> = {
-  green: "badge-status-green",
-  yellow: "badge-status-neutral",
-  blue: "badge-status-blue",
-};
-
-const STATUS_NAME_OVERRIDES: Record<string, string> = {
-  "Code Review": "badge-status-blue",
-  "In Review": "badge-status-blue",
-};
-
-function statusBadgeClass(colorName: string, statusName?: string): string {
-  if (statusName && STATUS_NAME_OVERRIDES[statusName]) {
-    return STATUS_NAME_OVERRIDES[statusName];
-  }
-  return STATUS_CATEGORY_CLASSES[colorName] || "badge-status-neutral";
 }
 
 function HeroStats({
@@ -365,11 +350,12 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                       title={`${issue.key}: ${issue.summary}`}
                       subtitle={issue.project.name}
                       time={issue.updated}
-                      badge={issue.status.name}
-                      badgeClass={statusBadgeClass(
-                        issue.status.statusCategory.colorName,
-                        issue.status.name,
-                      )}
+                      badge={
+                        <StatusBadge
+                          statusName={issue.status.name}
+                          colorName={issue.status.statusCategory.colorName}
+                        />
+                      }
                       onClick={() => setSelectedIssue(issue)}
                       hideTime={true}
                     />
