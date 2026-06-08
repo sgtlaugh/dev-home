@@ -26,17 +26,13 @@ import {
 } from "../utils/activityUtils";
 import { categorizeAction, ACTION_CATEGORIES } from "../utils/activityCategories";
 import { ActivityBarChart, computeStreak } from "./ActivityBarChart";
+import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
 
 interface ActivityTimelineProps {
   activities: ActivityItem[];
   loading: boolean;
   emptyMessage: string;
   currentUsername?: string;
-  dailyCounts?: {
-    date: string;
-    count: number;
-    segments: { category: string; count: number; color: string }[];
-  }[];
 }
 
 function getActivityIcon(item: ActivityItem) {
@@ -99,7 +95,6 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   loading,
   emptyMessage,
   currentUsername,
-  dailyCounts,
 }) => {
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
@@ -140,6 +135,42 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
     }
     return result;
   }, [activities, activeFilters, activeActors]);
+
+  const dailyCounts = useMemo(() => {
+    const countsByDateCat = new Map<string, Map<string, number>>();
+    for (const a of filteredActivities) {
+      const day = a.timestamp.slice(0, 10);
+      const cat = categorizeAction(a.action);
+      if (!countsByDateCat.has(day)) countsByDateCat.set(day, new Map());
+      const dayMap = countsByDateCat.get(day)!;
+      dayMap.set(cat, (dayMap.get(cat) || 0) + 1);
+    }
+
+    const colorMap = new Map(ACTION_CATEGORIES.map((c) => [c.label, c.color]));
+
+    const days: {
+      date: string;
+      count: number;
+      segments: { category: string; count: number; color: string }[];
+    }[] = [];
+    const now = new Date();
+    for (let i = ACTIVITY_LOOKBACK_DAYS - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const dayCats = countsByDateCat.get(key);
+      const segments: { category: string; count: number; color: string }[] = [];
+      let total = 0;
+      if (dayCats) {
+        for (const [cat, count] of dayCats) {
+          segments.push({ category: cat, count, color: colorMap.get(cat) || "#656d76" });
+          total += count;
+        }
+      }
+      days.push({ date: key, count: total, segments });
+    }
+    return days;
+  }, [filteredActivities]);
 
   const groupedActivities = useMemo(
     () => groupActivitiesByDate(filteredActivities),
@@ -255,7 +286,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
 
       {/* Bar chart */}
       {dailyCounts && dailyCounts.length > 0 && (
-        <ActivityBarChart dailyCounts={dailyCounts} activities={activities} />
+        <ActivityBarChart dailyCounts={dailyCounts} activities={filteredActivities} />
       )}
 
       {/* Timeline */}
