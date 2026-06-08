@@ -10,20 +10,26 @@ interface PRListTableProps {
 }
 
 const statusBadge = (pr: GitHubPR) => {
+  const badgeStyle = {
+    fontSize: "0.6rem",
+    display: "inline-block",
+    width: 46,
+    textAlign: "center" as const,
+  };
   if (pr.merged)
     return (
-      <Badge bg="" className="badge-status-purple" style={{ fontSize: "0.6rem" }}>
+      <Badge bg="" className="badge-status-purple" style={badgeStyle}>
         Merged
       </Badge>
     );
   if (pr.state === "open")
     return (
-      <Badge bg="" className="badge-status-green" style={{ fontSize: "0.6rem" }}>
+      <Badge bg="" className="badge-status-green" style={badgeStyle}>
         Open
       </Badge>
     );
   return (
-    <Badge bg="" className="badge-status-red" style={{ fontSize: "0.6rem" }}>
+    <Badge bg="" className="badge-status-red" style={badgeStyle}>
       Closed
     </Badge>
   );
