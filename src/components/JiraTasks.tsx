@@ -138,7 +138,9 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
         <table className="table" style={{ fontSize: "0.8125rem" }}>
           <thead>
             <tr>
-              <th style={{ width: 32 }} title="Priority" />
+              <th style={{ width: 32 }} title="Priority">
+                P
+              </th>
               <th title="JIRA ticket identifier">Ticket</th>
               <th title="Issue summary">Summary</th>
               <th title="Issue type (Bug, Story, Task, etc.)">Type</th>
@@ -167,6 +169,7 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
                         src={issue.priority.iconUrl}
                         alt={issue.priority.name}
                         className="priority-icon"
+                        style={{ marginLeft: "-3px" }}
                       />
                     )}
                   </td>
@@ -192,16 +195,18 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
                     <Badge
                       bg=""
                       className={TYPE_COLORS[issue.issueType || "Task"] || "badge-status-neutral"}
-                      style={{ fontSize: "0.65rem" }}
+                      style={{ fontSize: "0.65rem", marginLeft: "-6px" }}
                     >
                       {issue.issueType || "Task"}
                     </Badge>
                   </td>
                   <td>
-                    <StatusBadge
-                      statusName={issue.status.name}
-                      colorName={issue.status.statusCategory.colorName}
-                    />
+                    <div style={{ marginLeft: "-6px" }}>
+                      <StatusBadge
+                        statusName={issue.status.name}
+                        colorName={issue.status.statusCategory.colorName}
+                      />
+                    </div>
                   </td>
                   {hasStoryPoints && <td>{issue.storyPoints || "—"}</td>}
                   <td style={{ whiteSpace: "nowrap" }}>
