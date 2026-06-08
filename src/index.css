@@ -1188,6 +1188,31 @@ a,
   white-space: pre-wrap;
 }
 
+.note-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid #d1d9e0;
+  border-radius: 6px;
+  background: #ffffff;
+  width: 200px;
+}
+
+.note-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.8rem;
+  color: #1f2328;
+  width: 100%;
+}
+
+.note-search-input::placeholder {
+  color: #8b949e;
+}
+
+
 /* ============================================
    Tiptap Editor
    ============================================ */

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import Card from "react-bootstrap/Card";
 import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
@@ -11,6 +11,7 @@ import {
   IconCheck,
   IconTrash,
   IconPlus,
+  IconSearch,
 } from "@tabler/icons-react";
 import { Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
@@ -26,18 +27,11 @@ interface PersonalNotesProps {
   jiraBaseUrl: string;
 }
 
-const TYPE_ICON: Record<string, React.ReactNode> = {
-  free_text: <IconNote size={14} stroke={1.8} />,
-  jira_ticket: <IconBrandJira size={14} stroke={1.8} />,
-  github_pr: <IconGitPullRequest size={14} stroke={1.8} />,
-  link: <IconLink size={14} stroke={1.8} />,
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  free_text: "Note",
-  jira_ticket: "JIRA",
-  github_pr: "PR",
-  link: "Link",
+const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+  free_text: { icon: <IconNote size={14} stroke={1.8} />, color: "#656d76", label: "Note" },
+  jira_ticket: { icon: <IconBrandJira size={14} stroke={1.8} />, color: "#0052CC", label: "JIRA" },
+  github_pr: { icon: <IconGitPullRequest size={14} stroke={1.8} />, color: "#1a7f37", label: "PR" },
+  link: { icon: <IconLink size={14} stroke={1.8} />, color: "#8250df", label: "Link" },
 };
 
 export const PersonalNotes: React.FC<PersonalNotesProps> = ({
@@ -73,16 +67,40 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
     );
   }
 
-  const unresolved = notes.filter((n) => n.resolved === 0);
-  const resolved = notes.filter((n) => n.resolved === 1);
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!search) return notes;
+    const q = search.toLowerCase();
+    return notes.filter((n) => {
+      const title = getNoteDisplayTitle(n).toLowerCase();
+      const content = (n.content || "").toLowerCase();
+      return title.includes(q) || content.includes(q);
+    });
+  }, [notes, search]);
+
+  const unresolved = filtered.filter((n) => n.resolved === 0);
+  const resolved = filtered.filter((n) => n.resolved === 1);
 
   return (
     <div>
-      <div className="d-flex justify-content-end mb-2">
-        <Button variant="outline-secondary" size="sm" onClick={onAdd}>
-          <IconPlus size={14} className="me-1" />
-          Add Note
-        </Button>
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <div className="note-search-box">
+          <IconSearch size={14} style={{ color: "#656d76", flexShrink: 0 }} />
+          <input
+            type="text"
+            placeholder="Search notes..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="note-search-input"
+          />
+        </div>
+        <div style={{ marginLeft: "auto" }}>
+          <Button variant="outline-secondary" size="sm" onClick={onAdd}>
+            <IconPlus size={14} className="me-1" />
+            Add Note
+          </Button>
+        </div>
       </div>
       {unresolved.length > 0 && (
         <Card className="mb-3">
@@ -154,15 +172,19 @@ function NoteRow({
 }) {
   const url = getReferenceUrl(note, jiraBaseUrl);
   const title = getNoteDisplayTitle(note);
+  const config = TYPE_CONFIG[note.type] || TYPE_CONFIG.free_text;
 
   return (
     <div
       className="summary-item d-flex align-items-center gap-3 px-3 py-2"
-      style={{ cursor: "pointer" }}
+      style={{ cursor: "pointer", borderLeft: `3px solid ${config.color}` }}
       onClick={() => onOpenNote(note)}
     >
-      <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
-        {TYPE_ICON[note.type]}
+      <div
+        className="d-flex align-items-center gap-2"
+        style={{ flexShrink: 0, color: config.color }}
+      >
+        {config.icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="d-flex align-items-center gap-2">
@@ -197,7 +219,7 @@ function NoteRow({
       </div>
       <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
         <Badge bg="" className="badge-status-neutral">
-          {TYPE_LABEL[note.type]}
+          {config.label}
         </Badge>
         {note.resolved === 0 && (
           <Button

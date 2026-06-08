@@ -236,24 +236,28 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   useEffect(() => {
     if (!editor || !show) return;
 
-    if (note) {
-      const rawText = reconstructRawText(note);
-      const title = getDefaultTitle(note);
-      setTitleText(title);
-      setInitialTitle(title);
-      editor.commands.setContent(rawText);
-      setEditorContent(rawText);
-      setInitialContent(rawText);
-      setIsDirty(false);
-    } else {
-      setTitleText("");
-      setInitialTitle("");
-      editor.commands.setContent("");
-      setEditorContent("");
-      setInitialContent("");
-      setIsDirty(false);
-    }
-    setError(null);
+    // Delay content setup to after modal animation to prevent focus/render race
+    const timer = setTimeout(() => {
+      if (note) {
+        const rawText = reconstructRawText(note);
+        const title = getDefaultTitle(note);
+        setTitleText(title);
+        setInitialTitle(title);
+        editor.commands.setContent(rawText);
+        setEditorContent(rawText);
+        setInitialContent(rawText);
+        setIsDirty(false);
+      } else {
+        setTitleText("");
+        setInitialTitle("");
+        editor.commands.setContent("");
+        setEditorContent("");
+        setInitialContent("");
+        setIsDirty(false);
+      }
+      setError(null);
+    }, 50);
+    return () => clearTimeout(timer);
   }, [note, show, editor]);
 
   const handleClose = () => {
