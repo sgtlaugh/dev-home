@@ -160,13 +160,24 @@ router.get("/issues", async (_req: Request, res: Response) => {
   const config = getConfig();
   const jira = createJiraClient();
 
-  const jql = `assignee = "${config.jiraEmail}" AND updated >= -90d ORDER BY updated DESC`;
+  const jql = `assignee = "${config.jiraEmail}" ORDER BY updated DESC`;
   const spField = await getStoryPointsFieldId();
   const fields = ["summary", "status", "priority", "assignee", "project", "updated", "description", "issuetype", ...(spField ? [spField] : [])];
 
-  const { data } = await jira.post("/search/jql", { jql, fields, maxResults: 50 });
+  const allIssues: any[] = [];
+  let nextPageToken: string | undefined;
+  const pageSize = 100;
+  while (true) {
+    const payload: any = { jql, fields, maxResults: pageSize };
+    if (nextPageToken) payload.nextPageToken = nextPageToken;
+    const { data } = await jira.post("/search/jql", payload);
+    const batch = data.issues || data || [];
+    allIssues.push(...batch);
+    if (!data.nextPageToken || batch.length < pageSize) break;
+    nextPageToken = data.nextPageToken;
+  }
 
-  const issues = (data.issues || data || []).map((issue: any) => ({
+  const issues = allIssues.map((issue: any) => ({
     key: issue.key,
     summary: issue.fields?.summary,
     status: {

@@ -2,13 +2,10 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import { useUserOrgs, useOrgLeaderboard, usePrefetchStatus } from "../hooks/useOrgLeaderboard";
-import { DateRangePicker } from "./DateRangePicker";
+import { DateControls } from "./DateControls";
 
-type DateMode = "month" | "year" | "custom";
 type SortKey = "commits" | "prs" | "reviews";
 type SortDir = "asc" | "desc";
-
-const MIN_YEAR = 2008;
 
 function SortHeader({
   label,
@@ -42,53 +39,27 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   githubUsername,
 }) => {
   const { orgs, loading: orgsLoading } = useUserOrgs(active);
-  const now = new Date();
 
   const [org, setOrg] = useState<string | null>(
     localStorage.getItem("leaderboard:defaultOrg") ?? null,
   );
-  const [mode, setMode] = useState<DateMode>("month");
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("commits");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [search, setSearch] = useState("");
-  const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleDateChange = useCallback((start: string, end: string) => {
-    setCustomStart(start);
-    setCustomEnd(end);
-    setMode("custom");
+    setStartDate(start);
+    setEndDate(end);
   }, []);
 
   useEffect(() => {
     if (orgs.length > 0 && !org) setOrg(orgs[0].login);
   }, [orgs, org]);
 
-  const { startDate, endDate } = useMemo(() => {
-    if (mode === "month") {
-      const m = month.toString().padStart(2, "0");
-      const lastDay = new Date(year, month, 0).getDate();
-      return {
-        startDate: `${year}-${m}-01`,
-        endDate: `${year}-${m}-${lastDay.toString().padStart(2, "0")}`,
-      };
-    }
-    if (mode === "year") {
-      return { startDate: `${year}-01-01`, endDate: `${year}-12-31` };
-    }
-    return { startDate: customStart, endDate: customEnd };
-  }, [mode, year, month, customStart, customEnd]);
-
   const prefetch = usePrefetchStatus(active);
-  const { members, loading, error } = useOrgLeaderboard(
-    active && !validationError,
-    org,
-    startDate,
-    endDate,
-  );
+  const { members, loading, error } = useOrgLeaderboard(active, org, startDate, endDate);
 
   const sorted = useMemo(() => {
     const copy = [...members];
@@ -143,6 +114,9 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
 
   return (
     <div>
+      {/* Controls */}
+      <DateControls joinDate="2008-01-01" onDateChange={handleDateChange} className="mb-3" />
+
       {/* Stats Donut + My Stats */}
       {(() => {
         const total = totalCommits + totalPRs + totalReviews;
@@ -415,81 +389,6 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
           </div>
         );
       })()}
-
-      {/* Controls */}
-      <Card className="controls-card mb-3">
-        <Card.Body className="p-3">
-          <div className="d-flex gap-3 align-items-center flex-wrap">
-            {/* Mode selector */}
-            <div className="segmented-control">
-              {(["month", "year", "custom"] as DateMode[]).map((m) => (
-                <button
-                  key={m}
-                  className={`segmented-btn ${mode === m ? "active" : ""}`}
-                  onClick={() => setMode(m)}
-                >
-                  {m.charAt(0).toUpperCase() + m.slice(1)}
-                </button>
-              ))}
-            </div>
-            {mode === "month" && (
-              <div className="d-flex gap-2 align-items-center">
-                <select
-                  className="date-dropdown"
-                  value={month}
-                  onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-                >
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {new Date(year, i).toLocaleString("default", { month: "long" })}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="date-dropdown"
-                  value={year}
-                  onChange={(e) => setYear(parseInt(e.target.value, 10))}
-                >
-                  {Array.from({ length: now.getFullYear() - MIN_YEAR + 1 }, (_, i) => {
-                    const y = now.getFullYear() - i;
-                    return (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            )}
-            {mode === "year" && (
-              <select
-                className="date-dropdown"
-                value={year}
-                onChange={(e) => setYear(parseInt(e.target.value, 10))}
-              >
-                {Array.from({ length: now.getFullYear() - MIN_YEAR + 1 }, (_, i) => {
-                  const y = now.getFullYear() - i;
-                  return (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  );
-                })}
-              </select>
-            )}
-            {mode === "custom" && (
-              <DateRangePicker
-                joinDate={`${MIN_YEAR}-01-01`}
-                onDateChange={handleDateChange}
-                validationError={validationError}
-                onValidationError={setValidationError}
-                initialStart={customStart}
-                initialEnd={customEnd}
-              />
-            )}
-          </div>
-        </Card.Body>
-      </Card>
 
       {members.length > 0 && (
         <div className="mb-3 d-flex gap-2 align-items-center">

@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import { IconChecklist } from "@tabler/icons-react";
 import { JiraIssue } from "../types";
 import { StatusBadge } from "./StatusBadge";
 import { EmptyState } from "./EmptyState";
+import { DateControls } from "./DateControls";
 
 function hashHue(name: string): number {
   let hash = 0;
@@ -50,11 +51,28 @@ interface JiraTasksProps {
 }
 
 export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading, baseUrl }) => {
-  const issues = [...rawIssues].sort(
+  const allIssues = [...rawIssues].sort(
     (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime(),
   );
   const jiraBase = baseUrl?.replace(/\/+$/, "") || "";
   const [activeStatus, setActiveStatus] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<{ start: string; end: string } | null>(null);
+
+  const handleDateChange = useCallback((start: string, end: string) => {
+    setDateRange({ start, end });
+  }, []);
+
+  const issues = useMemo(() => {
+    if (!dateRange) return allIssues;
+    const from = new Date(dateRange.start);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(dateRange.end);
+    to.setHours(23, 59, 59, 999);
+    return allIssues.filter((i) => {
+      const d = new Date(i.updated);
+      return d >= from && d <= to;
+    });
+  }, [allIssues, dateRange]);
 
   const statusBreakdown = useMemo(() => {
     const counts = new Map<string, { count: number; color: string }>();
@@ -108,6 +126,8 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
 
   return (
     <div>
+      <DateControls onDateChange={handleDateChange} />
+
       {/* Status breakdown bar */}
       {statusBreakdown.length > 0 && (
         <div style={{ marginBottom: "0.75rem" }}>
@@ -131,7 +151,15 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
               />
             ))}
           </div>
-          <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.4rem", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.4rem",
+              marginTop: "0.4rem",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
             {statusBreakdown.map((s) => (
               <span
                 key={s.name}

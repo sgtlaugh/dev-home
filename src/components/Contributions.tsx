@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
-import Card from "react-bootstrap/Card";
 import { IconGitPullRequest } from "@tabler/icons-react";
 import { GitHubPR } from "../types";
 import { fetchPRsByDateRange, fetchCommitCount, fetchUserJoinDate } from "../services/github";
@@ -9,14 +8,11 @@ import { EmptyState } from "./EmptyState";
 import { DescriptionModal } from "./DescriptionModal";
 import { RepoBreakdown } from "./RepoBreakdown";
 import { ContributionHeatmap } from "./ContributionHeatmap";
-import { DateRangePicker } from "./DateRangePicker";
+import { DateControls, DateModeInfo } from "./DateControls";
 import { PRListTable } from "./PRListTable";
 import { PRStats } from "./PRStats";
 
-export type DateMode = "month" | "year" | "custom";
 type StateFilter = "all" | "open" | "merged" | "closed";
-
-const MIN_YEAR = 2000;
 
 interface ContributionsProps {
   onCountChange?: (count: number) => void;
@@ -24,25 +20,24 @@ interface ContributionsProps {
 }
 
 export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, active = true }) => {
-  const now = new Date();
-  const [mode, setMode] = useState<DateMode>("month");
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [modeInfo, setModeInfo] = useState<DateModeInfo>({
+    mode: "month",
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+  });
   const [stateFilter, setStateFilter] = useState<StateFilter>("all");
   const [prs, setPrs] = useState<GitHubPR[]>([]);
   const [commitCount, setCommitCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
   const [joinDate, setJoinDate] = useState<string | null>(null);
 
   const handleDateChange = useCallback((start: string, end: string) => {
     setStartDate(start);
     setEndDate(end);
-    setMode("custom");
   }, []);
 
   const abortRef = React.useRef<AbortController | null>(null);
@@ -50,7 +45,7 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
   useEffect(() => {
     fetchUserJoinDate()
       .then(setJoinDate)
-      .catch(() => setJoinDate(`${MIN_YEAR}-01-01`));
+      .catch(() => setJoinDate(null));
   }, []);
 
   useEffect(() => {
@@ -61,21 +56,7 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
     const signal = abortRef.current.signal;
 
     const loadPRs = async () => {
-      let start: string, end: string;
-      if (mode === "month") {
-        const monthStr = month.toString().padStart(2, "0");
-        start = `${year}-${monthStr}-01`;
-        const lastDay = new Date(year, month, 0).getDate();
-        end = `${year}-${monthStr}-${lastDay.toString().padStart(2, "0")}`;
-      } else if (mode === "year") {
-        start = `${year}-01-01`;
-        end = `${year}-12-31`;
-      } else {
-        start = startDate;
-        end = endDate;
-      }
-
-      if (!start || !end) {
+      if (!startDate || !endDate) {
         if (!signal.aborted) {
           setPrs([]);
           setCommitCount(0);
@@ -90,8 +71,8 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
       setError(null);
       try {
         const [prsResult, commits] = await Promise.all([
-          fetchPRsByDateRange(start, end, signal),
-          fetchCommitCount(start, end, signal),
+          fetchPRsByDateRange(startDate, endDate, signal),
+          fetchCommitCount(startDate, endDate, signal),
         ]);
         if (signal.aborted) return;
         setPrs(prsResult);
@@ -108,7 +89,7 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
 
     loadPRs();
     return () => abortRef.current?.abort();
-  }, [mode, year, month, startDate, endDate, onCountChange, active]);
+  }, [startDate, endDate, onCountChange, active]);
 
   const { counts, totalAdditions, totalDeletions } = useMemo(() => {
     let merged = 0,
@@ -165,19 +146,22 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
     [stateFilter],
   );
 
-  const monthLabel = new Date(year, month - 1).toLocaleString("default", {
-    month: "long",
-    year: "numeric",
-  });
-
   const getLabel = () => {
-    if (mode === "month") return monthLabel;
-    if (mode === "year") return year.toString();
+    if (modeInfo.mode === "month") {
+      return new Date(modeInfo.year, modeInfo.month - 1).toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
+    }
+    if (modeInfo.mode === "year") return modeInfo.year.toString();
     return startDate && endDate ? `${startDate} to ${endDate}` : "Custom Range";
   };
 
   return (
     <div>
+      {/* Controls */}
+      <DateControls joinDate={joinDate} onDateChange={handleDateChange} onModeInfo={setModeInfo} />
+
       <PRStats
         counts={counts}
         commitCount={commitCount}
@@ -194,99 +178,13 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
       {prs.length > 0 && (
         <ContributionHeatmap
           prs={prs}
-          mode={mode}
-          year={year}
-          month={month}
-          selectedStart={
-            mode === "month"
-              ? `${year}-${String(month).padStart(2, "0")}-01`
-              : mode === "year"
-                ? `${year}-01-01`
-                : startDate
-          }
-          selectedEnd={
-            mode === "month"
-              ? `${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate().toString().padStart(2, "0")}`
-              : mode === "year"
-                ? `${year}-12-31`
-                : endDate
-          }
+          mode={modeInfo.mode}
+          year={modeInfo.year}
+          month={modeInfo.month}
+          selectedStart={startDate}
+          selectedEnd={endDate}
         />
       )}
-
-      {/* Controls */}
-      <Card className="controls-card mb-4">
-        <Card.Body>
-          <div className="d-flex gap-3 align-items-center flex-wrap">
-            <div className="segmented-control">
-              {(["month", "year", "custom"] as DateMode[]).map((m) => (
-                <button
-                  key={m}
-                  className={`segmented-btn ${mode === m ? "active" : ""}`}
-                  onClick={() => setMode(m)}
-                >
-                  {m.charAt(0).toUpperCase() + m.slice(1)}
-                </button>
-              ))}
-            </div>
-            {mode === "month" && (
-              <div className="d-flex gap-2 align-items-center">
-                <select
-                  className="date-dropdown"
-                  value={month}
-                  onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-                >
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {new Date(year, i).toLocaleString("default", { month: "long" })}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="date-dropdown"
-                  value={year}
-                  onChange={(e) => setYear(parseInt(e.target.value, 10))}
-                >
-                  {Array.from({ length: new Date().getFullYear() - 1999 }, (_, i) => {
-                    const y = new Date().getFullYear() - i;
-                    return (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            )}
-            {mode === "year" && (
-              <select
-                className="date-dropdown"
-                value={year}
-                onChange={(e) => setYear(parseInt(e.target.value, 10))}
-              >
-                {Array.from({ length: new Date().getFullYear() - 1999 }, (_, i) => {
-                  const y = new Date().getFullYear() - i;
-                  return (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  );
-                })}
-              </select>
-            )}
-            {mode === "custom" && (
-              <DateRangePicker
-                joinDate={joinDate}
-                onDateChange={handleDateChange}
-                validationError={validationError}
-                onValidationError={setValidationError}
-                initialStart={startDate}
-                initialEnd={endDate}
-              />
-            )}
-          </div>
-        </Card.Body>
-      </Card>
 
       {error && (
         <div className="alert alert-danger small" role="alert">
