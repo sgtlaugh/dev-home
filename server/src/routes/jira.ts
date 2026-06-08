@@ -272,17 +272,45 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   res.json(result);
 });
 
+const avatarCache = new Map<string, { data: Buffer; contentType: string }>();
+
 router.get("/avatar", async (req: Request, res: Response) => {
-  const url = req.query.url as string;
+  const raw = req.originalUrl;
+  const prefix = "avatar?url=";
+  const idx = raw.indexOf(prefix);
+  const url = idx >= 0 ? raw.slice(idx + prefix.length) : "";
   if (!url) return res.status(400).send("Missing url param");
+
+  const cached = avatarCache.get(url);
+  if (cached) {
+    res.set("Content-Type", cached.contentType);
+    res.set("Cache-Control", "public, max-age=86400");
+    return res.send(cached.data);
+  }
 
   try {
     const axios = (await import("axios")).default;
-    const response = await axios.get(url, { responseType: "arraybuffer", timeout: 5000 });
+    let fetchUrl = url;
+
+    // Gravatar redirects to fallback URL for users without accounts.
+    // The fallback CDN rate-limits aggressively, so extract the d= param and fetch directly.
+    if (url.includes("gravatar.com/avatar")) {
+      const match = url.match(/[?&]d=([^&]+)/);
+      if (match) {
+        const head = await axios.head(url, { maxRedirects: 0, timeout: 3000, validateStatus: () => true });
+        if (head.status === 302) {
+          fetchUrl = decodeURIComponent(match[1]);
+        }
+      }
+    }
+
+    const response = await axios.get(fetchUrl, { responseType: "arraybuffer", timeout: 5000 });
     const contentType = response.headers["content-type"] || "image/png";
+    const data = Buffer.from(response.data);
+    avatarCache.set(url, { data, contentType });
     res.set("Content-Type", contentType);
     res.set("Cache-Control", "public, max-age=86400");
-    res.send(response.data);
+    res.send(data);
   } catch {
     res.status(404).send("Avatar not found");
   }

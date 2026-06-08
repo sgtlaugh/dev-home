@@ -10,18 +10,18 @@ import { API_BASE } from "../services/config";
 
 function JiraAvatar({ url, name }: { url?: string; name: string }) {
   const [failed, setFailed] = useState(false);
-  const proxied = url ? `${API_BASE}/jira/avatar?url=${url}` : "";
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   if (!url || failed) {
-    const initials = name
-      .split(" ")
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
     return <div className="avatar-md avatar-initials">{initials}</div>;
   }
 
+  const proxied = `${API_BASE}/jira/avatar?url=${url}`;
   return <img src={proxied} alt={name} className="avatar-md" onError={() => setFailed(true)} />;
 }
 
