@@ -6,6 +6,24 @@ import { JiraComment } from "../types";
 import { EmptyState } from "./EmptyState";
 import { truncateText } from "../utils/text";
 import { Timestamp } from "./Timestamp";
+import { API_BASE } from "../services/config";
+
+function JiraAvatar({ url, name }: { url?: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  const proxied = url ? `${API_BASE}/jira/avatar?url=${url}` : "";
+
+  if (!url || failed) {
+    const initials = name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+    return <div className="avatar-md avatar-initials">{initials}</div>;
+  }
+
+  return <img src={proxied} alt={name} className="avatar-md" onError={() => setFailed(true)} />;
+}
 
 // Highlight @mentions in text
 function highlightMentions(text: string, maxLen: number = 120): React.ReactNode {
@@ -69,10 +87,9 @@ export const JiraComments: React.FC<JiraCommentsProps> = ({ comments, loading, b
         return (
           <div key={comment.id} className="comment-card">
             <div className="d-flex gap-3 align-items-start">
-              <img
-                src={comment.author.avatarUrls["48x48"]}
-                alt={comment.author.displayName}
-                className="avatar-md"
+              <JiraAvatar
+                url={comment.author.avatarUrls?.["48x48"]}
+                name={comment.author.displayName}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="d-flex justify-content-between align-items-center gap-2">
@@ -91,6 +108,8 @@ export const JiraComments: React.FC<JiraCommentsProps> = ({ comments, loading, b
                         fontSize: "0.75rem",
                         fontWeight: 500,
                         whiteSpace: "nowrap",
+                        minWidth: "5.5rem",
+                        textAlign: "right",
                       }}
                     >
                       {comment.issueKey}
@@ -101,7 +120,12 @@ export const JiraComments: React.FC<JiraCommentsProps> = ({ comments, loading, b
                         className={
                           comment.type === "mentioned" ? "badge-status-blue" : "badge-status-green"
                         }
-                        style={{ fontSize: "0.625rem", padding: "2px 6px" }}
+                        style={{
+                          fontSize: "0.625rem",
+                          padding: "2px 6px",
+                          minWidth: "4.5rem",
+                          textAlign: "center",
+                        }}
                       >
                         {comment.type === "mentioned" ? "@mentioned" : "assigned"}
                       </Badge>

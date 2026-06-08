@@ -272,6 +272,22 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   res.json(result);
 });
 
+router.get("/avatar", async (req: Request, res: Response) => {
+  const url = req.query.url as string;
+  if (!url) return res.status(400).send("Missing url param");
+
+  try {
+    const axios = (await import("axios")).default;
+    const response = await axios.get(url, { responseType: "arraybuffer", timeout: 5000 });
+    const contentType = response.headers["content-type"] || "image/png";
+    res.set("Content-Type", contentType);
+    res.set("Cache-Control", "public, max-age=86400");
+    res.send(response.data);
+  } catch {
+    res.status(404).send("Avatar not found");
+  }
+});
+
 /**
  * GET /api/jira/velocity?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  * Fetch task completion velocity metrics for the date range.

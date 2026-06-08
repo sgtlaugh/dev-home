@@ -879,6 +879,17 @@ a:hover {
   object-fit: cover;
 }
 
+.avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #656d76;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 /* --- Priority icon --- */
 .priority-icon {
   width: 16px;
