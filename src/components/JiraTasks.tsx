@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import { IconChecklist } from "@tabler/icons-react";
@@ -45,6 +45,7 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
     (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime(),
   );
   const jiraBase = baseUrl?.replace(/\/+$/, "") || "";
+  const [activeStatus, setActiveStatus] = useState<string | null>(null);
 
   const statusBreakdown = useMemo(() => {
     const counts = new Map<string, { count: number; color: string }>();
@@ -87,6 +88,9 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
     );
   }
 
+  const filteredIssues = activeStatus
+    ? issues.filter((i) => i.status.name === activeStatus)
+    : issues;
   const hasStoryPoints = issues.some((i) => (i.storyPoints || 0) > 0);
 
   return (
@@ -114,21 +118,27 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
               />
             ))}
           </div>
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.4rem", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.4rem", flexWrap: "wrap" }}>
             {statusBreakdown.map((s) => (
-              <div key={s.name} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                <div
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    backgroundColor: s.color,
-                  }}
-                />
-                <span style={{ fontSize: "0.7rem", color: "#656d76" }}>
-                  {s.name} ({s.count})
-                </span>
-              </div>
+              <span
+                key={s.name}
+                onClick={() => setActiveStatus(activeStatus === s.name ? null : s.name)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontSize: "0.7rem",
+                  padding: "2px 8px",
+                  borderRadius: "999px",
+                  cursor: "pointer",
+                  backgroundColor: activeStatus === s.name ? s.color : `${s.color}15`,
+                  color: activeStatus === s.name ? "#fff" : s.color,
+                  border: `1px solid ${s.color}${activeStatus === s.name ? "" : "30"}`,
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {s.name} ({s.count})
+              </span>
             ))}
           </div>
         </div>
@@ -151,7 +161,7 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
             </tr>
           </thead>
           <tbody>
-            {issues.map((issue) => {
+            {filteredIssues.map((issue) => {
               const browseUrl = jiraBase ? `${jiraBase}/browse/${issue.key}` : "";
               const updatedDate = new Date(issue.updated);
               const short = `${updatedDate.getFullYear()}-${String(updatedDate.getMonth() + 1).padStart(2, "0")}-${String(updatedDate.getDate()).padStart(2, "0")}`;
