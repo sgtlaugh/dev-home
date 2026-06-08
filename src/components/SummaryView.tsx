@@ -57,6 +57,7 @@ interface SectionProps {
   onSeeMore?: () => void;
   headerAction?: React.ReactNode;
   loading?: boolean;
+  tooltip?: string;
 }
 
 function Section({
@@ -68,11 +69,12 @@ function Section({
   onSeeMore,
   headerAction,
   loading,
+  tooltip,
 }: SectionProps) {
   return (
     <Card className="h-100 summary-card" style={{ borderLeft: `3px solid ${accent}` }}>
       <Card.Body className="p-0">
-        <div className="section-header px-3 pt-3 mb-0">
+        <div className="section-header px-3 pt-3 mb-0" title={tooltip}>
           <span
             className="section-icon-bg"
             style={{ backgroundColor: `${accent}15`, color: accent }}
@@ -209,22 +211,52 @@ function HeroStats({
   onNavigate: (tab: string) => void;
 }) {
   const stats = [
-    { label: "Open PRs", count: prCount, color: SECTION_COLORS.prs, tab: "prs" },
-    { label: "Reviews", count: reviewCount, color: SECTION_COLORS.reviews, tab: "reviews" },
-    { label: "JIRA Tasks", count: jiraCount, color: SECTION_COLORS.jira, tab: "jira" },
+    {
+      label: "Open PRs",
+      count: prCount,
+      color: SECTION_COLORS.prs,
+      tab: "prs",
+      tooltip: "Pull requests awaiting merge",
+    },
+    {
+      label: "Reviews",
+      count: reviewCount,
+      color: SECTION_COLORS.reviews,
+      tab: "reviews",
+      tooltip: "Pull requests awaiting your review",
+    },
+    {
+      label: "JIRA Tasks",
+      count: jiraCount,
+      color: SECTION_COLORS.jira,
+      tab: "jira",
+      tooltip: "Issues updated in the last 30 days",
+    },
     {
       label: "Notifications",
       count: notifCount,
       color: SECTION_COLORS.notifications,
       tab: "mentions",
+      tooltip: "Comments where you were mentioned",
     },
-    { label: "Notes", count: noteCount, color: SECTION_COLORS.notes, tab: "notes" },
+    {
+      label: "Notes",
+      count: noteCount,
+      color: SECTION_COLORS.notes,
+      tab: "notes",
+      tooltip: "Personal notes and reminders",
+    },
   ];
 
   return (
     <div className="summary-hero-bar">
       {stats.map((s) => (
-        <div key={s.label} className="summary-hero-stat" onClick={() => onNavigate(s.tab)}>
+        <div
+          key={s.label}
+          className="summary-hero-stat"
+          onClick={() => onNavigate(s.tab)}
+          title={s.tooltip}
+        >
           <div className="summary-hero-count" style={{ color: s.color }}>
             {s.count}
           </div>
@@ -266,13 +298,18 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
 
   const jiraBase = jiraBaseUrl?.replace(/\/+$/, "") || "";
 
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const issuesThisMonth = jiraIssues.filter((issue) => new Date(issue.updated) >= thirtyDaysAgo);
+
   const topReviews = [...reviewRequests]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 5);
   const topPRs = [...openPRs]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 5);
-  const topIssues = [...jiraIssues]
+  const topIssues = [...issuesThisMonth]
     .sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime())
     .slice(0, 5);
   const topNotes = [...notes]
@@ -296,7 +333,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
       <HeroStats
         prCount={openPRs.length}
         reviewCount={reviewRequests.length}
-        jiraCount={jiraIssues.length}
+        jiraCount={issuesThisMonth.length}
         notifCount={jiraComments.length}
         noteCount={notes.length}
         onNavigate={onNavigate}
@@ -313,6 +350,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 accent={SECTION_COLORS.prs}
                 onSeeMore={openPRs.length > 5 ? () => onNavigate("prs") : undefined}
                 loading={openPRsLoading}
+                tooltip="Pull requests awaiting merge"
               >
                 {topPRs.length > 0 ? (
                   topPRs.map((pr) => (
@@ -337,10 +375,11 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
               <Section
                 icon={<IconSubtask size={13} stroke={1.8} />}
                 title="JIRA Tasks"
-                count={jiraIssues.length}
+                count={issuesThisMonth.length}
                 accent={SECTION_COLORS.jira}
-                onSeeMore={jiraIssues.length > 5 ? () => onNavigate("jira") : undefined}
+                onSeeMore={issuesThisMonth.length > 5 ? () => onNavigate("jira") : undefined}
                 loading={jiraIssuesLoading}
+                tooltip="Issues updated in the last 30 days"
               >
                 {topIssues.length > 0 ? (
                   topIssues.map((issue) => (
@@ -375,6 +414,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 accent={SECTION_COLORS.reviews}
                 onSeeMore={reviewRequests.length > 5 ? () => onNavigate("reviews") : undefined}
                 loading={reviewRequestsLoading}
+                tooltip="Pull requests awaiting your review"
               >
                 {topReviews.length > 0 ? (
                   topReviews.map((r) => (
@@ -402,6 +442,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 accent={SECTION_COLORS.notifications}
                 onSeeMore={jiraComments.length > 5 ? () => onNavigate("mentions") : undefined}
                 loading={jiraCommentsLoading}
+                tooltip="Comments where you were mentioned"
               >
                 {allMentions.length > 0 ? (
                   allMentions.map((m) => (
@@ -428,6 +469,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             accent={SECTION_COLORS.notes}
             onSeeMore={notes.length > 10 ? () => onNavigate("notes") : undefined}
             loading={notesLoading}
+            tooltip="Personal notes and reminders"
             headerAction={
               <Button
                 variant="outline-secondary"
