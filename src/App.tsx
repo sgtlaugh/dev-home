@@ -36,6 +36,7 @@ import { JiraVelocity } from "./components/JiraVelocity";
 import { TeamActivity } from "./components/TeamActivity";
 import { OrgLeaderboard } from "./components/OrgLeaderboard";
 import { useActivity } from "./hooks/useActivity";
+import { useActivityCount } from "./hooks/useActivityCount";
 import { useTeamActivity } from "./hooks/useTeamActivity";
 import { useGitHubRateLimit } from "./hooks/useGitHubRateLimit";
 import { usePrefetchStatus } from "./hooks/useOrgLeaderboard";
@@ -76,11 +77,13 @@ export default function App() {
     removeNote,
     refresh: refreshNotes,
   } = useNotes(configured);
+  const isActivityTab = activeTab === "activity" || activeTab === "jira-activity";
   const {
     activities,
     loading: activityLoading,
     refresh: refreshActivity,
-  } = useActivity(configured);
+  } = useActivity(configured && isActivityTab);
+  const activityCounts = useActivityCount(configured);
   const { activities: teamActivities, refresh: refreshTeamActivity } = useTeamActivity(configured);
   const { rateLimit } = useGitHubRateLimit(configured);
   const prefetch = usePrefetchStatus(configured);
@@ -219,8 +222,12 @@ export default function App() {
                 prs: openPRs.length,
                 reviews: reviewRequests.length,
                 peers: teamActivities.length,
-                activity: activities.filter((a) => a.type === "github").length,
-                "jira-activity": activities.filter((a) => a.type === "jira").length,
+                activity: isActivityTab
+                  ? activities.filter((a) => a.type === "github").length
+                  : activityCounts.github,
+                "jira-activity": isActivityTab
+                  ? activities.filter((a) => a.type === "jira").length
+                  : activityCounts.jira,
                 mentions: jiraComments.length,
                 notes: unresolvedNotes.length,
               };

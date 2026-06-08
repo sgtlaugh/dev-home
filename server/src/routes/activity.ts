@@ -44,11 +44,10 @@ interface ActivityItem {
  * GET /api/activity
  * Fetch recent activity from JIRA and GitHub (last 48 hours)
  */
-router.get("/", async (_req: Request, res: Response) => {
-  const cacheKey = "activity:recent";
-  const cached = apiCache.get(cacheKey);
-  if (cached) return res.json(cached);
+let refreshInProgress = false;
+const ACTIVITY_CACHE_KEY = "activity:recent";
 
+async function refreshActivityCache(): Promise<{ activities: ActivityItem[] }> {
   const [jiraActivities, githubActivities] = await Promise.all([
     fetchJiraActivity(),
     fetchGitHubActivity(),
@@ -61,8 +60,39 @@ router.get("/", async (_req: Request, res: Response) => {
   logger.info("Activity", `Found ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub = ${allActivities.length} total`);
 
   const result = { activities: allActivities };
-  apiCache.set(cacheKey, result, SHORT_CACHE_TTL);
+  apiCache.set(ACTIVITY_CACHE_KEY, result, SHORT_CACHE_TTL);
+  return result;
+}
+
+router.get("/", async (_req: Request, res: Response) => {
+  const stale = apiCache.getStale<{ activities: ActivityItem[] }>(ACTIVITY_CACHE_KEY);
+  if (stale) {
+    if (stale.fresh) return res.json(stale.data);
+
+    res.json(stale.data);
+    if (!refreshInProgress) {
+      refreshInProgress = true;
+      refreshActivityCache().finally(() => { refreshInProgress = false; });
+    }
+    return;
+  }
+
+  const result = await refreshActivityCache();
   res.json(result);
+});
+
+router.get("/count", async (_req: Request, res: Response) => {
+  const cacheKey = "activity:recent";
+  const stale = apiCache.getStale<{ activities: ActivityItem[] }>(ACTIVITY_CACHE_KEY);
+  const acts = stale
+    ? stale.data.activities
+    : (await refreshActivityCache()).activities;
+
+  res.json({
+    github: acts.filter(a => a.type === "github").length,
+    jira: acts.filter(a => a.type === "jira").length,
+    total: acts.length,
+  });
 });
 
 function truncatePreview(text: string): string {
@@ -268,6 +298,61 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
     logError("Activity/GitHub user profile", err);
   }
 
+  const sinceDate = new Date(thirtyDaysAgo).toISOString().slice(0, 10);
+  const untilDate = new Date().toISOString().slice(0, 10);
+
+  const PR_ACTIVITY_QUERY = `
+    query($query: String!, $first: Int!) {
+      search(query: $query, type: ISSUE, first: $first) {
+        nodes {
+          ... on PullRequest {
+            number
+            title
+            url
+            state
+            merged
+            createdAt
+            mergedAt
+            closedAt
+            author { login avatarUrl }
+            mergedBy { login avatarUrl }
+            repository { nameWithOwner }
+          }
+        }
+      }
+    }
+  `;
+
+  const repoDiscoveryPromise = graphql<{
+    viewer: {
+      contributionsCollection: {
+        commitContributionsByRepository: { repository: { nameWithOwner: string; defaultBranchRef: { name: string } | null } }[];
+      };
+    };
+  }>(
+    `query {
+      viewer {
+        contributionsCollection(from: "${sinceDate}T00:00:00Z", to: "${untilDate}T23:59:59Z") {
+          commitContributionsByRepository(maxRepositories: 100) {
+            repository { nameWithOwner defaultBranchRef { name } }
+          }
+        }
+      }
+    }`,
+    {},
+    "activity/repo-discovery",
+  ).catch(err => { logError("Activity/GitHub repo discovery", err); return null; });
+
+  const prSupplementPromise = graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
+    query: `author:${config.githubUsername} type:pr created:>=${sinceDate}`,
+    first: 100,
+  }, "activity/pr-supplement").catch(err => { logError("Activity/GitHub GraphQL PRs", err); return null; });
+
+  const mergedPrsPromise = graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
+    query: `involves:${config.githubUsername} type:pr is:merged merged:>=${sinceDate}`,
+    first: 100,
+  }, "activity/merged-prs").catch(err => { logError("Activity/GitHub merged PRs", err); return null; });
+
   try {
     const { data: events } = await github.get(`/users/${config.githubUsername}/events`, { params: { per_page: 300 } });
 
@@ -468,12 +553,59 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       }
     }
 
+    const commitFetches: Promise<void>[] = [];
     for (const [repoFullName, branches] of pushBranches) {
       for (const branch of branches) {
-        try {
-          const commits = await fetchAllCommits(github, repoFullName, {
+        commitFetches.push(
+          fetchAllCommits(github, repoFullName, {
             sha: branch, author: config.githubUsername, since,
-          });
+          }).then(commits => {
+            for (const commit of commits) {
+              if (seenShas.has(commit.sha)) continue;
+              seenShas.add(commit.sha);
+              const firstLine = (commit.commit?.message || "").split("\n")[0].slice(0, 120);
+              activities.push({
+                id: `github-commit-${commit.sha}`,
+                type: "github",
+                action: "Committed",
+                title: `${repoFullName}: ${firstLine}`,
+                url: commit.html_url,
+                timestamp: commit.commit?.author?.date || commit.commit?.committer?.date,
+                entityKey: `${repoFullName}:${commit.sha}`,
+                metadata: { actor: userActor },
+              });
+            }
+          }).catch((err: any) => {
+            if (err?.response?.status === 404) {
+              logger.warn("Activity", `Repo not found: ${repoFullName}@${branch}`);
+            } else {
+              logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
+            }
+          }),
+        );
+      }
+    }
+    await Promise.all(commitFetches);
+  } catch (err) {
+    logger.error("Activity", "Failed to fetch GitHub events", { error: String(err) });
+  }
+
+  const [repoDiscovery, prSupplement, mergedPrs] = await Promise.all([
+    repoDiscoveryPromise, prSupplementPromise, mergedPrsPromise,
+  ]);
+
+  if (repoDiscovery) {
+    const repos = repoDiscovery.viewer.contributionsCollection.commitContributionsByRepository || [];
+    let supplementCount = 0;
+
+    const supplementFetches = repos
+      .filter(entry => !pushBranches.has(entry.repository.nameWithOwner))
+      .map(entry => {
+        const repoFullName = entry.repository.nameWithOwner;
+        const defaultBranch = entry.repository.defaultBranchRef?.name || "main";
+        return fetchAllCommits(github, repoFullName, {
+          sha: defaultBranch, author: config.githubUsername, since,
+        }).then(commits => {
           for (const commit of commits) {
             if (seenShas.has(commit.sha)) continue;
             seenShas.add(commit.sha);
@@ -488,119 +620,24 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
               entityKey: `${repoFullName}:${commit.sha}`,
               metadata: { actor: userActor },
             });
+            supplementCount++;
           }
-        } catch (err: any) {
+        }).catch((err: any) => {
           if (err?.response?.status === 404) {
-            logger.warn("Activity", `Repo not found: ${repoFullName}@${branch}`);
+            logger.warn("Activity", `Repo not found: ${repoFullName}@${defaultBranch}`);
           } else {
-            logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
+            logError("Activity/GitHub commit supplement", err, { repo: repoFullName });
           }
-        }
-      }
-    }
-  } catch (err) {
-    logger.error("Activity", "Failed to fetch GitHub events", { error: String(err) });
-  }
-
-  // Discover ALL repos with commits via GraphQL (events API limited to 300 events)
-  const sinceDate = new Date(thirtyDaysAgo).toISOString().slice(0, 10);
-  const untilDate = new Date().toISOString().slice(0, 10);
-  try {
-    const repoDiscovery = await graphql<{
-      viewer: {
-        contributionsCollection: {
-          commitContributionsByRepository: { repository: { nameWithOwner: string; defaultBranchRef: { name: string } | null } }[];
-        };
-      };
-    }>(
-      `query {
-        viewer {
-          contributionsCollection(from: "${sinceDate}T00:00:00Z", to: "${untilDate}T23:59:59Z") {
-            commitContributionsByRepository(maxRepositories: 100) {
-              repository { nameWithOwner defaultBranchRef { name } }
-            }
-          }
-        }
-      }`,
-      {},
-      "activity/repo-discovery",
-    );
-
-    const repos = repoDiscovery.viewer.contributionsCollection.commitContributionsByRepository || [];
-    let supplementCount = 0;
-
-    for (const entry of repos) {
-      const repoFullName = entry.repository.nameWithOwner;
-      const defaultBranch = entry.repository.defaultBranchRef?.name || "main";
-
-      // Skip repos already fetched via events
-      if (pushBranches.has(repoFullName)) continue;
-
-      try {
-        const commits = await fetchAllCommits(github, repoFullName, {
-          sha: defaultBranch, author: config.githubUsername, since,
         });
-        for (const commit of commits) {
-          if (seenShas.has(commit.sha)) continue;
-          seenShas.add(commit.sha);
-          const firstLine = (commit.commit?.message || "").split("\n")[0].slice(0, 120);
-          activities.push({
-            id: `github-commit-${commit.sha}`,
-            type: "github",
-            action: "Committed",
-            title: `${repoFullName}: ${firstLine}`,
-            url: commit.html_url,
-            timestamp: commit.commit?.author?.date || commit.commit?.committer?.date,
-            entityKey: `${repoFullName}:${commit.sha}`,
-            metadata: { actor: userActor },
-          });
-          supplementCount++;
-        }
-      } catch (err: any) {
-        if (err?.response?.status === 404) {
-          logger.warn("Activity", `Repo not found: ${repoFullName}@${defaultBranch}`);
-        } else {
-          logError("Activity/GitHub commit supplement", err, { repo: repoFullName });
-        }
-      }
-    }
-
+      });
+    await Promise.all(supplementFetches);
     logger.info("Activity", `GraphQL repo discovery: ${repos.length} repos, ${supplementCount} extra commits`);
-  } catch (err) {
-    logError("Activity/GitHub repo discovery", err);
   }
+
   const seenEntityKeys = new Set(activities.filter((a) => a.action.includes("PR")).map((a) => a.entityKey));
 
-  const PR_ACTIVITY_QUERY = `
-    query($query: String!, $first: Int!) {
-      search(query: $query, type: ISSUE, first: $first) {
-        nodes {
-          ... on PullRequest {
-            number
-            title
-            url
-            state
-            merged
-            createdAt
-            mergedAt
-            closedAt
-            author { login avatarUrl }
-            mergedBy { login avatarUrl }
-            repository { nameWithOwner }
-          }
-        }
-      }
-    }
-  `;
-
-  try {
-
-    const result = await graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
-      query: `author:${config.githubUsername} type:pr created:>=${sinceDate}`,
-      first: 100,
-    }, "activity/pr-supplement");
-
-    for (const pr of result.search.nodes || []) {
+  if (prSupplement) {
+    for (const pr of prSupplement.search.nodes || []) {
       const repoName = pr.repository?.nameWithOwner || "";
       const entityKey = `${repoName}#${pr.number}`;
 
@@ -631,21 +668,12 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
         });
       }
     }
-
-    logger.info("Activity", `GraphQL PR supplement: ${result.search.nodes?.length || 0} PRs checked`);
-  } catch (err) {
-    logError("Activity/GitHub GraphQL PRs", err);
+    logger.info("Activity", `GraphQL PR supplement: ${prSupplement.search.nodes?.length || 0} PRs checked`);
   }
 
-  // Fetch PRs user merged (including org repos) via involves: search + mergedBy filter
-  try {
-    const mergedResult = await graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
-      query: `involves:${config.githubUsername} type:pr is:merged merged:>=${sinceDate}`,
-      first: 100,
-    }, "activity/merged-prs");
-
+  if (mergedPrs) {
     let mergedCount = 0;
-    for (const pr of mergedResult.search.nodes || []) {
+    for (const pr of mergedPrs.search.nodes || []) {
       if (pr.mergedBy?.login !== config.githubUsername) continue;
 
       const repoName = pr.repository?.nameWithOwner || "";
@@ -666,9 +694,7 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
         mergedCount++;
       }
     }
-    logger.info("Activity", `GraphQL merged PRs: ${mergedResult.search.nodes?.length || 0} checked, ${mergedCount} by user`);
-  } catch (err) {
-    logError("Activity/GitHub merged PRs", err);
+    logger.info("Activity", `GraphQL merged PRs: ${mergedPrs.search.nodes?.length || 0} checked, ${mergedCount} by user`);
   }
 
   logger.info("Activity", `GitHub: ${activities.length} activities`);

@@ -45,6 +45,17 @@ class ApiCache {
     return JSON.parse(row.data);
   }
 
+  getStale<T>(key: string): { data: T; fresh: boolean } | null {
+    const row = this.db.prepare("SELECT data, timestamp FROM cache WHERE key = ?").get(key) as
+      | { data: string; timestamp: number }
+      | undefined;
+
+    if (!row) return null;
+
+    const age = Date.now() - row.timestamp;
+    return { data: JSON.parse(row.data), fresh: age <= this.ttl };
+  }
+
   set<T>(key: string, data: T, ttlMs?: number): void {
     logger.debug("Cache", `SET ${key}${ttlMs ? ` (ttl: ${Math.round(ttlMs / 1000)}s)` : ""}`);
     const effectiveTimestamp = ttlMs ? Date.now() + ttlMs - this.ttl : Date.now();

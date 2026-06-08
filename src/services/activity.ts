@@ -15,3 +15,14 @@ export async function fetchActivity(): Promise<ActivityItem[]> {
   const { data } = await apiClient.get("/activity");
   return data.activities;
 }
+
+export interface ActivityCount {
+  github: number;
+  jira: number;
+  total: number;
+}
+
+export async function fetchActivityCount(): Promise<ActivityCount> {
+  const { data } = await apiClient.get("/activity/count");
+  return data;
+}
