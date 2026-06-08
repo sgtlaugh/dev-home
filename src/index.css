@@ -1459,6 +1459,8 @@ a,
   font-weight: 600;
   color: #e3795c;
   margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .activity-hour-heatmap {
