@@ -35,6 +35,40 @@ interface ActivityTimelineProps {
   currentUsername?: string;
 }
 
+function getLocalDateString(timestamp: string): string {
+  const date = new Date(timestamp);
+  return (
+    date.getFullYear() +
+    "-" +
+    String(date.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(date.getDate()).padStart(2, "0")
+  );
+}
+
+function getLocalDateForRange(): string {
+  const d = new Date();
+  return (
+    d.getFullYear() +
+    "-" +
+    String(d.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(d.getDate()).padStart(2, "0")
+  );
+}
+
+function getLocalDateMinusDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return (
+    d.getFullYear() +
+    "-" +
+    String(d.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(d.getDate()).padStart(2, "0")
+  );
+}
+
 function getActivityIcon(item: ActivityItem) {
   if (item.type === "github") {
     if (item.action.includes("commit") || item.action.includes("Committed"))
@@ -139,7 +173,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   const dailyCounts = useMemo(() => {
     const countsByDateCat = new Map<string, Map<string, number>>();
     for (const a of filteredActivities) {
-      const day = a.timestamp.slice(0, 10);
+      const day = getLocalDateString(a.timestamp);
       const cat = categorizeAction(a.action);
       if (!countsByDateCat.has(day)) countsByDateCat.set(day, new Map());
       const dayMap = countsByDateCat.get(day)!;
@@ -153,11 +187,8 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
       count: number;
       segments: { category: string; count: number; color: string }[];
     }[] = [];
-    const now = new Date();
     for (let i = ACTIVITY_LOOKBACK_DAYS - 1; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
+      const key = getLocalDateMinusDays(i);
       const dayCats = countsByDateCat.get(key);
       const segments: { category: string; count: number; color: string }[] = [];
       let total = 0;

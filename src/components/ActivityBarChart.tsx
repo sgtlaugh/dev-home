@@ -79,8 +79,8 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts,
     if (!activities || activities.length === 0) return null;
     const counts = new Array(24).fill(0);
     for (const a of activities) {
-      const hour = new Date(a.timestamp).getHours();
-      counts[hour]++;
+      const localHour = new Date(a.timestamp).getHours();
+      counts[localHour]++;
     }
     return counts as number[];
   }, [activities]);
