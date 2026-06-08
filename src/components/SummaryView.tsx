@@ -44,7 +44,7 @@ const SECTION_COLORS: Record<string, string> = {
   reviews: "#8250df",
   jira: "#0969da",
   notifications: "#e3795c",
-  notes: "#656d76",
+  notes: "#0d9488",
 };
 
 interface SectionProps {
