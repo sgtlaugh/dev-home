@@ -9,7 +9,7 @@ import { EmptyState } from "./EmptyState";
 function hashHue(name: string): number {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash = name.charCodeAt(i) + ((hash << 10) - hash);
   }
   return ((hash % 360) + 360) % 360;
 }
