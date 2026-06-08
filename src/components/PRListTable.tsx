@@ -9,32 +9,6 @@ interface PRListTableProps {
   onPRClick: (pr: GitHubPR) => void;
 }
 
-const statusBadge = (pr: GitHubPR) => {
-  const badgeStyle = {
-    fontSize: "0.6rem",
-    display: "inline-block",
-    width: 46,
-    textAlign: "center" as const,
-  };
-  if (pr.merged)
-    return (
-      <Badge bg="" className="badge-status-purple" style={badgeStyle}>
-        Merged
-      </Badge>
-    );
-  if (pr.state === "open")
-    return (
-      <Badge bg="" className="badge-status-green" style={badgeStyle}>
-        Open
-      </Badge>
-    );
-  return (
-    <Badge bg="" className="badge-status-red" style={badgeStyle}>
-      Closed
-    </Badge>
-  );
-};
-
 function formatDate(timestamp: string) {
   const d = new Date(timestamp);
   const yyyy = d.getFullYear();
@@ -48,77 +22,84 @@ function formatDate(timestamp: string) {
   };
 }
 
-const PRRow = memo(function PRRow({
-  pr,
-  index,
-  onClick,
-}: {
-  pr: GitHubPR;
-  index: number;
-  onClick: () => void;
-}) {
+function statusLabel(pr: GitHubPR): { text: string; cls: string } {
+  if (pr.merged) return { text: "Merged", cls: "badge-status-purple" };
+  if (pr.state === "open") return { text: "Open", cls: "badge-status-green" };
+  return { text: "Closed", cls: "badge-status-red" };
+}
+
+const PRRow = memo(function PRRow({ pr, onClick }: { pr: GitHubPR; onClick: () => void }) {
   const iconColor = pr.merged ? "#8250df" : pr.state === "open" ? "#1a7f37" : "#cf222e";
   const { short, full } = formatDate(pr.created_at);
+  const status = statusLabel(pr);
 
   return (
     <tr className="pr-table-row" onClick={onClick} style={{ cursor: "pointer" }}>
       <td
         style={{
-          width: 28,
-          color: "#656d76",
-          fontSize: "0.7rem",
-          textAlign: "right",
-          paddingRight: 4,
+          width: 20,
+          paddingRight: 0,
+          color: iconColor,
+          verticalAlign: "top",
+          paddingTop: 12,
         }}
       >
-        {index}
+        {pr.merged ? <IconGitMerge size={15} /> : <IconGitPullRequest size={15} />}
       </td>
       <td>
-        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+        <div>
           <a
             href={pr.html_url}
             target="_blank"
             rel="noopener noreferrer"
             className="activity-title"
             onClick={(e) => e.stopPropagation()}
-            style={{ fontSize: "0.8rem", wordBreak: "break-word", whiteSpace: "normal" }}
+            style={{ fontSize: "0.8125rem" }}
           >
-            #{pr.number} {pr.title}
+            {pr.title}
           </a>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-            <Badge
-              bg=""
-              className="badge-status-neutral"
-              style={{ fontSize: "0.55rem", fontWeight: 500 }}
-            >
-              {pr.repo_full_name}
-            </Badge>
-            <span className="branch-tag" style={{ fontSize: "0.6rem" }}>
-              {pr.head.ref}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              marginTop: 2,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={{ fontSize: "0.65rem", color: "#656d76" }}>
+              {pr.repo_full_name}#{pr.number}
             </span>
-            <span style={{ fontSize: "0.6rem", color: "#656d76" }}>→</span>
             <span className="branch-tag" style={{ fontSize: "0.6rem" }}>
-              {pr.base.ref}
-            </span>
-            <span style={{ color: iconColor, display: "flex", alignItems: "center" }}>
-              {pr.merged ? <IconGitMerge size={12} /> : <IconGitPullRequest size={12} />}
+              {pr.head.ref} → {pr.base.ref}
             </span>
           </div>
         </div>
       </td>
-      <td style={{ width: 90 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "-6px" }}>
-          {statusBadge(pr)}
+      <td style={{ width: 80, verticalAlign: "middle" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "5px", marginLeft: "-6px" }}>
+          <Badge
+            bg=""
+            className={status.cls}
+            style={{
+              fontSize: "0.575rem",
+              display: "inline-block",
+              width: 44,
+              textAlign: "center",
+            }}
+          >
+            {status.text}
+          </Badge>
           {pr.draft && (
-            <Badge bg="" className="badge-status-neutral" style={{ fontSize: "0.55rem" }}>
+            <Badge bg="" className="badge-status-neutral" style={{ fontSize: "0.5rem" }}>
               Draft
             </Badge>
           )}
           <ChecksStatusIcon status={pr.checks_status} />
         </div>
       </td>
-      <td style={{ whiteSpace: "nowrap", width: 90 }}>
-        <span className="activity-time" title={full}>
+      <td style={{ whiteSpace: "nowrap", width: 80, verticalAlign: "middle" }}>
+        <span className="activity-time" title={full} style={{ fontSize: "0.75rem" }}>
           {short}
         </span>
       </td>
@@ -131,15 +112,15 @@ export const PRListTable: React.FC<PRListTableProps> = ({ prs, onPRClick }) => {
     <table className="pr-list-table">
       <thead>
         <tr>
-          <th style={{ width: 28 }} />
+          <th style={{ width: 20 }} />
           <th>Pull Request</th>
-          <th style={{ width: 90 }}>Status</th>
-          <th style={{ width: 90 }}>Date</th>
+          <th style={{ width: 80 }}>Status</th>
+          <th style={{ width: 80 }}>Date</th>
         </tr>
       </thead>
       <tbody>
-        {prs.map((pr, i) => (
-          <PRRow key={pr.id} pr={pr} index={i + 1} onClick={() => onPRClick(pr)} />
+        {prs.map((pr) => (
+          <PRRow key={pr.id} pr={pr} onClick={() => onPRClick(pr)} />
         ))}
       </tbody>
     </table>
