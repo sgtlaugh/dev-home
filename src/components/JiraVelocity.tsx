@@ -7,6 +7,7 @@ import { useJiraVelocity } from "../hooks/useJiraVelocity";
 import { useConfig } from "../hooks/useConfig";
 import { EmptyState } from "./EmptyState";
 import { VelocityChart } from "./VelocityChart";
+import { getLocalDateString } from "../utils/dateUtils";
 
 type Preset = "30d" | "90d" | "6mo" | "1y";
 
@@ -53,24 +54,14 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
   }, [preset]);
 
   const { startDate, endDate } = useMemo(() => {
-    const formatLocalDate = (d: Date) => {
-      return (
-        d.getFullYear() +
-        "-" +
-        String(d.getMonth() + 1).padStart(2, "0") +
-        "-" +
-        String(d.getDate()).padStart(2, "0")
-      );
-    };
-
     const now = new Date();
-    const end = formatLocalDate(now);
+    const end = getLocalDateString(now.toISOString());
     const from = new Date(now);
     if (preset === "30d") from.setDate(from.getDate() - 30);
     else if (preset === "90d") from.setDate(from.getDate() - 90);
     else if (preset === "6mo") from.setMonth(from.getMonth() - 6);
     else from.setFullYear(from.getFullYear() - 1);
-    return { startDate: formatLocalDate(from), endDate: end };
+    return { startDate: getLocalDateString(from.toISOString()), endDate: end };
   }, [preset]);
 
   const { metrics, completedIssues, loading, error } = useJiraVelocity(startDate, endDate, active);
