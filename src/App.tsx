@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Badge from "react-bootstrap/Badge";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
 import { apiClient } from "./services/config";
@@ -214,20 +213,19 @@ export default function App() {
                 );
               }
 
+              if (!item.icon) return null;
+
               const countMap: Record<string, number | undefined> = {
                 prs: openPRs.length,
                 reviews: reviewRequests.length,
                 peers: teamActivities.length,
-                jira: jiraIssues.length,
-                mentions: jiraComments.length,
                 activity: activities.filter((a) => a.type === "github").length,
                 "jira-activity": activities.filter((a) => a.type === "jira").length,
-                contributions: currentMonthPRsCount,
+                mentions: jiraComments.length,
                 notes: unresolvedNotes.length,
               };
               const count = item.key ? countMap[item.key] : undefined;
 
-              if (!item.icon) return null;
               return (
                 <button
                   key={item.key}
@@ -235,13 +233,15 @@ export default function App() {
                   onClick={() => setActiveTab(item.key!)}
                   title={item.label}
                 >
-                  <item.icon size={18} />
-                  <span className="sidebar-tab-label">{item.label}</span>
-                  {count !== undefined && count > 0 && (
-                    <Badge bg="secondary" pill className="sidebar-badge">
-                      {count}
-                    </Badge>
-                  )}
+                  <span className="sidebar-icon">
+                    <item.icon size={16} />
+                  </span>
+                  <span className="sidebar-tab-label">
+                    {item.label}
+                    {count !== undefined && count > 0 && (
+                      <span className="sidebar-count-sup">{count}</span>
+                    )}
+                  </span>
                 </button>
               );
             })}

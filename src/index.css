@@ -288,15 +288,17 @@ a:hover {
   gap: 8px;
   padding: 8px 10px;
   border: none;
-  border-radius: 6px;
+  border-left: 3px solid transparent;
+  border-radius: 0 6px 6px 0;
   background: transparent;
   color: #656d76;
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   transition:
-    background-color 150ms ease,
-    color 150ms ease;
+    background-color 200ms ease,
+    color 200ms ease,
+    border-color 200ms ease;
   white-space: nowrap;
   text-align: left;
   width: 100%;
@@ -304,12 +306,13 @@ a:hover {
 
 .sidebar-tab:hover {
   color: #1f2328;
-  background-color: #eaeef2;
+  background-color: rgba(234, 238, 242, 0.6);
 }
 
 .sidebar-tab.active {
   color: #0969da;
-  background-color: rgba(31, 111, 235, 0.133);
+  background-color: rgba(31, 111, 235, 0.08);
+  border-left-color: #0969da;
   font-weight: 600;
 }
 
@@ -318,16 +321,50 @@ a:hover {
   outline: none;
 }
 
+.sidebar-tab .sidebar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background-color: rgba(101, 109, 118, 0.08);
+  flex-shrink: 0;
+  transition: background-color 200ms ease;
+}
+
+.sidebar-tab:hover .sidebar-icon {
+  background-color: rgba(101, 109, 118, 0.14);
+}
+
+.sidebar-tab.active .sidebar-icon {
+  background-color: rgba(9, 105, 218, 0.12);
+  color: #0969da;
+}
+
 .sidebar-tab-label {
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
 }
 
-.sidebar-badge {
-  font-size: 0.625rem;
-  padding: 2px 6px;
-  flex-shrink: 0;
+.sidebar-count-sup {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  color: #fff;
+  background-color: #0d9488;
+  border-radius: 999px;
+  padding: 0 4px;
+  line-height: 1.4;
+  vertical-align: super;
+  margin-left: 3px;
+  display: inline-block;
+  min-width: 14px;
+  text-align: center;
+}
+
+.sidebar-tab.active .sidebar-count-sup {
+  background-color: #0969da;
 }
 
 .sidebar-separator {
@@ -339,7 +376,7 @@ a:hover {
   font-size: 0.75rem;
   font-weight: 600;
   color: #656d76;
-  padding: 8px 12px 4px 12px;
+  padding: 8px 10px 4px 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   flex-shrink: 0;
@@ -386,9 +423,14 @@ a:hover {
   gap: 0;
 }
 
-.sidebar.collapsed .sidebar-tab-label,
-.sidebar.collapsed .sidebar-badge {
+.sidebar.collapsed .sidebar-tab-label {
   display: none;
+}
+
+
+.sidebar.collapsed .sidebar-tab {
+  border-left: none;
+  border-radius: 6px;
 }
 
 /* --- Sidebar Transition --- */
