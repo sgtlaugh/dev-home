@@ -7,8 +7,6 @@ import { ChecksStatusIcon } from "./ChecksStatusIcon";
 interface PRListTableProps {
   prs: GitHubPR[];
   onPRClick: (pr: GitHubPR) => void;
-  sortAsc: boolean;
-  onToggleSort: () => void;
 }
 
 const statusBadge = (pr: GitHubPR) => {
@@ -122,12 +120,7 @@ const PRRow = memo(function PRRow({
   );
 });
 
-export const PRListTable: React.FC<PRListTableProps> = ({
-  prs,
-  onPRClick,
-  sortAsc,
-  onToggleSort,
-}) => {
+export const PRListTable: React.FC<PRListTableProps> = ({ prs, onPRClick }) => {
   return (
     <table className="pr-list-table">
       <thead>
@@ -136,13 +129,7 @@ export const PRListTable: React.FC<PRListTableProps> = ({
           <th style={{ width: 28 }} />
           <th style={{ width: 90 }}>Status</th>
           <th>Pull Request</th>
-          <th
-            style={{ width: 90, cursor: "pointer", userSelect: "none" }}
-            onClick={onToggleSort}
-            title={sortAsc ? "Oldest first" : "Newest first"}
-          >
-            Date {sortAsc ? "↑" : "↓"}
-          </th>
+          <th style={{ width: 90 }}>Date</th>
         </tr>
       </thead>
       <tbody>

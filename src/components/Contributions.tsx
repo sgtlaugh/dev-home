@@ -111,7 +111,6 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
     };
   }, [prs]);
 
-  const [sortAsc, setSortAsc] = useState(false);
   const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
 
   const toggleRepo = useCallback((repo: string) => {
@@ -133,11 +132,10 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
       if (selectedRepos.size > 0 && !selectedRepos.has(pr.repo_full_name)) return false;
       return true;
     });
-    const dir = sortAsc ? 1 : -1;
     return [...filtered].sort(
-      (a, b) => dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
-  }, [prs, stateFilter, sortAsc, selectedRepos]);
+  }, [prs, stateFilter, selectedRepos]);
 
   const toggleFilter = useCallback(
     (key: StateFilter) => {
@@ -234,12 +232,7 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
               </span>
             )}
           </div>
-          <PRListTable
-            prs={filteredPrs}
-            onPRClick={setSelectedPR}
-            sortAsc={sortAsc}
-            onToggleSort={() => setSortAsc((v) => !v)}
-          />
+          <PRListTable prs={filteredPrs} onPRClick={setSelectedPR} />
         </>
       )}
 
