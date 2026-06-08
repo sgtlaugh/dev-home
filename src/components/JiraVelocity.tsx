@@ -41,7 +41,6 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
     }
     return "30d";
   });
-  const [showAllIssues, setShowAllIssues] = useState(false);
   const { jiraBaseUrl } = useConfig();
   const jiraBase = jiraBaseUrl?.replace(/\/+$/, "") || "";
 
@@ -51,10 +50,6 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
     } catch {
       /* ignore */
     }
-  }, [preset]);
-
-  React.useEffect(() => {
-    setShowAllIssues(false);
   }, [preset]);
 
   const { startDate, endDate } = useMemo(() => {
@@ -80,7 +75,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
   const trendArrow =
     metrics?.velocity.trendPercentage && metrics.velocity.trendPercentage > 0 ? "↑" : "↓";
 
-  const visibleIssues = showAllIssues ? completedIssues : completedIssues.slice(0, 10);
+  const visibleIssues = completedIssues;
 
   const typeBreakdown = useMemo(() => {
     const counts = new Map<string, number>();
@@ -368,16 +363,6 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                     </tbody>
                   </table>
                 </div>
-                {completedIssues.length > 10 && (
-                  <div style={{ textAlign: "center", marginTop: 4 }}>
-                    <button
-                      className="see-more-btn"
-                      onClick={() => setShowAllIssues(!showAllIssues)}
-                    >
-                      {showAllIssues ? "Show less" : `Show all ${completedIssues.length} issues`}
-                    </button>
-                  </div>
-                )}
               </Card.Body>
             </Card>
           )}
