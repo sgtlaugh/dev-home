@@ -1693,8 +1693,8 @@ a,
 
 /* ── Activity filters ── */
 .activity-stat-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -1702,18 +1702,18 @@ a,
 .activity-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .activity-filter-chip {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  font-size: 0.7rem;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 0.725rem;
   font-weight: 600;
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid #d1d9e0;
   background: transparent;
   color: #656d76;
@@ -1722,30 +1722,28 @@ a,
 }
 
 .activity-filter-chip:hover {
-  border-color: #0969da;
-  color: #1f2328;
+  border-color: #656d76;
+  background-color: rgba(101, 109, 118, 0.08);
 }
 
 .activity-filter-chip.active {
-  background: #1f6feb22;
-  border-color: #0969da;
-  color: #0969da;
+  color: #fff;
+  border-color: transparent;
 }
 
 .activity-filter-count {
   font-size: 0.65rem;
   font-weight: 700;
-  background: #d1d9e0;
-  color: #1f2328;
-  border-radius: 8px;
-  padding: 1px 5px;
-  min-width: 18px;
+  background: rgba(255, 255, 255, 0.25);
+  color: inherit;
+  border-radius: 6px;
+  padding: 2px 6px;
+  min-width: 20px;
   text-align: center;
 }
 
 .activity-filter-chip.active .activity-filter-count {
-  background: #1f6feb44;
-  color: #0969da;
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .activity-actor-filters {

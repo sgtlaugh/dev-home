@@ -241,11 +241,13 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
               key={s.label}
               className={`activity-filter-chip${activeFilters.has(s.label) ? " active" : ""}`}
               onClick={() => toggleFilter(s.label)}
+              style={
+                activeFilters.has(s.label)
+                  ? { backgroundColor: s.color + "cc" }
+                  : { borderColor: s.color + "40" }
+              }
             >
-              <div
-                className="activity-stat-dot"
-                style={{ backgroundColor: s.color, width: 6, height: 6 }}
-              />
+              <div className="activity-stat-dot" style={{ backgroundColor: s.color }} />
               {s.label}
               <span className="activity-filter-count">{s.count}</span>
             </button>
