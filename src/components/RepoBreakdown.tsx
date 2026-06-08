@@ -4,7 +4,7 @@ import { GitHubPR } from "../types";
 function hashColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash = name.charCodeAt(i) + ((hash << 4) - hash);
   }
   const hue = ((hash % 360) + 360) % 360;
   return `hsl(${hue}, 55%, 45%)`;
