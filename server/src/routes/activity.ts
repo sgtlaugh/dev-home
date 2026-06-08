@@ -11,6 +11,24 @@ import { adfToPlainText } from "../utils/adf";
 
 const router = Router();
 
+async function fetchAllCommits(
+  github: ReturnType<typeof createGitHubClient>,
+  repo: string,
+  params: Record<string, string>,
+): Promise<any[]> {
+  const all: any[] = [];
+  let page = 1;
+  while (true) {
+    const { data } = await github.get(`/repos/${repo}/commits`, {
+      params: { ...params, per_page: 100, page },
+    });
+    all.push(...data);
+    if (data.length < 100) break;
+    page++;
+  }
+  return all;
+}
+
 interface ActivityItem {
   id: string;
   type: "jira" | "github";
@@ -453,8 +471,8 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
     for (const [repoFullName, branches] of pushBranches) {
       for (const branch of branches) {
         try {
-          const { data: commits } = await github.get(`/repos/${repoFullName}/commits`, {
-            params: { sha: branch, author: config.githubUsername, since, per_page: 100 },
+          const commits = await fetchAllCommits(github, repoFullName, {
+            sha: branch, author: config.githubUsername, since,
           });
           for (const commit of commits) {
             if (seenShas.has(commit.sha)) continue;
@@ -519,8 +537,8 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       if (pushBranches.has(repoFullName)) continue;
 
       try {
-        const { data: commits } = await github.get(`/repos/${repoFullName}/commits`, {
-          params: { sha: defaultBranch, author: config.githubUsername, since, per_page: 100 },
+        const commits = await fetchAllCommits(github, repoFullName, {
+          sha: defaultBranch, author: config.githubUsername, since,
         });
         for (const commit of commits) {
           if (seenShas.has(commit.sha)) continue;
