@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
-import { apiClient } from "./services/config";
+import { apiClient, AppSettings, loadSettingsFromStore } from "./services/config";
 import {
   IconRefresh,
   IconSettings,
@@ -99,6 +99,38 @@ export default function App() {
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
   const [githubExpanded, setGithubExpanded] = useState(true);
   const [jiraExpanded, setJiraExpanded] = useState(true);
+
+  const EMPTY_SETTINGS: AppSettings = {
+    jiraBaseUrl: "",
+    jiraEmail: "",
+    jiraApiToken: "",
+    githubToken: "",
+    githubUsername: "",
+  };
+  const [settingsForm, setSettingsForm] = useState<AppSettings>(EMPTY_SETTINGS);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+
+  useEffect(() => {
+    loadSettingsFromStore()
+      .then((s) => {
+        if (s) setSettingsForm(s);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveSettings = useCallback(async () => {
+    setSettingsSaving(true);
+    try {
+      await saveSettings(settingsForm);
+      setToast("Settings saved");
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Failed to save settings");
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      setSettingsSaving(false);
+    }
+  }, [settingsForm, saveSettings]);
 
   const githubTabs = ["activity", "contributions", "leaderboard", "prs", "reviews", "peers"];
   const jiraTabs = ["jira-activity", "jira", "mentions", "velocity"];
@@ -279,14 +311,36 @@ export default function App() {
             {/* Show settings or dashboard */}
             {effectiveTab === "settings" ? (
               <>
-                <div className="content-header" />
+                <div className="content-header">
+                  <div className="content-header-time" />
+                  <div className="content-header-actions">
+                    <button
+                      className="sidebar-action-btn"
+                      onClick={handleSaveSettings}
+                      disabled={settingsSaving}
+                      style={{ fontSize: "0.7rem", padding: "2px 10px", fontWeight: 500 }}
+                    >
+                      {settingsSaving ? (
+                        <Spinner
+                          animation="border"
+                          size="sm"
+                          style={{ width: 12, height: 12, borderWidth: "1.5px" }}
+                        />
+                      ) : (
+                        "Save"
+                      )}
+                    </button>
+                  </div>
+                </div>
                 <div className="tab-content-area">
                   <SettingsView
                     backendOnline={backendOnline}
                     configured={configured}
                     jiraBaseUrl={jiraBaseUrl}
                     githubUsername={githubUsername}
-                    saveSettings={saveSettings}
+                    formState={settingsForm}
+                    setFormState={setSettingsForm}
+                    setToast={setToast}
                   />
                 </div>
               </>

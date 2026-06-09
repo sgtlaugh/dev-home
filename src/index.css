@@ -997,6 +997,58 @@ a:hover {
   box-shadow: 0 0 6px rgba(248, 81, 73, 0.4);
 }
 
+/* --- Settings token display --- */
+.settings-token-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  border-radius: 6px;
+  padding: 4px 8px 4px 12px;
+  min-height: 31px;
+}
+
+.settings-token-masked {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #656d76;
+  letter-spacing: 1px;
+}
+
+.settings-token-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-token-btn {
+  background: none;
+  border: none;
+  color: #656d76;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.settings-token-btn:hover {
+  color: #1f2328;
+  background: #eaeef2;
+}
+
+.settings-token-change {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #0969da;
+}
+
+.settings-token-change:hover {
+  color: #0550ae;
+  background: rgba(9, 105, 218, 0.08);
+}
+
 /* --- Type indicator dots (for summary view) --- */
 .type-indicator {
   display: flex;
