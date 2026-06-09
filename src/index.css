@@ -225,7 +225,26 @@ a:hover {
 }
 
 .sidebar-header {
-  display: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 10px 4px;
+  margin-bottom: 2px;
+  -webkit-app-region: drag;
+}
+
+.sidebar-header img {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar-header span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #656d76;
+  letter-spacing: 0.02em;
 }
 
 .sidebar-actions {

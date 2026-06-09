@@ -113,7 +113,11 @@ export default function App() {
         <div className="app-body">
           {/* Sidebar navigation */}
           <nav className="sidebar">
-            <div className="sidebar-header" />
+            <div className="sidebar-header">
+              <img src="/devhome-logo.svg" alt="Dev Home" />
+              <span>Dev Home</span>
+            </div>
+            <div className="sidebar-divider" />
 
             {/* Overview */}
             <button
