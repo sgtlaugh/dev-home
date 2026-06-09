@@ -133,8 +133,14 @@ export default function App() {
                 return (
                   <div
                     key={item.label}
-                    className="sidebar-group-label"
-                    style={{ display: "flex", alignItems: "center", gap: "12px", lineHeight: 1 }}
+                    className={`sidebar-group-label ${item.label?.toLowerCase()}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      lineHeight: 1,
+                      paddingLeft: "14px",
+                    }}
                   >
                     {item.label === "GitHub" &&
                       (() => {
@@ -147,7 +153,7 @@ export default function App() {
                                   cy={size / 2}
                                   r={r}
                                   fill="none"
-                                  stroke="var(--bs-border-color)"
+                                  stroke="rgba(255,255,255,0.15)"
                                   strokeWidth={stroke}
                                 />
                               </svg>
@@ -155,7 +161,7 @@ export default function App() {
                           );
                         }
                         const pct = rateLimit.remaining / rateLimit.limit;
-                        const color = pct > 0.5 ? "#1a7f37" : pct > 0.2 ? "#9a6700" : "#cf222e";
+                        const color = pct > 0.5 ? "#3fb950" : pct > 0.2 ? "#d29922" : "#f85149";
                         const circ = 2 * Math.PI * r;
                         const offset = circ * (1 - pct);
                         return (
@@ -170,7 +176,7 @@ export default function App() {
                                 cy={size / 2}
                                 r={r}
                                 fill="none"
-                                stroke="var(--bs-border-color)"
+                                stroke="rgba(255,255,255,0.15)"
                                 strokeWidth={stroke}
                               />
                               <circle
@@ -197,7 +203,7 @@ export default function App() {
                             cy={size / 2}
                             r={r}
                             fill="none"
-                            stroke="var(--bs-border-color)"
+                            stroke="rgba(255,255,255,0.15)"
                             strokeWidth={stroke}
                           />
                           <circle
@@ -205,7 +211,7 @@ export default function App() {
                             cy={size / 2}
                             r={r}
                             fill="none"
-                            stroke="#0969da"
+                            stroke="#58a6ff"
                             strokeWidth={stroke}
                           />
                         </svg>
@@ -218,16 +224,7 @@ export default function App() {
 
               if (!item.icon) return null;
 
-              const countMap: Record<string, number | undefined> = {
-                activity: isActivityTab
-                  ? activities.filter((a) => a.type === "github").length
-                  : activityCounts.github,
-                "jira-activity": isActivityTab
-                  ? activities.filter((a) => a.type === "jira").length
-                  : activityCounts.jira,
-                notes: unresolvedNotes.length,
-              };
-              const count = item.key ? countMap[item.key] : undefined;
+              const count = item.key === "notes" ? unresolvedNotes.length : undefined;
 
               return (
                 <button
@@ -236,9 +233,7 @@ export default function App() {
                   onClick={() => setActiveTab(item.key!)}
                   title={item.label}
                 >
-                  <span className="sidebar-icon">
-                    <item.icon size={16} />
-                  </span>
+                  <item.icon size={16} className="sidebar-icon" />
                   <span className="sidebar-tab-label">
                     {item.label}
                     {count !== undefined && count > 0 && (
@@ -306,7 +301,7 @@ export default function App() {
                                 cy={size / 2}
                                 r={r}
                                 fill="none"
-                                stroke="var(--bs-border-color)"
+                                stroke="rgba(255,255,255,0.15)"
                                 strokeWidth={stroke}
                               />
                               <circle

@@ -211,15 +211,15 @@ a:hover {
 
 /* --- Sidebar --- */
 .sidebar {
-  width: 200px;
-  min-width: 200px;
-  background-color: #f6f8fa;
-  border-right: 1px solid #d1d9e0;
-  border-top: 1px solid #d1d9e0;
+  width: 220px;
+  min-width: 220px;
+  background-color: #22272e;
+  border-right: none;
+  border-top: none;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 8px;
+  padding: 10px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -243,14 +243,14 @@ a:hover {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #656d76;
+  color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease;
 }
 
 .sidebar-action-btn:hover {
-  background-color: #eaeef2;
-  color: #1f2328;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .sidebar-action-btn:disabled {
@@ -285,61 +285,47 @@ a:hover {
 .sidebar-tab {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 10px;
+  padding: 7px 10px;
   border: none;
-  border-left: 3px solid transparent;
-  border-radius: 0 6px 6px 0;
+  border-radius: 6px;
   background: transparent;
-  color: #656d76;
+  color: rgba(255, 255, 255, 0.55);
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 400;
   cursor: pointer;
   transition:
     background-color 200ms ease,
-    color 200ms ease,
-    border-color 200ms ease;
+    color 200ms ease;
   white-space: nowrap;
   text-align: left;
   width: 100%;
+  letter-spacing: 0.01em;
 }
 
 .sidebar-tab:hover {
-  color: #1f2328;
-  background-color: rgba(234, 238, 242, 0.6);
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 .sidebar-tab.active {
-  color: #0969da;
-  background-color: rgba(31, 111, 235, 0.08);
-  border-left-color: #0969da;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.08);
+  font-weight: 500;
 }
 
 .sidebar-tab:focus-visible {
-  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.4);
+  box-shadow: 0 0 0 2px rgba(56, 139, 253, 0.4);
   outline: none;
 }
 
 .sidebar-tab .sidebar-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background-color: rgba(101, 109, 118, 0.08);
   flex-shrink: 0;
-  transition: background-color 200ms ease;
-}
-
-.sidebar-tab:hover .sidebar-icon {
-  background-color: rgba(101, 109, 118, 0.14);
+  transition: color 200ms ease;
 }
 
 .sidebar-tab.active .sidebar-icon {
-  background-color: rgba(9, 105, 218, 0.12);
-  color: #0969da;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .sidebar-tab-label {
@@ -352,19 +338,15 @@ a:hover {
   font-size: 0.5625rem;
   font-weight: 600;
   color: #fff;
-  background-color: #6e7681;
+  background-color: #388bfd;
   border-radius: 999px;
-  padding: 0 4px;
+  padding: 0 5px;
   line-height: 1.4;
   vertical-align: super;
-  margin-left: 3px;
+  margin-left: 4px;
   display: inline-block;
   min-width: 14px;
   text-align: center;
-}
-
-.sidebar-tab.active .sidebar-count-sup {
-  background-color: #0969da;
 }
 
 .sidebar-separator {
@@ -373,13 +355,21 @@ a:hover {
 }
 
 .sidebar-group-label {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #656d76;
-  padding: 8px 10px 4px 13px;
+  color: rgba(255, 255, 255, 0.3);
+  padding: 10px 10px 4px 10px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   flex-shrink: 0;
+}
+
+.sidebar-group-label.github {
+  color: #3fb950;
+}
+
+.sidebar-group-label.jira {
+  color: #58a6ff;
 }
 
 /* --- Sidebar Toggle Button --- */
@@ -392,7 +382,7 @@ a:hover {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #656d76;
+  color: rgba(255, 255, 255, 0.4);
   cursor: pointer;
   transition:
     background-color 150ms ease,
@@ -400,8 +390,8 @@ a:hover {
 }
 
 .sidebar-toggle:hover {
-  color: #1f2328;
-  background-color: #eaeef2;
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .sidebar-toggle:focus-visible {
@@ -425,12 +415,6 @@ a:hover {
 
 .sidebar.collapsed .sidebar-tab-label {
   display: none;
-}
-
-
-.sidebar.collapsed .sidebar-tab {
-  border-left: none;
-  border-radius: 6px;
 }
 
 /* --- Sidebar Transition --- */
