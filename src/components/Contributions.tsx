@@ -30,7 +30,7 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
   const [stateFilter, setStateFilter] = useState<StateFilter>("all");
   const [prs, setPrs] = useState<GitHubPR[]>([]);
   const [commitCount, setCommitCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
   const [joinDate, setJoinDate] = useState<string | null>(null);
@@ -196,7 +196,7 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
         </div>
       )}
 
-      {!loading && filteredPrs.length === 0 ? (
+      {!loading && startDate && endDate && filteredPrs.length === 0 ? (
         <EmptyState
           icon={<IconGitPullRequest size={40} stroke={1.5} />}
           title={
