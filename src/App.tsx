@@ -6,7 +6,7 @@ import {
   IconRefresh,
   IconSettings,
   IconApps,
-  IconNotes,
+  IconNote,
   IconSubtask,
   IconAt,
   IconGitPullRequest,
@@ -206,7 +206,7 @@ export default function App() {
               className={`sidebar-top-item${effectiveTab === "notes" ? " active" : ""}`}
               onClick={() => setActiveTab("notes")}
             >
-              <IconNotes size={22} />
+              <IconNote size={22} />
               <span className="sidebar-top-label">Notes</span>
               {unresolvedNotes.length > 0 && (
                 <span className="sidebar-count-badge">{unresolvedNotes.length}</span>
