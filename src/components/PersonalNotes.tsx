@@ -135,13 +135,20 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
           Resolved
           <span className="activity-filter-count">{resolvedNotes.length}</span>
         </button>
-        <div style={{ flex: 1 }} />
-        <SearchBox value={search} onChange={setSearch} placeholder="Search notes..." />
       </div>
+
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder="Search notes..."
+        className="flex-1 mb-3"
+      />
 
       {filters.new && newNotes.length > 0 && (
         <div className="notes-section">
-          <div className="notes-section-label">New</div>
+          <div className="notes-section-label" style={{ color: "#0969da" }}>
+            New
+          </div>
           <div className="notes-list">
             {newNotes.map((note) => (
               <NoteRow
@@ -159,7 +166,9 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
 
       {filters.resolved && resolvedNotes.length > 0 && (
         <div className="notes-section">
-          <div className="notes-section-label">Resolved</div>
+          <div className="notes-section-label" style={{ color: "#1a7f37" }}>
+            Resolved
+          </div>
           <div className="notes-list">
             {resolvedNotes.map((note) => (
               <NoteRow
