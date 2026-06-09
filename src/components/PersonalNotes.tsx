@@ -147,9 +147,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
 
       {filters.new && newNotes.length > 0 && (
         <div className="notes-section">
-          <div className="notes-section-label" style={{ color: "#0969da" }}>
-            New
-          </div>
+          <div className="notes-section-label notes-section-label-new">New</div>
           <div className="notes-list">
             {newNotes.map((note) => (
               <NoteRow
@@ -167,9 +165,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
 
       {filters.resolved && resolvedNotes.length > 0 && (
         <div className="notes-section">
-          <div className="notes-section-label" style={{ color: "#1a7f37" }}>
-            Resolved
-          </div>
+          <div className="notes-section-label notes-section-label-resolved">Resolved</div>
           <div className="notes-list">
             {resolvedNotes.map((note) => (
               <NoteRow

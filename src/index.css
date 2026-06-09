@@ -1651,12 +1651,24 @@ a,
 }
 
 .notes-section-label {
-  font-size: 0.7rem;
+  display: inline-block;
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #656d76;
-  padding: 0 4px 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.notes-section-label-new {
+  color: #0969da;
+  background-color: #ddf4ff;
+}
+
+.notes-section-label-resolved {
+  color: #1a7f37;
+  background-color: #dafbe1;
 }
 
 .notes-empty-filter {
