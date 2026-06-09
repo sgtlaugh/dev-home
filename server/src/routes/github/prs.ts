@@ -7,7 +7,6 @@ import { logger } from "../../utils/logger";
 import {
   monthsAgo,
   mapGraphQLPr,
-  mapCheckContext,
   extractOwnPRComments,
   buildYearRanges,
   fetchPRsForSubRange,
@@ -171,68 +170,6 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   const responseData = { prs: allPRs };
   apiCache.set(cacheKey, responseData);
   res.json(responseData);
-});
-
-router.get("/pr-checks", async (req: Request, res: Response) => {
-  const owner = req.query.owner as string;
-  const repo = req.query.repo as string;
-  const number = parseInt(req.query.number as string, 10);
-
-  if (!owner || !repo || !number) {
-    return res.status(400).json({ error: "owner, repo, and number are required" });
-  }
-
-  const cacheKey = `github:pr-checks:${owner}/${repo}#${number}`;
-  const cached = apiCache.get(cacheKey);
-  if (cached) return res.json(cached);
-
-  const config = getConfig();
-  try {
-    const data = await graphql<{ repository: { pullRequest: any } }>(
-      `query($owner: String!, $repo: String!, $number: Int!) {
-        repository(owner: $owner, name: $repo) {
-          pullRequest(number: $number) {
-            commits(last: 1) {
-              nodes {
-                commit {
-                  statusCheckRollup {
-                    state
-                    contexts(first: 50) {
-                      nodes {
-                        ... on CheckRun {
-                          name
-                          conclusion
-                          status
-                          detailsUrl
-                        }
-                        ... on StatusContext {
-                          context
-                          state
-                          targetUrl
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }`,
-      { owner, repo, number },
-      `pr-checks/${owner}/${repo}#${number}`,
-    );
-
-    const rollup = data.repository?.pullRequest?.commits?.nodes?.[0]?.commit?.statusCheckRollup;
-    const contextNodes = rollup?.contexts?.nodes || [];
-    const checks = contextNodes.map(mapCheckContext);
-    const responseData = { checks };
-    apiCache.set(cacheKey, responseData);
-    res.json(responseData);
-  } catch (error) {
-    logger.error("GET /pr-checks", `GraphQL error: ${error}`);
-    res.status(500).json({ error: "Failed to fetch PR checks" });
-  }
 });
 
 export default router;

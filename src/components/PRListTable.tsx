@@ -7,7 +7,6 @@ import { Timestamp } from "./Timestamp";
 
 interface PRListTableProps {
   prs: GitHubPR[];
-  onPRClick: (pr: GitHubPR) => void;
 }
 
 function statusLabel(pr: GitHubPR): { text: string; cls: string } {
@@ -16,12 +15,16 @@ function statusLabel(pr: GitHubPR): { text: string; cls: string } {
   return { text: "Closed", cls: "badge-status-red" };
 }
 
-const PRRow = memo(function PRRow({ pr, onClick }: { pr: GitHubPR; onClick: () => void }) {
+const PRRow = memo(function PRRow({ pr }: { pr: GitHubPR }) {
   const iconColor = pr.merged ? "#8250df" : pr.state === "open" ? "#1a7f37" : "#cf222e";
   const status = statusLabel(pr);
 
   return (
-    <tr className="pr-table-row" onClick={onClick} style={{ cursor: "pointer" }}>
+    <tr
+      className="pr-table-row"
+      onClick={() => window.open(pr.html_url, "_blank")}
+      style={{ cursor: "pointer" }}
+    >
       <td
         style={{
           width: 20,
@@ -92,7 +95,7 @@ const PRRow = memo(function PRRow({ pr, onClick }: { pr: GitHubPR; onClick: () =
   );
 });
 
-export const PRListTable: React.FC<PRListTableProps> = ({ prs, onPRClick }) => {
+export const PRListTable: React.FC<PRListTableProps> = ({ prs }) => {
   return (
     <table className="pr-list-table">
       <thead>
@@ -105,7 +108,7 @@ export const PRListTable: React.FC<PRListTableProps> = ({ prs, onPRClick }) => {
       </thead>
       <tbody>
         {prs.map((pr) => (
-          <PRRow key={pr.id} pr={pr} onClick={() => onPRClick(pr)} />
+          <PRRow key={pr.id} pr={pr} />
         ))}
       </tbody>
     </table>

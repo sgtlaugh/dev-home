@@ -3,15 +3,8 @@ import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import { IconGitPullRequest } from "@tabler/icons-react";
 import { GitHubPR } from "../types";
-import {
-  fetchPRsByDateRange,
-  fetchCommitCount,
-  fetchUserJoinDate,
-  fetchPRChecks,
-} from "../services/github";
-import { CheckRunInfo } from "../types";
+import { fetchPRsByDateRange, fetchCommitCount, fetchUserJoinDate } from "../services/github";
 import { EmptyState } from "./EmptyState";
-import { DescriptionModal } from "./DescriptionModal";
 import { RepoBreakdown } from "./RepoBreakdown";
 import { ContributionHeatmap } from "./ContributionHeatmap";
 import { DateControls, DateModeInfo } from "./DateControls";
@@ -38,8 +31,6 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
   const [commitCount, setCommitCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
-  const [selectedPRChecks, setSelectedPRChecks] = useState<CheckRunInfo[] | undefined>(undefined);
   const [joinDate, setJoinDate] = useState<string | null>(null);
 
   const handleDateChange = useCallback((start: string, end: string) => {
@@ -144,19 +135,6 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
     );
   }, [prs, stateFilter, selectedRepos]);
 
-  const handlePRClick = useCallback((pr: GitHubPR) => {
-    setSelectedPR(pr);
-    setSelectedPRChecks(pr.checks?.length ? pr.checks : undefined);
-    if (!pr.checks?.length && pr.repo_full_name) {
-      const [owner, repo] = pr.repo_full_name.split("/");
-      if (owner && repo) {
-        fetchPRChecks(owner, repo, pr.number)
-          .then(setSelectedPRChecks)
-          .catch(() => setSelectedPRChecks([]));
-      }
-    }
-  }, []);
-
   const toggleFilter = useCallback(
     (key: StateFilter) => {
       setStateFilter(stateFilter === key ? "all" : key);
@@ -252,22 +230,9 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
               </span>
             )}
           </div>
-          <PRListTable prs={filteredPrs} onPRClick={handlePRClick} />
+          <PRListTable prs={filteredPrs} />
         </>
       )}
-
-      <DescriptionModal
-        show={!!selectedPR}
-        onHide={() => {
-          setSelectedPR(null);
-          setSelectedPRChecks(undefined);
-        }}
-        title={selectedPR ? `#${selectedPR.number} ${selectedPR.title}` : ""}
-        subtitle={selectedPR?.repo_full_name}
-        description={selectedPR?.body || ""}
-        url={selectedPR?.html_url}
-        checks={selectedPRChecks}
-      />
     </div>
   );
 };
