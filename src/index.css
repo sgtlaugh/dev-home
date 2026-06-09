@@ -1331,18 +1331,32 @@ a,
   white-space: pre-wrap;
 }
 
-.note-search-box {
+.search-box.flex-1 {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-box {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 10px;
   border: 1px solid #d1d9e0;
   border-radius: 6px;
   background: #ffffff;
-  width: 200px;
+  transition: border-color 150ms ease, background-color 150ms ease;
 }
 
-.note-search-input {
+.search-box:hover {
+  border-color: #0969da;
+}
+
+.search-box:focus-within {
+  border-color: #0969da;
+  background-color: rgba(88, 166, 255, 0.05);
+}
+
+.search-box-input {
   border: none;
   outline: none;
   background: transparent;
@@ -1351,8 +1365,206 @@ a,
   width: 100%;
 }
 
-.note-search-input::placeholder {
+.search-box-input::placeholder {
   color: #8b949e;
+}
+
+/* Notes — header */
+.notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notes-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0969da;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.notes-add-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  background: #0969da;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+
+.notes-add-btn:hover {
+  background: #0860ca;
+}
+
+.notes-divider {
+  height: 1px;
+  background: #d1d9e0;
+  margin: 12px 0;
+}
+
+/* Notes — filter row */
+.notes-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.notes-section {
+  margin-bottom: 16px;
+}
+
+.notes-section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #656d76;
+  padding: 0 4px 6px;
+}
+
+.notes-empty-filter {
+  text-align: center;
+  padding: 2.5rem 0;
+  color: #656d76;
+  font-size: 0.85rem;
+}
+
+/* Notes — list & rows */
+.notes-list {
+  border: 1px solid #d1d9e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.note-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 120ms ease;
+}
+
+.note-row:not(:last-child) {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.note-row:hover {
+  background-color: #f6f8fa;
+}
+
+.note-row-accent {
+  width: 3px;
+  align-self: stretch;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.note-row-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.note-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-row-title {
+  display: block;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  color: #1f2328;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+}
+
+a.note-row-title:hover {
+  color: #0969da;
+}
+
+.note-row-content {
+  font-size: 0.75rem;
+  color: #656d76;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Notes — hover actions */
+.note-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.note-row:hover .note-row-actions {
+  opacity: 1;
+}
+
+.note-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: #656d76;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.note-action-btn:hover {
+  background: rgba(9, 105, 218, 0.1);
+  color: #0969da;
+}
+
+.note-action-delete:hover {
+  background: rgba(207, 34, 46, 0.1);
+  color: #cf222e;
+}
+
+/* Notes — empty state add */
+.notes-empty-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #0969da;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 100ms ease;
+  margin-top: 8px;
+}
+
+.notes-empty-add:hover {
+  background: #0860ca;
+  transform: translateY(-1px);
 }
 
 

@@ -502,6 +502,7 @@ export default function App() {
                       }}
                       onAdd={() => setShowNoteEditor(true)}
                       jiraBaseUrl={jiraBaseUrl}
+                      active={effectiveTab === "notes"}
                     />
                   )}
                   {effectiveTab === "contributions" && (

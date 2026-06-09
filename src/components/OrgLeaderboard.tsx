@@ -3,6 +3,7 @@ import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import { useUserOrgs, useOrgLeaderboard, usePrefetchStatus } from "../hooks/useOrgLeaderboard";
 import { DateControls } from "./DateControls";
+import { SearchBox } from "./SearchBox";
 
 type SortKey = "commits" | "prs" | "reviews";
 type SortDir = "asc" | "desc";
@@ -406,13 +407,11 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
               </option>
             ))}
           </select>
-          <input
-            type="text"
-            placeholder="Search by name or login"
+          <SearchBox
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="filter-input"
-            style={{ fontSize: "0.8rem", padding: "6px 10px", flex: 1 }}
+            onChange={setSearch}
+            placeholder="Search by name or login"
+            className="flex-1"
           />
         </div>
       )}

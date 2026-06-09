@@ -1,7 +1,4 @@
-import React, { useState, useMemo } from "react";
-import Card from "react-bootstrap/Card";
-import Badge from "react-bootstrap/Badge";
-import Button from "react-bootstrap/Button";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Spinner from "react-bootstrap/Spinner";
 import {
   IconNote,
@@ -11,11 +8,16 @@ import {
   IconCheck,
   IconTrash,
   IconPlus,
-  IconSearch,
 } from "@tabler/icons-react";
+import { SearchBox } from "./SearchBox";
 import { Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
 import { EmptyState } from "./EmptyState";
+
+interface NoteFilters {
+  new: boolean;
+  resolved: boolean;
+}
 
 interface PersonalNotesProps {
   notes: Note[];
@@ -25,13 +27,14 @@ interface PersonalNotesProps {
   onOpenNote: (note: Note) => void;
   onAdd: () => void;
   jiraBaseUrl: string;
+  active?: boolean;
 }
 
-const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  free_text: { icon: <IconNote size={14} stroke={1.8} />, color: "#656d76", label: "Note" },
-  jira_ticket: { icon: <IconBrandJira size={14} stroke={1.8} />, color: "#0052CC", label: "JIRA" },
-  github_pr: { icon: <IconGitPullRequest size={14} stroke={1.8} />, color: "#1a7f37", label: "PR" },
-  link: { icon: <IconLink size={14} stroke={1.8} />, color: "#8250df", label: "Link" },
+const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = {
+  free_text: { icon: <IconNote size={14} stroke={1.8} />, color: "#656d76" },
+  jira_ticket: { icon: <IconBrandJira size={14} stroke={1.8} />, color: "#0052CC" },
+  github_pr: { icon: <IconGitPullRequest size={14} stroke={1.8} />, color: "#1a7f37" },
+  link: { icon: <IconLink size={14} stroke={1.8} />, color: "#8250df" },
 };
 
 export const PersonalNotes: React.FC<PersonalNotesProps> = ({
@@ -42,7 +45,30 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
   onOpenNote,
   onAdd,
   jiraBaseUrl,
+  active,
 }) => {
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<NoteFilters>({ new: true, resolved: false });
+  const prevActive = useRef(active);
+
+  useEffect(() => {
+    if (active && !prevActive.current) {
+      setFilters({ new: true, resolved: false });
+      setSearch("");
+    }
+    prevActive.current = active;
+  }, [active]);
+
+  const searched = useMemo(() => {
+    if (!search) return notes;
+    const q = search.toLowerCase();
+    return notes.filter((n) => {
+      const title = getNoteDisplayTitle(n).toLowerCase();
+      const content = (n.content || "").toLowerCase();
+      return title.includes(q) || content.includes(q);
+    });
+  }, [notes, search]);
+
   if (loading && notes.length === 0) {
     return (
       <div className="d-flex justify-content-center py-5">
@@ -55,104 +81,108 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
     return (
       <EmptyState
         icon={<IconNote size={48} stroke={1} />}
-        title="No notes"
-        description="Add a note using the button below."
+        title="No notes yet"
+        description="Capture ideas, track tickets, or bookmark links."
         action={
-          <Button variant="outline-secondary" size="sm" className="mt-2" onClick={onAdd}>
-            <IconPlus size={14} className="me-1" />
-            Add Note
-          </Button>
+          <button className="notes-empty-add" onClick={onAdd}>
+            <IconPlus size={16} />
+            <span>Add</span>
+          </button>
         }
       />
     );
   }
 
-  const [search, setSearch] = useState("");
+  const newNotes = searched.filter((n) => n.resolved === 0);
+  const resolvedNotes = searched.filter((n) => n.resolved === 1);
 
-  const filtered = useMemo(() => {
-    if (!search) return notes;
-    const q = search.toLowerCase();
-    return notes.filter((n) => {
-      const title = getNoteDisplayTitle(n).toLowerCase();
-      const content = (n.content || "").toLowerCase();
-      return title.includes(q) || content.includes(q);
-    });
-  }, [notes, search]);
-
-  const unresolved = filtered.filter((n) => n.resolved === 0);
-  const resolved = filtered.filter((n) => n.resolved === 1);
+  const toggleFilter = (key: keyof NoteFilters) => {
+    setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
-    <div>
-      <div className="d-flex align-items-center gap-2 mb-3">
-        <div className="note-search-box">
-          <IconSearch size={14} style={{ color: "#656d76", flexShrink: 0 }} />
-          <input
-            type="text"
-            placeholder="Search notes..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="note-search-input"
-          />
-        </div>
-        <div style={{ marginLeft: "auto" }}>
-          <Button variant="outline-secondary" size="sm" onClick={onAdd}>
-            <IconPlus size={14} className="me-1" />
-            Add Note
-          </Button>
-        </div>
+    <div className="notes-container">
+      <div className="notes-header">
+        <h2 className="notes-title">Daily Planner</h2>
+        <button className="notes-add-btn" onClick={onAdd}>
+          <IconPlus size={15} />
+          <span>Add</span>
+        </button>
       </div>
-      {unresolved.length > 0 && (
-        <Card className="mb-3">
-          <Card.Body className="p-0">
-            <div className="section-header px-3 pt-3 mb-0">
-              <IconNote size={13} stroke={1.8} />
-              <span>Unresolved</span>
-              <Badge bg="" className="badge-status-yellow" style={{ fontSize: "0.625rem" }}>
-                {unresolved.length}
-              </Badge>
-            </div>
-            <div style={{ marginTop: 8 }}>
-              {unresolved.map((note) => (
-                <NoteRow
-                  key={note.id}
-                  note={note}
-                  jiraBaseUrl={jiraBaseUrl}
-                  onResolve={onResolve}
-                  onDelete={onDelete}
-                  onOpenNote={onOpenNote}
-                />
-              ))}
-            </div>
-          </Card.Body>
-        </Card>
+
+      <div className="notes-divider" />
+
+      <div className="notes-filter-row">
+        <button
+          className={`activity-filter-chip${filters.new ? " active" : ""}`}
+          style={
+            filters.new ? { backgroundColor: "#0969da", borderColor: "transparent" } : undefined
+          }
+          onClick={() => toggleFilter("new")}
+        >
+          New
+          <span className="activity-filter-count">{newNotes.length}</span>
+        </button>
+        <button
+          className={`activity-filter-chip${filters.resolved ? " active" : ""}`}
+          style={
+            filters.resolved
+              ? { backgroundColor: "#1a7f37", borderColor: "transparent" }
+              : undefined
+          }
+          onClick={() => toggleFilter("resolved")}
+        >
+          Resolved
+          <span className="activity-filter-count">{resolvedNotes.length}</span>
+        </button>
+        <div style={{ flex: 1 }} />
+        <SearchBox value={search} onChange={setSearch} placeholder="Search notes..." />
+      </div>
+
+      {filters.new && newNotes.length > 0 && (
+        <div className="notes-section">
+          <div className="notes-section-label">New</div>
+          <div className="notes-list">
+            {newNotes.map((note) => (
+              <NoteRow
+                key={note.id}
+                note={note}
+                jiraBaseUrl={jiraBaseUrl}
+                onResolve={onResolve}
+                onDelete={onDelete}
+                onOpenNote={onOpenNote}
+              />
+            ))}
+          </div>
+        </div>
       )}
 
-      {resolved.length > 0 && (
-        <Card>
-          <Card.Body className="p-0">
-            <div className="section-header px-3 pt-3 mb-0">
-              <IconCheck size={13} stroke={1.8} />
-              <span>Resolved</span>
-              <Badge bg="" className="badge-status-green" style={{ fontSize: "0.625rem" }}>
-                {resolved.length}
-              </Badge>
-            </div>
-            <div style={{ marginTop: 8 }}>
-              {resolved.map((note) => (
-                <NoteRow
-                  key={note.id}
-                  note={note}
-                  jiraBaseUrl={jiraBaseUrl}
-                  onResolve={onResolve}
-                  onDelete={onDelete}
-                  onOpenNote={onOpenNote}
-                />
-              ))}
-            </div>
-          </Card.Body>
-        </Card>
+      {filters.resolved && resolvedNotes.length > 0 && (
+        <div className="notes-section">
+          <div className="notes-section-label">Resolved</div>
+          <div className="notes-list">
+            {resolvedNotes.map((note) => (
+              <NoteRow
+                key={note.id}
+                note={note}
+                jiraBaseUrl={jiraBaseUrl}
+                onResolve={onResolve}
+                onDelete={onDelete}
+                onOpenNote={onOpenNote}
+              />
+            ))}
+          </div>
+        </div>
       )}
+
+      {(!filters.new || newNotes.length === 0) &&
+        (!filters.resolved || resolvedNotes.length === 0) && (
+          <div className="notes-empty-filter">
+            {!filters.new && !filters.resolved
+              ? "Select a filter to view notes"
+              : `No notes${search ? " matching your search" : ""}`}
+          </div>
+        )}
     </div>
   );
 };
@@ -175,70 +205,42 @@ function NoteRow({
   const config = TYPE_CONFIG[note.type] || TYPE_CONFIG.free_text;
 
   return (
-    <div
-      className="summary-item d-flex align-items-center gap-3 px-3 py-2"
-      style={{ cursor: "pointer", borderLeft: `3px solid ${config.color}` }}
-      onClick={() => onOpenNote(note)}
-    >
-      <div
-        className="d-flex align-items-center gap-2"
-        style={{ flexShrink: 0, color: config.color }}
-      >
+    <div className="note-row" onClick={() => onOpenNote(note)}>
+      <div className="note-row-accent" style={{ backgroundColor: config.color }} />
+      <div className="note-row-icon" style={{ color: config.color }}>
         {config.icon}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="d-flex align-items-center gap-2">
-          {url ? (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-truncate-custom"
-              style={{ fontWeight: 500, fontSize: "0.8125rem" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {title}
-            </a>
-          ) : (
-            <span
-              className="text-truncate-custom"
-              style={{ fontWeight: 500, fontSize: "0.8125rem" }}
-            >
-              {title}
-            </span>
-          )}
-        </div>
-        {note.content && (
-          <div
-            className="text-secondary-custom note-content-truncate"
-            style={{ fontSize: "0.75rem", marginTop: 1 }}
+      <div className="note-row-body">
+        {url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="note-row-title"
+            onClick={(e) => e.stopPropagation()}
           >
-            {note.content}
-          </div>
+            {title}
+          </a>
+        ) : (
+          <span className="note-row-title">{title}</span>
         )}
+        {note.content && <div className="note-row-content">{note.content}</div>}
       </div>
-      <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
-        <Badge bg="" className="badge-status-neutral">
-          {config.label}
-        </Badge>
+      <div className="note-row-actions">
         {note.resolved === 0 && (
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            style={{ padding: "2px 6px" }}
+          <button
+            className="note-action-btn"
             title="Resolve"
             onClick={(e) => {
               e.stopPropagation();
               onResolve(note.id);
             }}
           >
-            <IconCheck size={12} />
-          </Button>
+            <IconCheck size={13} />
+          </button>
         )}
-        <Button
-          variant="outline-secondary"
-          size="sm"
-          style={{ padding: "2px 6px" }}
+        <button
+          className="note-action-btn note-action-delete"
           title="Delete"
           onClick={(e) => {
             e.stopPropagation();
@@ -247,8 +249,8 @@ function NoteRow({
             }
           }}
         >
-          <IconTrash size={12} />
-        </Button>
+          <IconTrash size={13} />
+        </button>
       </div>
     </div>
   );
