@@ -51,7 +51,9 @@ function createWindow() {
     height: 860,
     minWidth: 900,
     minHeight: 600,
-    icon: path.join(__dirname, "../public/favicon.png"),
+    icon: process.env.VITE_DEV_SERVER_URL
+      ? path.join(__dirname, "../public/favicon.png")
+      : path.join(__dirname, "../dist/favicon.png"),
     titleBarStyle: "hiddenInset",
     backgroundColor: "#0a0a0a",
     webPreferences: {
