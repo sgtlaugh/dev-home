@@ -219,7 +219,7 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
               stroke={s.color}
               strokeWidth={1.5}
               strokeDasharray="4,3"
-              opacity={0.5}
+              opacity={0.6}
               style={{ transition: "all 0.3s ease" }}
             />
           ))}
