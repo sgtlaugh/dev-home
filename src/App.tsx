@@ -313,7 +313,7 @@ export default function App() {
             {/* Show settings or dashboard */}
             {effectiveTab === "settings" ? (
               <>
-                <div className="content-header" />
+                <div className="content-header" style={{ minHeight: 32 }} />
                 <div className="tab-content-area">
                   <SettingsView
                     backendOnline={backendOnline}
