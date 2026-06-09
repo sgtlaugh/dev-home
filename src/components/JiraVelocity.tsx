@@ -14,6 +14,7 @@ import { useConfig } from "../hooks/useConfig";
 import { EmptyState } from "./EmptyState";
 import { VelocityChart } from "./VelocityChart";
 import { getLocalDateString } from "../utils/dateUtils";
+import { Tooltip } from "./Tooltip";
 
 type Preset = "30d" | "90d" | "6mo" | "1y";
 
@@ -202,15 +203,15 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
             }}
           >
             {typeBreakdown.map((t) => (
-              <div
-                key={t.type}
-                style={{
-                  width: `${t.pct}%`,
-                  backgroundColor: t.color,
-                  transition: "width 0.4s ease",
-                }}
-                title={`${t.type}: ${t.count} (${Math.round(t.pct)}%)`}
-              />
+              <Tooltip key={t.type} text={`${t.type}: ${t.count} (${Math.round(t.pct)}%)`}>
+                <div
+                  style={{
+                    width: `${t.pct}%`,
+                    backgroundColor: t.color,
+                    transition: "width 0.4s ease",
+                  }}
+                />
+              </Tooltip>
             ))}
           </div>
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.4rem", flexWrap: "wrap" }}>
@@ -325,12 +326,24 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                   <table className="table" style={{ fontSize: "0.8125rem" }}>
                     <thead>
                       <tr>
-                        <th title="JIRA ticket identifier">Ticket</th>
-                        <th title="Issue summary">Summary</th>
-                        <th title="Issue type (Bug, Story, Task, etc.)">Type</th>
-                        <th title="Story points assigned to this issue">SP</th>
-                        <th title="Days from creation to resolution">Time</th>
-                        <th title="Date the issue was resolved">Resolved</th>
+                        <th>
+                          <Tooltip text="JIRA ticket identifier">Ticket</Tooltip>
+                        </th>
+                        <th>
+                          <Tooltip text="Issue summary">Summary</Tooltip>
+                        </th>
+                        <th>
+                          <Tooltip text="Issue type (Bug, Story, Task, etc.)">Type</Tooltip>
+                        </th>
+                        <th>
+                          <Tooltip text="Story points assigned to this issue">SP</Tooltip>
+                        </th>
+                        <th>
+                          <Tooltip text="Days from creation to resolution">Time</Tooltip>
+                        </th>
+                        <th>
+                          <Tooltip text="Date the issue was resolved">Resolved</Tooltip>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -381,9 +394,9 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
                               const short = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
                               const full = `${short} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
                               return (
-                                <span className="activity-time" title={full}>
-                                  {short}
-                                </span>
+                                <Tooltip text={full}>
+                                  <span className="activity-time">{short}</span>
+                                </Tooltip>
                               );
                             })()}
                           </td>

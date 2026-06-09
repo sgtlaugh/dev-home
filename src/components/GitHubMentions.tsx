@@ -6,6 +6,7 @@ import { Timestamp } from "./Timestamp";
 import { EmptyState } from "./EmptyState";
 import { truncateText } from "../utils/text";
 import { REASON_LABELS } from "../utils/github";
+import { Tooltip } from "./Tooltip";
 
 interface GitHubMentionsProps {
   mentions: GitHubComment[];
@@ -36,7 +37,9 @@ export const GitHubMentions: React.FC<GitHubMentionsProps> = ({ mentions, loadin
       {mentions.map((mention) => (
         <div key={mention.id} className="comment-card">
           <div className="d-flex gap-3 align-items-start">
-            <img src={mention.user.avatar_url} alt={mention.user.login} className="avatar-md" />
+            <Tooltip text={mention.user.login}>
+              <img src={mention.user.avatar_url} alt={mention.user.login} className="avatar-md" />
+            </Tooltip>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="d-flex justify-content-between align-items-center gap-2">
                 <div className="d-flex align-items-center gap-2">

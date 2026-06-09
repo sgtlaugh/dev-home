@@ -13,6 +13,7 @@ import { SearchBox } from "./SearchBox";
 import { Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
 import { EmptyState } from "./EmptyState";
+import { Tooltip } from "./Tooltip";
 
 interface NoteFilters {
   new: boolean;
@@ -237,29 +238,31 @@ function NoteRow({
       </div>
       <div className="note-row-actions">
         {note.resolved === 0 && (
+          <Tooltip text="Resolve">
+            <button
+              className="note-action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onResolve(note.id);
+              }}
+            >
+              <IconCheck size={13} />
+            </button>
+          </Tooltip>
+        )}
+        <Tooltip text="Delete">
           <button
-            className="note-action-btn"
-            title="Resolve"
+            className="note-action-btn note-action-delete"
             onClick={(e) => {
               e.stopPropagation();
-              onResolve(note.id);
+              if (window.confirm("Are you sure you want to delete this note?")) {
+                onDelete(note.id);
+              }
             }}
           >
-            <IconCheck size={13} />
+            <IconTrash size={13} />
           </button>
-        )}
-        <button
-          className="note-action-btn note-action-delete"
-          title="Delete"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (window.confirm("Are you sure you want to delete this note?")) {
-              onDelete(note.id);
-            }
-          }}
-        >
-          <IconTrash size={13} />
-        </button>
+        </Tooltip>
       </div>
     </div>
   );

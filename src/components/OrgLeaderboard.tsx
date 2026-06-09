@@ -4,6 +4,7 @@ import Spinner from "react-bootstrap/Spinner";
 import { useUserOrgs, useOrgLeaderboard, usePrefetchStatus } from "../hooks/useOrgLeaderboard";
 import { DateControls } from "./DateControls";
 import { SearchBox } from "./SearchBox";
+import { Tooltip } from "./Tooltip";
 
 type SortKey = "commits" | "prs" | "reviews";
 type SortDir = "asc" | "desc";
@@ -28,9 +29,16 @@ function SortHeader({
     <th
       style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
       onClick={() => onSort(sortKey)}
-      title={tooltip}
     >
-      {label} {active ? (currentDir === "desc" ? "↓" : "↑") : ""}
+      {tooltip ? (
+        <Tooltip text={tooltip}>
+          {label} {active ? (currentDir === "desc" ? "↓" : "↑") : ""}
+        </Tooltip>
+      ) : (
+        <>
+          {label} {active ? (currentDir === "desc" ? "↓" : "↑") : ""}
+        </>
+      )}
     </th>
   );
 }
@@ -517,52 +525,55 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <span style={{ minWidth: 36 }}>{m.commits.toLocaleString()}</span>
-                          <div
-                            className="leaderboard-bar-track"
-                            title={`${m.commits} commits (${Math.round((m.commits / maxCommits) * 100)}% of max contributor)`}
+                          <Tooltip
+                            text={`${m.commits} commits (${Math.round((m.commits / maxCommits) * 100)}% of max contributor)`}
                           >
-                            <div
-                              className="leaderboard-bar-fill"
-                              style={{
-                                width: `${(m.commits / maxCommits) * 100}%`,
-                                backgroundColor: "#1a7f37",
-                              }}
-                            />
-                          </div>
+                            <div className="leaderboard-bar-track">
+                              <div
+                                className="leaderboard-bar-fill"
+                                style={{
+                                  width: `${(m.commits / maxCommits) * 100}%`,
+                                  backgroundColor: "#1a7f37",
+                                }}
+                              />
+                            </div>
+                          </Tooltip>
                         </div>
                       </td>
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <span style={{ minWidth: 36 }}>{m.prs.toLocaleString()}</span>
-                          <div
-                            className="leaderboard-bar-track"
-                            title={`${m.prs} PRs (${Math.round((m.prs / maxPRs) * 100)}% of max contributor)`}
+                          <Tooltip
+                            text={`${m.prs} PRs (${Math.round((m.prs / maxPRs) * 100)}% of max contributor)`}
                           >
-                            <div
-                              className="leaderboard-bar-fill"
-                              style={{
-                                width: `${(m.prs / maxPRs) * 100}%`,
-                                backgroundColor: "#0969da",
-                              }}
-                            />
-                          </div>
+                            <div className="leaderboard-bar-track">
+                              <div
+                                className="leaderboard-bar-fill"
+                                style={{
+                                  width: `${(m.prs / maxPRs) * 100}%`,
+                                  backgroundColor: "#0969da",
+                                }}
+                              />
+                            </div>
+                          </Tooltip>
                         </div>
                       </td>
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <span style={{ minWidth: 36 }}>{m.reviews.toLocaleString()}</span>
-                          <div
-                            className="leaderboard-bar-track"
-                            title={`${m.reviews} reviews (${Math.round((m.reviews / maxReviews) * 100)}% of max contributor)`}
+                          <Tooltip
+                            text={`${m.reviews} reviews (${Math.round((m.reviews / maxReviews) * 100)}% of max contributor)`}
                           >
-                            <div
-                              className="leaderboard-bar-fill"
-                              style={{
-                                width: `${(m.reviews / maxReviews) * 100}%`,
-                                backgroundColor: "#8250df",
-                              }}
-                            />
-                          </div>
+                            <div className="leaderboard-bar-track">
+                              <div
+                                className="leaderboard-bar-fill"
+                                style={{
+                                  width: `${(m.reviews / maxReviews) * 100}%`,
+                                  backgroundColor: "#8250df",
+                                }}
+                              />
+                            </div>
+                          </Tooltip>
                         </div>
                       </td>
                     </tr>

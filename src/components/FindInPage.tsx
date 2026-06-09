@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { IconSearch, IconX, IconChevronUp, IconChevronDown } from "@tabler/icons-react";
+import { Tooltip } from "./Tooltip";
 
 export function FindInPage() {
   const [visible, setVisible] = useState(false);
@@ -134,32 +135,31 @@ export function FindInPage() {
           {matchInfo.total === 0 ? "No results" : `${matchInfo.current} of ${matchInfo.total}`}
         </span>
       )}
-      <button
-        className="find-bar-btn"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => navigate(false)}
-        disabled={!query}
-        title="Previous match (Shift+Enter)"
-      >
-        <IconChevronUp size={14} />
-      </button>
-      <button
-        className="find-bar-btn"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => navigate(true)}
-        disabled={!query}
-        title="Next match (Enter)"
-      >
-        <IconChevronDown size={14} />
-      </button>
-      <button
-        className="find-bar-btn"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={close}
-        title="Close (Escape)"
-      >
-        <IconX size={14} />
-      </button>
+      <Tooltip text="Previous match (Shift+Enter)">
+        <button
+          className="find-bar-btn"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => navigate(false)}
+          disabled={!query}
+        >
+          <IconChevronUp size={14} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Next match (Enter)">
+        <button
+          className="find-bar-btn"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => navigate(true)}
+          disabled={!query}
+        >
+          <IconChevronDown size={14} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Close (Escape)">
+        <button className="find-bar-btn" onMouseDown={(e) => e.preventDefault()} onClick={close}>
+          <IconX size={14} />
+        </button>
+      </Tooltip>
     </div>
   );
 }

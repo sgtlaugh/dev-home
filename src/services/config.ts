@@ -21,6 +21,9 @@ declare global {
       onFindResult: (
         callback: (result: { activeMatchOrdinal: number; matches: number }) => void,
       ) => () => void;
+      windowMinimize: () => Promise<void>;
+      windowMaximize: () => Promise<void>;
+      windowClose: () => Promise<void>;
     };
   }
 }

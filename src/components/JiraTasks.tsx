@@ -7,6 +7,7 @@ import { StatusBadge } from "./StatusBadge";
 import { EmptyState } from "./EmptyState";
 import { DateControls } from "./DateControls";
 import { formatLocalDate, formatLocalDateTime } from "../utils/dateUtils";
+import { Tooltip } from "./Tooltip";
 
 function hashHue(name: string): number {
   let hash = 0;
@@ -141,15 +142,15 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
             }}
           >
             {statusBreakdown.map((s) => (
-              <div
-                key={s.name}
-                style={{
-                  width: `${s.pct}%`,
-                  backgroundColor: s.color,
-                  transition: "width 0.4s ease",
-                }}
-                title={`${s.name}: ${s.count} (${Math.round(s.pct)}%)`}
-              />
+              <Tooltip key={s.name} text={`${s.name}: ${s.count} (${Math.round(s.pct)}%)`}>
+                <div
+                  style={{
+                    width: `${s.pct}%`,
+                    backgroundColor: s.color,
+                    transition: "width 0.4s ease",
+                  }}
+                />
+              </Tooltip>
             ))}
           </div>
           <div
@@ -190,16 +191,32 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
         <table className="table" style={{ fontSize: "0.8125rem" }}>
           <thead>
             <tr>
-              <th style={{ width: 32 }} title="Priority">
-                P
+              <th style={{ width: 32 }}>
+                <Tooltip text="Priority">P</Tooltip>
               </th>
-              <th title="JIRA ticket identifier">Ticket</th>
-              <th title="Issue summary">Summary</th>
-              <th title="Issue type (Bug, Story, Task, etc.)">Type</th>
-              <th title="Current issue status">Status</th>
-              {hasStoryPoints && <th title="Story points assigned to this issue">SP</th>}
-              <th title="Last updated date">Updated</th>
-              <th title="Project the issue belongs to">Project</th>
+              <th>
+                <Tooltip text="JIRA ticket identifier">Ticket</Tooltip>
+              </th>
+              <th>
+                <Tooltip text="Issue summary">Summary</Tooltip>
+              </th>
+              <th>
+                <Tooltip text="Issue type (Bug, Story, Task, etc.)">Type</Tooltip>
+              </th>
+              <th>
+                <Tooltip text="Current issue status">Status</Tooltip>
+              </th>
+              {hasStoryPoints && (
+                <th>
+                  <Tooltip text="Story points assigned to this issue">SP</Tooltip>
+                </th>
+              )}
+              <th>
+                <Tooltip text="Last updated date">Updated</Tooltip>
+              </th>
+              <th>
+                <Tooltip text="Project the issue belongs to">Project</Tooltip>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -262,9 +279,9 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
                   </td>
                   {hasStoryPoints && <td>{issue.storyPoints || "—"}</td>}
                   <td style={{ whiteSpace: "nowrap" }}>
-                    <span className="activity-time" title={full}>
-                      {short}
-                    </span>
+                    <Tooltip text={full}>
+                      <span className="activity-time">{short}</span>
+                    </Tooltip>
                   </td>
                   <td>
                     <span

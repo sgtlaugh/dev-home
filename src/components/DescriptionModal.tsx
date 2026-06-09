@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { CheckRunInfo } from "../types";
 import { STATUS_CONFIG } from "./ChecksStatusIcon";
+import { Tooltip } from "./Tooltip";
 
 const CHECK_SORT_ORDER: Record<string, number> = {
   FAILURE: 0,
@@ -129,21 +130,22 @@ export const DescriptionModal: React.FC<DescriptionModalProps> = ({
       </Modal.Body>
       {url && (
         <Modal.Footer>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontSize: "0.8125rem",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-            className="text-truncate-custom"
-            title={url}
-          >
-            {url}
-          </a>
+          <Tooltip text={url}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: "0.8125rem",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              className="text-truncate-custom"
+            >
+              {url}
+            </a>
+          </Tooltip>
         </Modal.Footer>
       )}
     </Modal>

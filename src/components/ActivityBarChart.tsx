@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { ACTION_CATEGORIES } from "../utils/activityCategories";
 import { getLocalDateString } from "../utils/dateUtils";
+import { Tooltip } from "./Tooltip";
 
 interface Segment {
   category: string;
@@ -68,12 +69,6 @@ const DARK_COLORS: Record<string, string> = Object.fromEntries(
 );
 
 export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts, activities }) => {
-  const [tooltip, setTooltip] = useState<{
-    text: string;
-    x: number;
-    y: number;
-  } | null>(null);
-
   const monthLabels = useMemo(() => getMonthLabels(dailyCounts), [dailyCounts]);
 
   const hourCounts = useMemo(() => {
@@ -114,41 +109,34 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts,
 
           return (
             <div key={day.date} className="activity-bar-wrapper">
-              <div
-                className="activity-bar-stacked"
-                style={{ height: isEmpty ? "4px" : `${barHeight}%` }}
-                onMouseEnter={(e) => {
-                  const rect = (e.target as HTMLElement).getBoundingClientRect();
-                  setTooltip({
-                    text: tooltipText,
-                    x: rect.left + rect.width / 2,
-                    y: rect.top - 8,
-                  });
-                }}
-                onMouseLeave={() => setTooltip(null)}
-              >
-                {isEmpty ? (
-                  <div className="activity-bar-empty-segment" />
-                ) : (
-                  day.segments.map((seg, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        flex: seg.count,
-                        backgroundColor: isMax ? DARK_COLORS[seg.color] || seg.color : seg.color,
-                        opacity: isMax ? 1 : 0.75,
-                        borderRadius:
-                          idx === 0 && idx === day.segments.length - 1
-                            ? "2px 2px 0 0"
-                            : idx === 0
+              <Tooltip text={tooltipText}>
+                <div
+                  className="activity-bar-stacked"
+                  style={{ height: isEmpty ? "4px" : `${barHeight}%` }}
+                >
+                  {isEmpty ? (
+                    <div className="activity-bar-empty-segment" />
+                  ) : (
+                    day.segments.map((seg, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          flex: seg.count,
+                          backgroundColor: isMax ? DARK_COLORS[seg.color] || seg.color : seg.color,
+                          opacity: isMax ? 1 : 0.75,
+                          borderRadius:
+                            idx === 0 && idx === day.segments.length - 1
                               ? "2px 2px 0 0"
-                              : undefined,
-                      }}
-                    />
-                  ))
-                )}
-                {isToday && !isEmpty && <div className="activity-bar-today-dot" />}
-              </div>
+                              : idx === 0
+                                ? "2px 2px 0 0"
+                                : undefined,
+                        }}
+                      />
+                    ))
+                  )}
+                  {isToday && !isEmpty && <div className="activity-bar-today-dot" />}
+                </div>
+              </Tooltip>
               {isToday && isEmpty && (
                 <div className="activity-bar-today-dot" style={{ bottom: "6px" }} />
               )}
@@ -180,13 +168,16 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts,
               const isMax = count === maxHour;
               return (
                 <div key={hour} className="activity-bar-wrapper">
-                  <div
-                    className={`activity-hour-bar${isEmpty ? " activity-bar-empty-segment" : ""}${isMax ? " activity-hour-bar-max" : ""}`}
-                    style={{
-                      height: isEmpty ? "4px" : `${Math.max((count / maxHour) * 100, 12)}%`,
-                    }}
-                    title={`${count} activit${count === 1 ? "y" : "ies"} during ${label}:00-${String((hour + 1) % 24).padStart(2, "0")}:00`}
-                  />
+                  <Tooltip
+                    text={`${count} activit${count === 1 ? "y" : "ies"} during ${label}:00-${String((hour + 1) % 24).padStart(2, "0")}:00`}
+                  >
+                    <div
+                      className={`activity-hour-bar${isEmpty ? " activity-bar-empty-segment" : ""}${isMax ? " activity-hour-bar-max" : ""}`}
+                      style={{
+                        height: isEmpty ? "4px" : `${Math.max((count / maxHour) * 100, 12)}%`,
+                      }}
+                    />
+                  </Tooltip>
                 </div>
               );
             })}
@@ -205,22 +196,6 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts,
               </span>
             ))}
           </div>
-        </div>
-      )}
-
-      {tooltip && (
-        <div
-          className="heatmap-tooltip"
-          data-below="false"
-          style={{
-            position: "fixed",
-            left: `${tooltip.x}px`,
-            top: `${tooltip.y}px`,
-            transform: "translate(-50%, -100%)",
-            whiteSpace: "pre-line",
-          }}
-        >
-          {tooltip.text}
         </div>
       )}
     </div>

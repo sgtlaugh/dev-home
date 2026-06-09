@@ -28,6 +28,7 @@ import { categorizeAction, ACTION_CATEGORIES } from "../utils/activityCategories
 import { ActivityBarChart, computeStreak } from "./ActivityBarChart";
 import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
 import { getLocalDateString, getLocalDateMinusDays } from "../utils/dateUtils";
+import { Tooltip } from "./Tooltip";
 
 interface ActivityTimelineProps {
   activities: ActivityItem[];
@@ -309,13 +310,11 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                   {actionCount}
                 </Badge>
                 {expandableItems.length > 0 && (
-                  <button
-                    className="activity-date-toggle"
-                    onClick={() => toggleDateGroup(items)}
-                    title={allExpanded ? "Collapse all" : "Expand all"}
-                  >
-                    {allExpanded ? <IconChevronsUp size={14} /> : <IconChevronsDown size={14} />}
-                  </button>
+                  <Tooltip text={allExpanded ? "Collapse all" : "Expand all"}>
+                    <button className="activity-date-toggle" onClick={() => toggleDateGroup(items)}>
+                      {allExpanded ? <IconChevronsUp size={14} /> : <IconChevronsDown size={14} />}
+                    </button>
+                  </Tooltip>
                 )}
               </div>
               <div className="activity-list">
@@ -392,17 +391,18 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                   flexShrink: 0,
                                 }}
                               >
-                                <img
-                                  src={lastActor.avatar_url}
-                                  alt={lastActor.login}
-                                  title={lastActor.login}
-                                  style={{
-                                    width: "24px",
-                                    height: "24px",
-                                    borderRadius: "50%",
-                                    border: "2px solid #d1d9e0",
-                                  }}
-                                />
+                                <Tooltip text={lastActor.login}>
+                                  <img
+                                    src={lastActor.avatar_url}
+                                    alt={lastActor.login}
+                                    style={{
+                                      width: "24px",
+                                      height: "24px",
+                                      borderRadius: "50%",
+                                      border: "2px solid #d1d9e0",
+                                    }}
+                                  />
+                                </Tooltip>
                                 {currentUsername && (
                                   <span
                                     style={{
@@ -489,17 +489,18 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                       flexShrink: 0,
                                     }}
                                   >
-                                    <img
-                                      src={action.metadata.actor.avatar_url}
-                                      alt={action.metadata.actor.login}
-                                      title={action.metadata.actor.login}
-                                      style={{
-                                        width: "20px",
-                                        height: "20px",
-                                        borderRadius: "50%",
-                                        border: "1px solid #d1d9e0",
-                                      }}
-                                    />
+                                    <Tooltip text={action.metadata.actor.login}>
+                                      <img
+                                        src={action.metadata.actor.avatar_url}
+                                        alt={action.metadata.actor.login}
+                                        style={{
+                                          width: "20px",
+                                          height: "20px",
+                                          borderRadius: "50%",
+                                          border: "1px solid #d1d9e0",
+                                        }}
+                                      />
+                                    </Tooltip>
                                     {currentUsername && (
                                       <span style={{ fontSize: "0.7rem", color: "#656d76" }}>
                                         @{action.metadata.actor.login}
@@ -529,16 +530,17 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                 <Timestamp timestamp={action.timestamp} />
                               </div>
                               {action.metadata?.commentBody && (
-                                <a
-                                  href={action.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="activity-comment-preview"
-                                  title="View on GitHub"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {action.metadata.commentBody}
-                                </a>
+                                <Tooltip text="View on GitHub">
+                                  <a
+                                    href={action.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="activity-comment-preview"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {action.metadata.commentBody}
+                                  </a>
+                                </Tooltip>
                               )}
                             </div>
                           ))}

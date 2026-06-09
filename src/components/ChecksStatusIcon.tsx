@@ -1,5 +1,6 @@
 import React from "react";
 import { IconCircleCheck, IconCircleX, IconClock, IconCircleMinus } from "@tabler/icons-react";
+import { Tooltip } from "./Tooltip";
 
 export const STATUS_CONFIG: Record<
   string,
@@ -22,9 +23,19 @@ export const STATUS_CONFIG: Record<
 };
 
 export const ChecksStatusIcon: React.FC<{ status?: string | null }> = ({ status }) => {
-  if (!status) return <IconCircleMinus size={14} stroke={1.8} color="#959da5" title="No checks" />;
+  if (!status) {
+    return (
+      <Tooltip text="No checks">
+        <IconCircleMinus size={14} stroke={1.8} color="#959da5" />
+      </Tooltip>
+    );
+  }
   const config = STATUS_CONFIG[status];
   if (!config) return null;
   const Icon = config.icon;
-  return <Icon size={14} stroke={1.8} color={config.color} title={config.title} />;
+  return (
+    <Tooltip text={config.title}>
+      <Icon size={14} stroke={1.8} color={config.color} />
+    </Tooltip>
+  );
 };

@@ -26,6 +26,7 @@ import {
 import { Note, NoteType } from "../types";
 import { detectNote } from "../utils/noteDetection";
 import { getReferenceUrl } from "../utils/text";
+import { Tooltip } from "./Tooltip";
 
 // tiptap-markdown doesn't ship type declarations for its storage
 function getMarkdown(editor: Editor): string {
@@ -61,118 +62,128 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
 
   return (
     <div className="tiptap-toolbar">
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        className={editor.isActive("bold") ? "is-active" : ""}
-        title="Bold"
-      >
-        <IconBold size={14} stroke={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={editor.isActive("italic") ? "is-active" : ""}
-        title="Italic"
-      >
-        <IconItalic size={14} stroke={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-        className={editor.isActive("strike") ? "is-active" : ""}
-        title="Strikethrough"
-      >
-        <IconStrikethrough size={14} stroke={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleCode().run()}
-        className={editor.isActive("code") ? "is-active" : ""}
-        title="Inline code"
-      >
-        <IconCode size={14} stroke={1.8} />
-      </button>
+      <Tooltip text="Bold">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={editor.isActive("bold") ? "is-active" : ""}
+        >
+          <IconBold size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Italic">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          className={editor.isActive("italic") ? "is-active" : ""}
+        >
+          <IconItalic size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Strikethrough">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          className={editor.isActive("strike") ? "is-active" : ""}
+        >
+          <IconStrikethrough size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Inline code">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          className={editor.isActive("code") ? "is-active" : ""}
+        >
+          <IconCode size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
 
       <div className="toolbar-divider" />
 
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        className={editor.isActive("heading", { level: 1 }) ? "is-active" : ""}
-        title="Heading 1"
-      >
-        <IconH1 size={14} stroke={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={editor.isActive("heading", { level: 2 }) ? "is-active" : ""}
-        title="Heading 2"
-      >
-        <IconH2 size={14} stroke={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        className={editor.isActive("heading", { level: 3 }) ? "is-active" : ""}
-        title="Heading 3"
-      >
-        <IconH3 size={14} stroke={1.8} />
-      </button>
+      <Tooltip text="Heading 1">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          className={editor.isActive("heading", { level: 1 }) ? "is-active" : ""}
+        >
+          <IconH1 size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Heading 2">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={editor.isActive("heading", { level: 2 }) ? "is-active" : ""}
+        >
+          <IconH2 size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Heading 3">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          className={editor.isActive("heading", { level: 3 }) ? "is-active" : ""}
+        >
+          <IconH3 size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
 
       <div className="toolbar-divider" />
 
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={editor.isActive("bulletList") ? "is-active" : ""}
-        title="Bullet list"
-      >
-        <IconList size={14} stroke={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={editor.isActive("orderedList") ? "is-active" : ""}
-        title="Ordered list"
-      >
-        <IconListNumbers size={14} stroke={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={editor.isActive("blockquote") ? "is-active" : ""}
-        title="Blockquote"
-      >
-        <IconBlockquote size={14} stroke={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-        className={editor.isActive("codeBlock") ? "is-active" : ""}
-        title="Code block"
-      >
-        <IconTerminal size={14} stroke={1.8} />
-      </button>
+      <Tooltip text="Bullet list">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={editor.isActive("bulletList") ? "is-active" : ""}
+        >
+          <IconList size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Ordered list">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={editor.isActive("orderedList") ? "is-active" : ""}
+        >
+          <IconListNumbers size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Blockquote">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          className={editor.isActive("blockquote") ? "is-active" : ""}
+        >
+          <IconBlockquote size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Code block">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          className={editor.isActive("codeBlock") ? "is-active" : ""}
+        >
+          <IconTerminal size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
 
       <div className="toolbar-divider" />
 
-      <button
-        type="button"
-        onClick={addLink}
-        className={editor.isActive("link") ? "is-active" : ""}
-        title="Link"
-      >
-        <IconLink size={14} stroke={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        title="Horizontal rule"
-      >
-        <IconMinus size={14} stroke={1.8} />
-      </button>
+      <Tooltip text="Link">
+        <button
+          type="button"
+          onClick={addLink}
+          className={editor.isActive("link") ? "is-active" : ""}
+        >
+          <IconLink size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
+      <Tooltip text="Horizontal rule">
+        <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+          <IconMinus size={14} stroke={1.8} />
+        </button>
+      </Tooltip>
     </div>
   );
 }
@@ -353,21 +364,22 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       </Modal.Body>
       <Modal.Footer>
         {referenceUrl && (
-          <a
-            href={referenceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontSize: "0.8125rem",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-            className="me-auto text-truncate-custom"
-            title={referenceUrl}
-          >
-            {referenceUrl}
-          </a>
+          <Tooltip text={referenceUrl}>
+            <a
+              href={referenceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: "0.8125rem",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              className="me-auto text-truncate-custom"
+            >
+              {referenceUrl}
+            </a>
+          </Tooltip>
         )}
         <Button variant="outline-secondary" size="sm" onClick={handleClose}>
           {isEditing ? "Close" : "Cancel"}

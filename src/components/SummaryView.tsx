@@ -20,6 +20,7 @@ import { DescriptionModal } from "./DescriptionModal";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
 import { Timestamp } from "./Timestamp";
 import { StatusBadge } from "./StatusBadge";
+import { Tooltip } from "./Tooltip";
 
 interface SummaryViewProps {
   jiraIssues: JiraIssue[];
@@ -74,13 +75,15 @@ function Section({
   return (
     <Card className="h-100 summary-card" style={{ borderLeft: `3px solid ${accent}` }}>
       <Card.Body className="p-0">
-        <div className="section-header px-3 pt-3 mb-0" title={tooltip}>
-          <span
-            className="section-icon-bg"
-            style={{ backgroundColor: `${accent}15`, color: accent }}
-          >
-            {icon}
-          </span>
+        <div className="section-header px-3 pt-3 mb-0">
+          <Tooltip text={tooltip || ""}>
+            <span
+              className="section-icon-bg"
+              style={{ backgroundColor: `${accent}15`, color: accent }}
+            >
+              {icon}
+            </span>
+          </Tooltip>
           <span>{title}</span>
           {count > 0 && (
             <Badge bg="" className="badge-status-neutral" style={{ fontSize: "0.625rem" }}>
@@ -251,17 +254,14 @@ function HeroStats({
   return (
     <div className="summary-hero-bar">
       {stats.map((s) => (
-        <div
-          key={s.label}
-          className="summary-hero-stat"
-          onClick={() => onNavigate(s.tab)}
-          title={s.tooltip}
-        >
-          <div className="summary-hero-count" style={{ color: s.color }}>
-            {s.count}
+        <Tooltip key={s.label} text={s.tooltip}>
+          <div className="summary-hero-stat" onClick={() => onNavigate(s.tab)}>
+            <div className="summary-hero-count" style={{ color: s.color }}>
+              {s.count}
+            </div>
+            <div className="summary-hero-label">{s.label}</div>
           </div>
-          <div className="summary-hero-label">{s.label}</div>
-        </div>
+        </Tooltip>
       ))}
     </div>
   );
@@ -463,38 +463,37 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             loading={notesLoading}
             tooltip="Personal notes and reminders"
             headerAction={
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                style={{ padding: "1px 5px", lineHeight: 1 }}
-                title="Add note"
-                onClick={onAddNote}
-              >
-                <IconPlus size={12} />
-              </Button>
+              <Tooltip text="Add note">
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  style={{ padding: "1px 5px", lineHeight: 1 }}
+                  onClick={onAddNote}
+                >
+                  <IconPlus size={12} />
+                </Button>
+              </Tooltip>
             }
           >
             {topNotes.length > 0 ? (
               <div className="summary-notes-grid">
                 {topNotes.map((note) => (
-                  <div
-                    key={note.id}
-                    className="summary-note-chip"
-                    onClick={() => onOpenNote(note)}
-                    title={getNoteDisplayTitle(note)}
-                  >
-                    <span className="summary-note-chip-text">{getNoteDisplayTitle(note)}</span>
-                    <button
-                      className="summary-note-resolve"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onResolveNote(note.id);
-                      }}
-                      title="Resolve"
-                    >
-                      <IconCheck size={10} />
-                    </button>
-                  </div>
+                  <Tooltip key={note.id} text={getNoteDisplayTitle(note)}>
+                    <div className="summary-note-chip" onClick={() => onOpenNote(note)}>
+                      <span className="summary-note-chip-text">{getNoteDisplayTitle(note)}</span>
+                      <Tooltip text="Resolve">
+                        <button
+                          className="summary-note-resolve"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onResolveNote(note.id);
+                          }}
+                        >
+                          <IconCheck size={10} />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  </Tooltip>
                 ))}
               </div>
             ) : (

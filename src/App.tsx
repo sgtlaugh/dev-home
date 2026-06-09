@@ -45,6 +45,7 @@ import { useGitHubRateLimit } from "./hooks/useGitHubRateLimit";
 import { usePrefetchStatus } from "./hooks/useOrgLeaderboard";
 import { apiCache } from "./utils/cache";
 import { getRandomQuote } from "./constants/quotes";
+import { Tooltip } from "./components/Tooltip";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("summary");
@@ -118,34 +119,37 @@ export default function App() {
           </div>
           <div className="titlebar-drag" />
           <div className="titlebar-controls">
-            <button
-              className="titlebar-btn"
-              onClick={() => window.electronAPI?.windowMinimize()}
-              title="Minimize"
-            >
-              <svg width="10" height="1">
-                <rect width="10" height="1" fill="currentColor" />
-              </svg>
-            </button>
-            <button
-              className="titlebar-btn"
-              onClick={() => window.electronAPI?.windowMaximize()}
-              title="Maximize"
-            >
-              <svg width="10" height="10">
-                <rect width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
-            </button>
-            <button
-              className="titlebar-btn titlebar-btn-close"
-              onClick={() => window.electronAPI?.windowClose()}
-              title="Close"
-            >
-              <svg width="10" height="10">
-                <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth="1.2" />
-                <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
-            </button>
+            <Tooltip text="Minimize">
+              <button className="titlebar-btn" onClick={() => window.electronAPI?.windowMinimize()}>
+                <svg width="10" height="1">
+                  <rect width="10" height="1" fill="currentColor" />
+                </svg>
+              </button>
+            </Tooltip>
+            <Tooltip text="Maximize">
+              <button className="titlebar-btn" onClick={() => window.electronAPI?.windowMaximize()}>
+                <svg width="10" height="10">
+                  <rect
+                    width="10"
+                    height="10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                  />
+                </svg>
+              </button>
+            </Tooltip>
+            <Tooltip text="Close">
+              <button
+                className="titlebar-btn titlebar-btn-close"
+                onClick={() => window.electronAPI?.windowClose()}
+              >
+                <svg width="10" height="10">
+                  <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth="1.2" />
+                  <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth="1.2" />
+                </svg>
+              </button>
+            </Tooltip>
           </div>
         </div>
 
@@ -166,19 +170,20 @@ export default function App() {
             <div className="sidebar-divider" />
 
             {/* GitHub section */}
-            <button
-              className={`sidebar-top-item${githubExpanded ? " expanded" : ""}${githubTabs.includes(effectiveTab) ? " section-active" : ""}`}
-              onClick={() => setGithubExpanded(!githubExpanded)}
-              title={
-                rateLimit ? `API: ${rateLimit.remaining}/${rateLimit.limit} remaining` : undefined
-              }
+            <Tooltip
+              text={rateLimit ? `API: ${rateLimit.remaining}/${rateLimit.limit} remaining` : ""}
             >
-              <IconBrandGithub size={22} />
-              <span className="sidebar-top-label">GitHub</span>
-              <span className="sidebar-chevron">
-                <IconChevronDown size={10} />
-              </span>
-            </button>
+              <button
+                className={`sidebar-top-item${githubExpanded ? " expanded" : ""}${githubTabs.includes(effectiveTab) ? " section-active" : ""}`}
+                onClick={() => setGithubExpanded(!githubExpanded)}
+              >
+                <IconBrandGithub size={22} />
+                <span className="sidebar-top-label">GitHub</span>
+                <span className="sidebar-chevron">
+                  <IconChevronDown size={10} />
+                </span>
+              </button>
+            </Tooltip>
 
             {githubExpanded && (
               <div className="sidebar-sub-items">
@@ -379,48 +384,50 @@ export default function App() {
                   </div>
                   <div className="content-header-actions">
                     {!refreshing && !loading && lastRefreshTime && (
-                      <span
-                        className="text-secondary sidebar-refresh-time sidebar-action-btn"
-                        title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
-                        style={{
-                          cursor: "default",
-                          padding: "0 8px",
-                          display: "flex",
-                          alignItems: "center",
-                        }}
-                      >
-                        {Math.round((Date.now() - lastRefreshTime) / 60000)}m
-                      </span>
+                      <Tooltip text={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}>
+                        <span
+                          className="text-secondary sidebar-refresh-time sidebar-action-btn"
+                          style={{
+                            cursor: "default",
+                            padding: "0 8px",
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          {Math.round((Date.now() - lastRefreshTime) / 60000)}m
+                        </span>
+                      </Tooltip>
                     )}
-                    <button
-                      className={`sidebar-action-btn${refreshing ? " spinning" : ""}`}
-                      onClick={async () => {
-                        if (refreshing) return;
-                        setRefreshing(true);
-                        setToast("Clearing cache and refreshing...");
-                        try {
-                          apiCache.clear();
-                          localStorage.clear();
-                          await apiClient.post("/cache/purge");
-                          await Promise.all([
-                            refresh(),
-                            refreshNotes(),
-                            refreshActivity(),
-                            refreshTeamActivity(),
-                          ]);
-                          setToast("Refreshed successfully");
-                        } catch {
-                          setToast("Refresh failed — check connection");
-                        } finally {
-                          setRefreshing(false);
-                          setTimeout(() => setToast(null), 3000);
-                        }
-                      }}
-                      disabled={refreshing}
-                      title="Clear cache and refresh all data"
-                    >
-                      <IconRefresh size={14} />
-                    </button>
+                    <Tooltip text="Clear cache and refresh all data">
+                      <button
+                        className={`sidebar-action-btn${refreshing ? " spinning" : ""}`}
+                        onClick={async () => {
+                          if (refreshing) return;
+                          setRefreshing(true);
+                          setToast("Clearing cache and refreshing...");
+                          try {
+                            apiCache.clear();
+                            localStorage.clear();
+                            await apiClient.post("/cache/purge");
+                            await Promise.all([
+                              refresh(),
+                              refreshNotes(),
+                              refreshActivity(),
+                              refreshTeamActivity(),
+                            ]);
+                            setToast("Refreshed successfully");
+                          } catch {
+                            setToast("Refresh failed — check connection");
+                          } finally {
+                            setRefreshing(false);
+                            setTimeout(() => setToast(null), 3000);
+                          }
+                        }}
+                        disabled={refreshing}
+                      >
+                        <IconRefresh size={14} />
+                      </button>
+                    </Tooltip>
                     {(() => {
                       const size = 14;
                       const stroke = 2.5;

@@ -7,6 +7,7 @@ import { ChecksStatusIcon } from "./ChecksStatusIcon";
 import { Timestamp } from "./Timestamp";
 import { EmptyState } from "./EmptyState";
 import { DescriptionModal } from "./DescriptionModal";
+import { Tooltip } from "./Tooltip";
 
 const REVIEW_STATUS_CONFIG: Record<string, { label: string; badgeClass: string }> = {
   APPROVED: { label: "Approved", badgeClass: "badge-status-green" },
@@ -56,17 +57,18 @@ const PRCard: React.FC<PRCardProps> = ({ pr, variant, onClick }) => {
         <div className="activity-header">
           {isReview && (
             <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-              <img
-                src={pr.user.avatar_url}
-                alt={pr.user.login}
-                title={pr.user.login}
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  border: "2px solid #d1d9e0",
-                }}
-              />
+              <Tooltip text={pr.user.login}>
+                <img
+                  src={pr.user.avatar_url}
+                  alt={pr.user.login}
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "50%",
+                    border: "2px solid #d1d9e0",
+                  }}
+                />
+              </Tooltip>
               <span style={{ fontSize: "0.75rem", color: "#656d76", fontWeight: 500 }}>
                 @{pr.user.login}
               </span>

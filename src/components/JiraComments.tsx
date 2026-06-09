@@ -7,6 +7,7 @@ import { EmptyState } from "./EmptyState";
 import { truncateText } from "../utils/text";
 import { Timestamp } from "./Timestamp";
 import { API_BASE } from "../services/config";
+import { Tooltip } from "./Tooltip";
 
 function JiraAvatar({ url, name }: { url?: string; name: string }) {
   const [failed, setFailed] = useState(false);
@@ -18,11 +19,19 @@ function JiraAvatar({ url, name }: { url?: string; name: string }) {
     .toUpperCase();
 
   if (!url || failed) {
-    return <div className="avatar-md avatar-initials">{initials}</div>;
+    return (
+      <Tooltip text={name}>
+        <div className="avatar-md avatar-initials">{initials}</div>
+      </Tooltip>
+    );
   }
 
   const proxied = `${API_BASE}/jira/avatar?url=${url}`;
-  return <img src={proxied} alt={name} className="avatar-md" onError={() => setFailed(true)} />;
+  return (
+    <Tooltip text={name}>
+      <img src={proxied} alt={name} className="avatar-md" onError={() => setFailed(true)} />
+    </Tooltip>
+  );
 }
 
 // Highlight @mentions in text

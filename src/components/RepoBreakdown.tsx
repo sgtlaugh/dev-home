@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { GitHubPR } from "../types";
+import { Tooltip } from "./Tooltip";
 
 function hashColor(name: string): string {
   let hash = 0;
@@ -40,18 +41,18 @@ export function RepoBreakdown({ prs, selectedRepos, onToggleRepo }: RepoBreakdow
     <div className="repo-bar-container">
       <div className="repo-bar">
         {repos.map((r) => (
-          <div
-            key={r.name}
-            className="repo-bar-segment"
-            style={{
-              width: `${r.pct}%`,
-              backgroundColor: r.color,
-              opacity: hasSelection && !selectedRepos.has(r.name) ? 0.2 : 1,
-              cursor: onToggleRepo ? "pointer" : "default",
-            }}
-            title={`${r.name}: ${r.count} PR${r.count !== 1 ? "s" : ""}`}
-            onClick={() => onToggleRepo?.(r.name)}
-          />
+          <Tooltip key={r.name} text={`${r.name}: ${r.count} PR${r.count !== 1 ? "s" : ""}`}>
+            <div
+              className="repo-bar-segment"
+              style={{
+                width: `${r.pct}%`,
+                backgroundColor: r.color,
+                opacity: hasSelection && !selectedRepos.has(r.name) ? 0.2 : 1,
+                cursor: onToggleRepo ? "pointer" : "default",
+              }}
+              onClick={() => onToggleRepo?.(r.name)}
+            />
+          </Tooltip>
         ))}
       </div>
       <div className="repo-bar-legend">

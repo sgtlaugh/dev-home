@@ -1,4 +1,5 @@
 import React from "react";
+import { Tooltip } from "./Tooltip";
 
 interface TimestampProps {
   timestamp: string;
@@ -28,8 +29,8 @@ export function Timestamp({ timestamp, label }: TimestampProps) {
   const tooltipText = label ? `${label} · ${fullDateTime}` : fullDateTime;
 
   return (
-    <span className="activity-time" title={tooltipText}>
-      {dateAndTime}
-    </span>
+    <Tooltip text={tooltipText}>
+      <span className="activity-time">{dateAndTime}</span>
+    </Tooltip>
   );
 }

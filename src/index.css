@@ -2795,6 +2795,23 @@ a.note-row-title:hover {
   }
 }
 
+/* --- Custom Tooltip --- */
+.js-tooltip {
+  position: fixed;
+  background-color: #2d333b;
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  font-style: normal;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 /* --- Leaderboard --- */
 .leaderboard-bar-track {
   flex: 1;
