@@ -282,6 +282,81 @@ a:hover {
   transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;
 }
 
+/* --- Rate Limit Widget & Popover --- */
+.rate-limit-widget {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  cursor: default;
+}
+
+.rate-limit-widget:hover .rate-limit-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.rate-limit-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background: #1e2228;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 180ms ease;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.rlp-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 10px;
+}
+
+.rlp-status {
+  margin-left: auto;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rlp-bar-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.rlp-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease, background-color 0.4s ease;
+}
+
+.rlp-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.625rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
 /* --- Sidebar Top-Level Items --- */
 .sidebar-top-item {
   display: flex;

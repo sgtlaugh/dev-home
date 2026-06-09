@@ -347,57 +347,79 @@ export default function App() {
                       <IconRefresh size={14} />
                     </button>
                     {(() => {
-                      const size = 16;
+                      const size = 14;
                       const stroke = 2.5;
                       const r = (size - stroke) / 2;
-                      if (!rateLimit) {
-                        return (
-                          <span className="sidebar-action-btn" style={{ cursor: "default" }}>
-                            <svg width={size} height={size} className="rate-limit-ring">
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke="var(--bs-border-color)"
-                                strokeWidth={stroke}
-                              />
-                            </svg>
-                          </span>
-                        );
-                      }
-                      const pct = rateLimit.remaining / rateLimit.limit;
-                      const color = pct > 0.5 ? "#3fb950" : pct > 0.2 ? "#d29922" : "#f85149";
+                      const pct = rateLimit ? rateLimit.remaining / rateLimit.limit : 0;
+                      const color = !rateLimit
+                        ? "var(--bs-border-color)"
+                        : pct > 0.5
+                          ? "#3fb950"
+                          : pct > 0.2
+                            ? "#d29922"
+                            : "#f85149";
                       const circ = 2 * Math.PI * r;
-                      const offset = circ * (1 - pct);
+                      const offset = rateLimit ? circ * (1 - pct) : circ;
+                      const resetTime = rateLimit ? new Date(rateLimit.resetAt) : null;
+                      const minsUntilReset = resetTime
+                        ? Math.max(0, Math.round((resetTime.getTime() - Date.now()) / 60000))
+                        : 0;
+                      const statusLabel = !rateLimit
+                        ? "Unknown"
+                        : pct > 0.5
+                          ? "Healthy"
+                          : pct > 0.2
+                            ? "Moderate"
+                            : "Critical";
                       return (
-                        <span
-                          className="sidebar-action-btn rate-limit-indicator"
-                          title={`GitHub API: ${rateLimit.remaining}/${rateLimit.limit} remaining\nResets ${new Date(rateLimit.resetAt).toLocaleTimeString()}`}
-                          style={{ cursor: "default" }}
-                        >
+                        <span className="rate-limit-widget">
                           <svg width={size} height={size} className="rate-limit-ring">
                             <circle
                               cx={size / 2}
                               cy={size / 2}
                               r={r}
                               fill="none"
-                              stroke="var(--bs-border-color)"
+                              stroke="#e1e4e8"
                               strokeWidth={stroke}
                             />
-                            <circle
-                              cx={size / 2}
-                              cy={size / 2}
-                              r={r}
-                              fill="none"
-                              stroke={color}
-                              strokeWidth={stroke}
-                              strokeDasharray={circ}
-                              strokeDashoffset={offset}
-                              strokeLinecap="round"
-                              transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                            />
+                            {rateLimit && (
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={r}
+                                fill="none"
+                                stroke={color}
+                                strokeWidth={stroke}
+                                strokeDasharray={circ}
+                                strokeDashoffset={offset}
+                                strokeLinecap="round"
+                                transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                              />
+                            )}
                           </svg>
+                          <div className="rate-limit-popover">
+                            <div className="rlp-header">
+                              <IconBrandGithub size={14} />
+                              <span>GitHub API</span>
+                              <span className="rlp-status" style={{ color }}>
+                                {statusLabel}
+                              </span>
+                            </div>
+                            <div className="rlp-bar-track">
+                              <div
+                                className="rlp-bar-fill"
+                                style={{ width: `${pct * 100}%`, backgroundColor: color }}
+                              />
+                            </div>
+                            <div className="rlp-details">
+                              <span>
+                                {rateLimit
+                                  ? `${rateLimit.remaining.toLocaleString()} / ${rateLimit.limit.toLocaleString()}`
+                                  : "—"}
+                              </span>
+                              <span>{rateLimit ? `Resets in ${minsUntilReset}m` : ""}</span>
+                            </div>
+                          </div>
                         </span>
                       );
                     })()}
