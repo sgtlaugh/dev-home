@@ -288,14 +288,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
 
-  if (loading && jiraIssues.length === 0 && openPRs.length === 0) {
-    return (
-      <div className="d-flex justify-content-center align-items-center py-5">
-        <Spinner animation="border" variant="secondary" />
-      </div>
-    );
-  }
-
   const jiraBase = jiraBaseUrl?.replace(/\/+$/, "") || "";
 
   const thirtyDaysAgo = new Date();

@@ -81,13 +81,10 @@ router.get("/", async (_req: Request, res: Response) => {
   res.json(result);
 });
 
-router.get("/count", async (_req: Request, res: Response) => {
-  const cacheKey = "activity:recent";
+router.get("/count", (_req: Request, res: Response) => {
   const stale = apiCache.getStale<{ activities: ActivityItem[] }>(ACTIVITY_CACHE_KEY);
-  const acts = stale
-    ? stale.data.activities
-    : (await refreshActivityCache()).activities;
-
+  if (!stale) return res.json({ github: 0, jira: 0, total: 0 });
+  const acts = stale.data.activities;
   res.json({
     github: acts.filter(a => a.type === "github").length,
     jira: acts.filter(a => a.type === "jira").length,
