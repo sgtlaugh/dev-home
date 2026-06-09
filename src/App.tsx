@@ -170,20 +170,16 @@ export default function App() {
             <div className="sidebar-divider" />
 
             {/* GitHub section */}
-            <Tooltip
-              text={rateLimit ? `API: ${rateLimit.remaining}/${rateLimit.limit} remaining` : ""}
+            <button
+              className={`sidebar-top-item${githubExpanded ? " expanded" : ""}${githubTabs.includes(effectiveTab) ? " section-active" : ""}`}
+              onClick={() => setGithubExpanded(!githubExpanded)}
             >
-              <button
-                className={`sidebar-top-item${githubExpanded ? " expanded" : ""}${githubTabs.includes(effectiveTab) ? " section-active" : ""}`}
-                onClick={() => setGithubExpanded(!githubExpanded)}
-              >
-                <IconBrandGithub size={22} />
-                <span className="sidebar-top-label">GitHub</span>
-                <span className="sidebar-chevron">
-                  <IconChevronDown size={10} />
-                </span>
-              </button>
-            </Tooltip>
+              <IconBrandGithub size={22} />
+              <span className="sidebar-top-label">GitHub</span>
+              <span className="sidebar-chevron">
+                <IconChevronDown size={10} />
+              </span>
+            </button>
 
             {githubExpanded && (
               <div className="sidebar-sub-items">
