@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
 import { apiClient } from "./services/config";
@@ -44,9 +44,11 @@ import { useTeamActivity } from "./hooks/useTeamActivity";
 import { useGitHubRateLimit } from "./hooks/useGitHubRateLimit";
 import { usePrefetchStatus } from "./hooks/useOrgLeaderboard";
 import { apiCache } from "./utils/cache";
+import { getRandomQuote } from "./constants/quotes";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("summary");
+  const quote = useMemo(() => getRandomQuote(), []);
   const [currentMonthPRsCount, setCurrentMonthPRsCount] = useState(0);
   const {
     configured,
@@ -248,6 +250,21 @@ export default function App() {
               <>
                 <div className="content-header">
                   <div className="content-header-time">
+                    {effectiveTab === "summary" && (
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          fontStyle: "italic",
+                          color: "#656d76",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          letterSpacing: "0.01em",
+                        }}
+                      >
+                        {quote}
+                      </span>
+                    )}
                     {(prefetch.running || prefetch.complete) &&
                       effectiveTab === "leaderboard" &&
                       (() => {
