@@ -317,6 +317,11 @@ a:hover {
   pointer-events: none;
 }
 
+.rate-limit-popover.popover-left {
+  right: auto;
+  left: 0;
+}
+
 .rlp-header {
   display: flex;
   align-items: center;

@@ -257,7 +257,7 @@ export default function App() {
                             <span
                               style={{
                                 fontSize: "0.7rem",
-                                color: "#1a7f37",
+                                color: "#0969da",
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -267,21 +267,20 @@ export default function App() {
                         }
                         const pct = prefetch.percentage / 100;
                         const color = "#0969da";
-                        const size = 16;
+                        const size = 14;
                         const stroke = 2.5;
                         const r = (size - stroke) / 2;
                         const circ = 2 * Math.PI * r;
                         const offset = circ * (1 - pct);
-                        const tip = `Caching ${prefetch.org}... ${prefetch.percentage}% (${prefetch.monthsDone}/${prefetch.totalMonths} months)`;
                         return (
-                          <span className="rate-limit-indicator" title={tip}>
+                          <span className="rate-limit-widget">
                             <svg width={size} height={size} className="rate-limit-ring">
                               <circle
                                 cx={size / 2}
                                 cy={size / 2}
                                 r={r}
                                 fill="none"
-                                stroke="rgba(255,255,255,0.15)"
+                                stroke="#e1e4e8"
                                 strokeWidth={stroke}
                               />
                               <circle
@@ -297,6 +296,27 @@ export default function App() {
                                 transform={`rotate(-90 ${size / 2} ${size / 2})`}
                               />
                             </svg>
+                            <div className="rate-limit-popover popover-left">
+                              <div className="rlp-header">
+                                <IconBrandGithub size={14} />
+                                <span>Org Caching</span>
+                                <span className="rlp-status" style={{ color }}>
+                                  {prefetch.org || "org"}
+                                </span>
+                              </div>
+                              <div className="rlp-bar-track">
+                                <div
+                                  className="rlp-bar-fill"
+                                  style={{ width: `${pct * 100}%`, backgroundColor: color }}
+                                />
+                              </div>
+                              <div className="rlp-details">
+                                <span>
+                                  {prefetch.monthsDone} / {prefetch.totalMonths} months
+                                </span>
+                                <span>{Math.round(pct * 100)}%</span>
+                              </div>
+                            </div>
                           </span>
                         );
                       })()}
