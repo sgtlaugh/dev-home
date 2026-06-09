@@ -218,7 +218,7 @@ a:hover {
   border-top: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   padding: 10px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -286,12 +286,12 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 6px 10px;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: rgba(255, 255, 255, 0.55);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 400;
   cursor: pointer;
   transition:
@@ -350,7 +350,7 @@ a:hover {
 }
 
 .sidebar-separator {
-  height: 12px;
+  height: 6px;
   flex-shrink: 0;
 }
 
