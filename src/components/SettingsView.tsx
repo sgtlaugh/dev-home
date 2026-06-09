@@ -399,9 +399,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </option>
                 ))}
               </Form.Select>
-              <Form.Text className="text-secondary-custom" style={{ fontSize: "0.7rem" }}>
-                Tab shown when the app launches.
-              </Form.Text>
             </Form.Group>
 
             <Form.Group className="mb-0">
@@ -485,27 +482,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     />
                   </div>
                 )}
-                <div
-                  className="d-flex justify-content-between py-1"
-                  style={{ borderBottom: "1px solid #d1d9e0" }}
-                >
+                <div className="settings-cache-row">
                   <span className="d-flex align-items-center gap-1">
                     <span className="settings-cache-dot" style={{ backgroundColor: "#8250df" }} />
                     <span className="text-secondary-custom">API cache</span>
                   </span>
                   <span>{cacheStats.apiCache}</span>
                 </div>
-                <div
-                  className="d-flex justify-content-between py-1"
-                  style={{ borderBottom: "1px solid #d1d9e0" }}
-                >
+                <div className="settings-cache-row">
                   <span className="d-flex align-items-center gap-1">
                     <span className="settings-cache-dot" style={{ backgroundColor: "#1a7f37" }} />
                     <span className="text-secondary-custom">Contributions</span>
                   </span>
                   <span>{cacheStats.contributions.toLocaleString()}</span>
                 </div>
-                <div className="d-flex justify-content-between py-1">
+                <div className="settings-cache-row">
                   <span className="d-flex align-items-center gap-1">
                     <span className="settings-cache-dot" style={{ backgroundColor: "#0969da" }} />
                     <span className="text-secondary-custom">Profiles</span>

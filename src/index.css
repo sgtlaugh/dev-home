@@ -1079,6 +1079,14 @@ a:hover {
   transition: width 0.3s ease;
 }
 
+.settings-cache-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 0;
+}
+
 .settings-cache-dot {
   width: 8px;
   height: 8px;
