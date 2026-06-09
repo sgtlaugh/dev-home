@@ -20,7 +20,6 @@ const router = Router();
 const MAX_BATCH_SIZE = 35;
 const MAX_CONCURRENT_BATCHES = 2;
 const MAX_RETRIES = 3;
-const RETRY_BASE_DELAY_MS = 3000;
 const FALLBACK_403_PAUSE_MS = 5000;
 const FALLBACK_403_PARALLEL = 5;
 
@@ -160,12 +159,6 @@ async function fetchBatchFromApi(
             logger.warn("Leaderboard", `${subTag} got 403, pausing ${FALLBACK_403_PAUSE_MS}ms then falling back to parallel single-user`);
             await new Promise((r) => setTimeout(r, FALLBACK_403_PAUSE_MS));
             return await fallbackToSingles(users, subTag);
-          }
-          if (status === 502 && attempt < MAX_RETRIES) {
-            const delay = RETRY_BASE_DELAY_MS * (attempt + 1);
-            logger.warn("Leaderboard", `${subTag} got ${status}, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`);
-            await new Promise((r) => setTimeout(r, delay));
-            continue;
           }
           if (err?.message?.includes("Resource limits") && users.length > 5) {
             logger.warn("Leaderboard", `${subTag} resource limit, splitting batch (${users.length} → ${Math.floor(users.length / 2)})`);
