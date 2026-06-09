@@ -13,7 +13,7 @@ import {
   gateStartDate,
 } from "./helpers";
 import { SEARCH_MY_PRS_QUERY } from "./queries";
-import { LONG_CACHE_TTL, CACHE_FRESHNESS_MONTHS } from "../../utils/constants";
+import { LONG_CACHE_TTL } from "../../utils/constants";
 import {
   getMonthsBetween,
   getCurrentYearMonth,
@@ -24,13 +24,6 @@ import {
 
 const router = Router();
 const PARALLEL_BATCH = 4;
-
-function isOlderThanMonths(yearMonth: string, n: number): boolean {
-  const now = new Date();
-  const cutoff = new Date(now.getFullYear(), now.getMonth() - n, 1);
-  const [y, m] = yearMonth.split("-").map(Number);
-  return new Date(y, m - 1, 1) < cutoff;
-}
 
 function bucketPRsByMonth(prs: any[]): Map<string, any[]> {
   const buckets = new Map<string, any[]>();
@@ -99,7 +92,7 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   const currentMonth = getCurrentYearMonth();
   const allMonths = getMonthsBetween(startDate, endDate);
   const cacheableMonths = allMonths.filter(
-    (m) => isFullMonth(startDate, endDate, m) && isOlderThanMonths(m, CACHE_FRESHNESS_MONTHS),
+    (m) => isFullMonth(startDate, endDate, m) && m < currentMonth,
   );
   const uncacheableMonths = allMonths.filter((m) => !cacheableMonths.includes(m));
 

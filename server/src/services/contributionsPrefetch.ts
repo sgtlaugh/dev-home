@@ -2,15 +2,16 @@ import { getConfig } from "../config";
 import { createGitHubClient } from "../clients/githubApiClient";
 import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
-import { LONG_CACHE_TTL, CACHE_FRESHNESS_MONTHS } from "../utils/constants";
+import { LONG_CACHE_TTL } from "../utils/constants";
 import { logger } from "../utils/logger";
 import {
   getMonthsBetween,
-  getCurrentYearMonth,
   getCachedPRs,
   savePRs,
   getCachedCommitCounts,
   saveCommitCount,
+  bustRecentPRs,
+  bustRecentCommitCounts,
 } from "./contributionCache";
 import {
   fetchUserJoinDate,
@@ -22,16 +23,16 @@ import {
 const PARALLEL_BATCH = 4;
 const MONTHS_PER_BATCH = 12;
 
-function getCacheableEndMonth(): string {
+const BUST_RECENT_MONTHS = 2;
+
+function getRecentMonths(n: number): string[] {
   const now = new Date();
-  const cutoff = new Date(now.getFullYear(), now.getMonth() - CACHE_FRESHNESS_MONTHS, 1);
-  // Last fully cacheable month is the one before the cutoff month
-  cutoff.setMonth(cutoff.getMonth() - 1);
-  if (cutoff.getMonth() < 0) {
-    cutoff.setFullYear(cutoff.getFullYear() - 1);
-    cutoff.setMonth(11);
+  const months: string[] = [];
+  for (let i = 1; i <= n; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(`${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}`);
   }
-  return `${cutoff.getFullYear()}-${(cutoff.getMonth() + 1).toString().padStart(2, "0")}`;
+  return months;
 }
 
 function bucketPRsByMonth(prs: any[]): Map<string, any[]> {
@@ -58,8 +59,15 @@ export async function prefetchContributions(): Promise<void> {
     return;
   }
 
-  const endMonth = getCacheableEndMonth();
+  const now = new Date();
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endMonth = `${prevMonth.getFullYear()}-${(prevMonth.getMonth() + 1).toString().padStart(2, "0")}`;
   const allMonths = getMonthsBetween(joinDate, `${endMonth}-28`);
+
+  const recentMonths = getRecentMonths(BUST_RECENT_MONTHS);
+  bustRecentPRs(recentMonths);
+  bustRecentCommitCounts(recentMonths);
+  logger.info("ContribPrefetch", `Busted cache for recent months: ${recentMonths.join(", ")}`);
 
   if (allMonths.length === 0) {
     logger.info("ContribPrefetch", "No months to prefetch");

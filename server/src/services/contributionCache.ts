@@ -147,6 +147,24 @@ export function clearProfiles(): void {
   db.exec("DELETE FROM github_profiles");
 }
 
+export function bustRecentPRs(months: string[]): void {
+  if (months.length === 0) return;
+  const db = getDb();
+  const placeholders = months.map(() => "?").join(",");
+  db.prepare(
+    `UPDATE user_contribution_cache SET prs_json = NULL WHERE year_month IN (${placeholders}) AND prs_json IS NOT NULL`,
+  ).run(...months);
+}
+
+export function bustRecentCommitCounts(months: string[]): void {
+  if (months.length === 0) return;
+  const db = getDb();
+  const placeholders = months.map(() => "?").join(",");
+  db.prepare(
+    `UPDATE user_contribution_cache SET commit_count = NULL WHERE year_month IN (${placeholders}) AND commit_count IS NOT NULL`,
+  ).run(...months);
+}
+
 export function saveCommitCount(yearMonth: string, count: number): void {
   const db = getDb();
   db.prepare(
