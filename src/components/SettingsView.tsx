@@ -261,7 +261,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   return (
     <div>
-      <Row>
+      <Row style={{ marginBottom: "1.5rem" }}>
         {/* GitHub */}
         <Col lg={6}>
           <SectionCard
