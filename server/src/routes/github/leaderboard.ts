@@ -129,6 +129,11 @@ export async function fetchOrgMembers(org: string): Promise<string[]> {
   return members;
 }
 
+interface BatchResult {
+  entries: LeaderboardEntry[];
+  hasErrors: boolean;
+}
+
 async function fetchBatchFromApi(
   members: string[],
   chunks: { from: string; to: string; alias: string }[],
@@ -136,8 +141,9 @@ async function fetchBatchFromApi(
   label: string,
   orgId: string,
   signal?: AbortSignal,
-): Promise<LeaderboardEntry[]> {
+): Promise<BatchResult> {
   const totalBatches = Math.ceil(members.length / batchSize);
+  let hasErrors = false;
 
   const fetchOne = async (index: number): Promise<LeaderboardEntry[]> => {
     const logins = members.slice(index * batchSize, (index + 1) * batchSize);
@@ -175,9 +181,11 @@ async function fetchBatchFromApi(
             return await fallbackToSingles(users, subTag);
           }
           logger.error("Leaderboard", `${subTag} failed: ${err}`);
+          hasErrors = true;
           return [];
         }
       }
+      hasErrors = true;
       return [];
     };
 
@@ -216,7 +224,7 @@ async function fetchBatchFromApi(
     entries.push(...results.flat());
   }
   saveProfiles(entries.map((e) => ({ login: e.login, name: e.name, avatarUrl: e.avatarUrl })));
-  return entries;
+  return { entries, hasErrors };
 }
 
 function loadProfiles(members: string[]): Map<string, { avatarUrl: string; name: string | null }> {
@@ -235,7 +243,9 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "org, startDate, endDate required" });
   }
 
-  const cacheKey = `github:org-leaderboard:${org}:${startDate}:${endDate}`;
+  const today = new Date().toISOString().split("T")[0];
+  const effectiveEnd = endDate > today ? today : endDate;
+  const cacheKey = `github:org-leaderboard:${org}:${startDate}:${effectiveEnd}`;
   const cached = apiCache.get(cacheKey);
   if (cached) return res.json(cached);
 
@@ -246,8 +256,6 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
   try {
     const orgId = await fetchOrgId(org);
     const members = await fetchOrgMembers(org);
-    const today = new Date().toISOString().split("T")[0];
-    const effectiveEnd = endDate > today ? today : endDate;
     const currentMonth = getCurrentYearMonth();
     const allMonths = getMonthsBetween(startDate, effectiveEnd);
     const fullMonths = allMonths.filter((m) => m !== currentMonth && isFullMonth(startDate, effectiveEnd, m));
@@ -268,6 +276,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     );
 
     const totals: Totals = new Map(members.map((l) => [l, { commits: 0, prs: 0, reviews: 0 }]));
+    let fetchHasErrors = false;
 
     for (const [, monthMap] of dbCache) {
       for (const contrib of monthMap.values()) {
@@ -279,14 +288,22 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     for (const [month, logins] of missingByMonth) {
       if (abort.signal.aborted) break;
       const chunk = monthToChunk(month);
-      const results = await fetchBatchFromApi(logins, [chunk], MAX_BATCH_SIZE, `leaderboard/${month}`, orgId, abort.signal);
-      saveContributions(org, results.map((r) => ({ login: r.login, yearMonth: month, commits: r.commits, prs: r.prs, reviews: r.reviews })));
-      addToTotals(totals, results);
+      const batch = await fetchBatchFromApi(logins, [chunk], MAX_BATCH_SIZE, `leaderboard/${month}`, orgId, abort.signal);
+      fetchHasErrors ||= batch.hasErrors;
+      saveContributions(org, batch.entries.map((r) => ({ login: r.login, yearMonth: month, commits: r.commits, prs: r.prs, reviews: r.reviews })));
+      addToTotals(totals, batch.entries);
     }
 
     if (partialMonths.length > 0) {
       const currentMonthPartials = partialMonths.filter((m) => m === currentMonth);
       const otherPartials = partialMonths.filter((m) => m !== currentMonth);
+
+      const monthToChunkRange = (month: string, alias: string) => {
+        const [y, m] = month.split("-").map(Number);
+        const first = month === allMonths[0] ? startDate : `${month}-01`;
+        const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
+        return { from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias };
+      };
 
       for (const month of currentMonthPartials) {
         const cmKey = `leaderboard:current:${org}:${month}:${startDate}:${effectiveEnd}`;
@@ -295,24 +312,18 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
           logger.info("Leaderboard", `Current month ${month} from cache`);
           addToTotals(totals, cmCached);
         } else {
-          const [y, m] = month.split("-").map(Number);
-          const first = month === allMonths[0] ? startDate : `${month}-01`;
-          const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
-          const chunks = [{ from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: "p0" }];
-          const results = await fetchBatchFromApi(members, chunks, MAX_BATCH_SIZE, `leaderboard/current`, orgId, abort.signal);
-          apiCache.set(cmKey, results, SHORT_CACHE_TTL);
-          addToTotals(totals, results);
+          const batch = await fetchBatchFromApi(members, [monthToChunkRange(month, "p0")], MAX_BATCH_SIZE, `leaderboard/current`, orgId, abort.signal);
+          fetchHasErrors ||= batch.hasErrors;
+          if (!batch.hasErrors) apiCache.set(cmKey, batch.entries, SHORT_CACHE_TTL);
+          addToTotals(totals, batch.entries);
         }
       }
 
       if (otherPartials.length > 0) {
-        const chunks = otherPartials.map((month, i) => {
-          const [y, m] = month.split("-").map(Number);
-          const first = month === allMonths[0] ? startDate : `${month}-01`;
-          const last = month === allMonths[allMonths.length - 1] ? effectiveEnd : `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
-          return { from: `${first}T00:00:00Z`, to: `${last}T23:59:59Z`, alias: `p${i}` };
-        });
-        addToTotals(totals, await fetchBatchFromApi(members, chunks, MAX_BATCH_SIZE, "leaderboard/partial", orgId, abort.signal));
+        const chunks = otherPartials.map((month, i) => monthToChunkRange(month, `p${i}`));
+        const batch = await fetchBatchFromApi(members, chunks, MAX_BATCH_SIZE, "leaderboard/partial", orgId, abort.signal);
+        fetchHasErrors ||= batch.hasErrors;
+        addToTotals(totals, batch.entries);
       }
     }
 
@@ -329,7 +340,9 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     });
 
     const responseData = { members: entries };
-    apiCache.set(cacheKey, responseData, new Date(effectiveEnd) < new Date() ? LONG_CACHE_TTL : undefined);
+    if (!fetchHasErrors) {
+      apiCache.set(cacheKey, responseData, new Date(effectiveEnd) < new Date() ? LONG_CACHE_TTL : undefined);
+    }
     logger.info("Leaderboard", `${entries.length} members for ${org} (${startDate} to ${effectiveEnd})`);
     res.json(responseData);
 
