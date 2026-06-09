@@ -48,7 +48,9 @@ import { getRandomQuote } from "./constants/quotes";
 import { Tooltip } from "./components/Tooltip";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("summary");
+  const [activeTab, setActiveTab] = useState(
+    () => localStorage.getItem("settings:startupTab") || "summary",
+  );
   const quote = useMemo(() => getRandomQuote(), []);
   const [currentMonthPRsCount, setCurrentMonthPRsCount] = useState(0);
   const {
@@ -311,27 +313,7 @@ export default function App() {
             {/* Show settings or dashboard */}
             {effectiveTab === "settings" ? (
               <>
-                <div className="content-header">
-                  <div className="content-header-time" />
-                  <div className="content-header-actions">
-                    <button
-                      className="sidebar-action-btn"
-                      onClick={handleSaveSettings}
-                      disabled={settingsSaving}
-                      style={{ fontSize: "0.7rem", padding: "2px 10px", fontWeight: 500 }}
-                    >
-                      {settingsSaving ? (
-                        <Spinner
-                          animation="border"
-                          size="sm"
-                          style={{ width: 12, height: 12, borderWidth: "1.5px" }}
-                        />
-                      ) : (
-                        "Save"
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <div className="content-header" />
                 <div className="tab-content-area">
                   <SettingsView
                     backendOnline={backendOnline}
@@ -341,6 +323,8 @@ export default function App() {
                     formState={settingsForm}
                     setFormState={setSettingsForm}
                     setToast={setToast}
+                    saving={settingsSaving}
+                    onSave={handleSaveSettings}
                   />
                 </div>
               </>

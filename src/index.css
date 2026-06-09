@@ -1049,6 +1049,66 @@ a:hover {
   background: rgba(9, 105, 218, 0.08);
 }
 
+.settings-meta {
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  background: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  border-radius: 6px;
+}
+
+.settings-meta a {
+  color: #0969da;
+  text-decoration: none;
+}
+
+.settings-meta a:hover {
+  text-decoration: underline;
+}
+
+.settings-cache-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #eaeef2;
+}
+
+.settings-cache-segment {
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+
+.settings-cache-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+  font-size: 0.7rem;
+  color: #656d76;
+}
+
+.settings-footer a {
+  color: #656d76;
+  text-decoration: none;
+}
+
+.settings-footer a:hover {
+  color: #0969da;
+}
+
+.settings-footer-sep {
+  color: #d1d9e0;
+}
+
 /* --- Type indicator dots (for summary view) --- */
 .type-indicator {
   display: flex;
