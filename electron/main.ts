@@ -46,6 +46,7 @@ function stopBackendServer() {
 }
 
 function createWindow() {
+  Menu.setApplicationMenu(null);
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
@@ -55,6 +56,7 @@ function createWindow() {
       ? path.join(__dirname, "../public/favicon.png")
       : path.join(__dirname, "../dist/favicon.png"),
     titleBarStyle: "hiddenInset",
+    autoHideMenuBar: true,
     backgroundColor: "#0a0a0a",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
