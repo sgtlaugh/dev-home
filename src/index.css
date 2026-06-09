@@ -2766,7 +2766,7 @@ a.note-row-title:hover {
 
 .app-toast {
   position: fixed;
-  top: 42px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   background-color: #2d333b;
@@ -2781,13 +2781,13 @@ a.note-row-title:hover {
   gap: 8px;
   z-index: 9999;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  animation: toastSlideDown 200ms ease-out;
+  animation: toastSlideUp 200ms ease-out;
 }
 
-@keyframes toastSlideDown {
+@keyframes toastSlideUp {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-12px);
+    transform: translateX(-50%) translateY(12px);
   }
   to {
     opacity: 1;
