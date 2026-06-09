@@ -75,10 +75,8 @@ export const SEARCH_TEAM_ACTIVITY_QUERY = `
           }
           comments(last: 50) {
             nodes {
-              databaseId
               body
               createdAt
-              updatedAt
               url
               author { login avatarUrl }
             }
@@ -87,10 +85,8 @@ export const SEARCH_TEAM_ACTIVITY_QUERY = `
             nodes {
               comments(last: 20) {
                 nodes {
-                  databaseId
                   body
                   createdAt
-                  updatedAt
                   url
                   author { login avatarUrl }
                 }

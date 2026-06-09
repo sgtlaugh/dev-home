@@ -97,48 +97,22 @@ function truncatePreview(text: string): string {
   return trimmed + (text.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
 }
 
-// Helper: Extract comments from issues by user
-async function extractUserComments(
-  jira: any,
-  issues: any[],
-  userAccountId: string,
-  cutoffTime: number,
-): Promise<ActivityItem[]> {
-  const activities: ActivityItem[] = [];
-  const config = getConfig();
-
-  for (const issue of issues) {
-    const comments = issue.fields?.comment?.comments || [];
-    for (const comment of comments) {
-      if (comment.author?.accountId !== userAccountId) continue;
-      const commentTime = new Date(comment.created).getTime();
-      if (commentTime < cutoffTime) continue;
-
-      const plainText = adfToPlainText(comment.body);
-      const commentPreview = plainText ? truncatePreview(plainText) : "";
-      activities.push({
-        id: `jira-comment-${comment.id}`,
-        type: "jira",
-        action: "Commented on ticket",
-        title: `${issue.key}: ${issue.fields.summary}`,
-        url: `${config.jiraBaseUrl}/browse/${issue.key}?focusedCommentId=${comment.id}`,
-        timestamp: comment.created,
-        entityKey: issue.key,
-        metadata: { commentBody: commentPreview || undefined },
-      });
-    }
-  }
-
-  return activities;
-}
-
 async function fetchJiraActivity(): Promise<ActivityItem[]> {
   const config = getConfig();
   const jira = createJiraClient();
   const activities: ActivityItem[] = [];
+  const cutoffTime = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+
+  let userAccountId: string;
+  try {
+    const { data: userData } = await jira.get("/myself");
+    userAccountId = userData.accountId;
+  } catch (err) {
+    logError("Activity/JIRA /myself", err);
+    return activities;
+  }
 
   try {
-    // Fetch issues created by user in last 24h
     const { data: createdData } = await jira.post("/search/jql", {
       jql: `creator = currentUser() AND created >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY created DESC`,
       fields: ["summary", "created"],
@@ -161,10 +135,6 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
   }
 
   try {
-    const { data: userData } = await jira.get("/myself");
-    const userAccountId = userData.accountId;
-    const cutoffTime = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
-
     // Query issues the user commented on recently
     const { data: commentedIssues } = await jira.post("/search/jql", {
       jql: `comment ~ currentUser() AND updated >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
@@ -214,15 +184,10 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
     logError("Activity/JIRA comments", err);
   }
 
-  // Fetch status transitions made by user
   try {
-    const { data: userData2 } = await jira.get("/myself");
-    const userAccountId2 = userData2.accountId;
-    const cutoffTime2 = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
-
     const { data: transitionIssues } = await jira.post("/search/jql", {
       jql: `assignee was currentUser() AND status changed AFTER -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
-      fields: ["summary", "status"],
+      fields: ["summary"],
       maxResults: 50,
     });
 
@@ -245,9 +210,9 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
 
     for (const { key, histories } of changelogs) {
       for (const history of histories) {
-        if (history.author?.accountId !== userAccountId2) continue;
+        if (history.author?.accountId !== userAccountId) continue;
         const historyTime = new Date(history.created).getTime();
-        if (historyTime < cutoffTime2) continue;
+        if (historyTime < cutoffTime) continue;
 
         for (const item of history.items || []) {
           if (item.field !== "status") continue;
@@ -306,12 +271,9 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
             number
             title
             url
-            state
             merged
             createdAt
             mergedAt
-            closedAt
-            author { login avatarUrl }
             mergedBy { login avatarUrl }
             repository { nameWithOwner }
           }
@@ -397,23 +359,6 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
       return prTitles.get(`${repo}#${pr.number}`) || `PR #${pr.number}`;
     };
 
-    // Cache for PR merger info fetched via REST
-    const prMergerCache = new Map<string, string | null>();
-    const getPRMerger = async (repo: string, prNumber: number): Promise<string | null> => {
-      const key = `${repo}#${prNumber}`;
-      if (prMergerCache.has(key)) return prMergerCache.get(key) || null;
-      try {
-        const [owner, repoName] = repo.split("/");
-        const { data: prData } = await github.get(`/repos/${owner}/${repoName}/pulls/${prNumber}`);
-        const merger = prData.merged_by?.login || null;
-        prMergerCache.set(key, merger);
-        return merger;
-      } catch (err) {
-        prMergerCache.set(key, null);
-        return null;
-      }
-    };
-
     for (const event of recentEvents) {
       const repo = event.repo?.name || "";
 
@@ -426,15 +371,10 @@ async function fetchGitHubActivity(): Promise<ActivityItem[]> {
           const prAction = event.payload?.action;
           if (!pr) break;
 
-          // Only show meaningful PR actions, skip synchronize/edited/reopened noise
           let action = "";
           if (prAction === "opened") action = "Created PR";
-          else if (prAction === "closed" && pr.merged) {
-            // Verify user merged it, not someone else
-            const merger = await getPRMerger(repo, pr.number);
-            if (merger === config.githubUsername) action = "Merged PR";
-            else continue; // Skip if someone else merged
-          } else if (prAction === "closed") action = "Closed PR";
+          else if (prAction === "closed" && !pr.merged) action = "Closed PR";
+          // Merged PRs handled by GraphQL queries below
           if (!action) break;
 
           activities.push({
