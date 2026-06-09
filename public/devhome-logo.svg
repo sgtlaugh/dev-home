@@ -9,16 +9,37 @@
       <stop offset="100%" stop-color="#0969da"/>
     </linearGradient>
   </defs>
+
   <!-- Rounded square background -->
   <rect x="16" y="16" width="480" height="480" rx="80" ry="80" fill="url(#bg)"/>
-  <!-- House roof -->
-  <path d="M256 100 L420 230 L400 230 L400 400 Q400 416 384 416 L128 416 Q112 416 112 400 L112 230 L92 230 Z"
-        fill="none" stroke="url(#accent)" stroke-width="24" stroke-linejoin="round" stroke-linecap="round"/>
-  <!-- Code brackets </> inside house -->
-  <polyline points="220,260 170,310 220,360"
-            fill="none" stroke="#3b9eff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-  <polyline points="292,260 342,310 292,360"
-            fill="none" stroke="#3b9eff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-  <line x1="270" y1="245" x2="242" y2="375"
-        stroke="#3b9eff" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- Terminal window -->
+  <rect x="72" y="80" width="368" height="352" rx="16" ry="16"
+        fill="none" stroke="url(#accent)" stroke-width="2.5" opacity="0.4"/>
+
+  <!-- Title bar line -->
+  <line x1="72" y1="116" x2="440" y2="116" stroke="url(#accent)" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Title bar dots -->
+  <circle cx="98" cy="98" r="5.5" fill="#cf222e" opacity="0.75"/>
+  <circle cx="116" cy="98" r="5.5" fill="#9a6700" opacity="0.75"/>
+  <circle cx="134" cy="98" r="5.5" fill="#1a7f37" opacity="0.75"/>
+
+  <!-- Prompt symbol -->
+  <text x="96" y="160" font-family="monospace" font-size="18" fill="#3b9eff" opacity="0.5">$</text>
+
+  <!-- 0-0-0 main text -->
+  <text x="256" y="285" text-anchor="middle" font-family="monospace" font-weight="700"
+        font-size="220" fill="url(#accent)" letter-spacing="6">#!</text>
+
+  <!-- Code lines decoration -->
+  <rect x="96" y="330" width="90" height="3" rx="1.5" fill="#3b9eff" opacity="0.2"/>
+  <rect x="96" y="345" width="140" height="3" rx="1.5" fill="#3b9eff" opacity="0.15"/>
+  <rect x="96" y="360" width="60" height="3" rx="1.5" fill="#3b9eff" opacity="0.1"/>
+
+  <!-- Cursor blink -->
+  <rect x="116" y="148" width="10" height="18" rx="1" fill="#3b9eff" opacity="0.4"/>
+
+  <!-- Bottom prompt -->
+  <text x="96" y="405" font-family="monospace" font-size="16" fill="#3b9eff" opacity="0.35">&gt;_</text>
 </svg>
