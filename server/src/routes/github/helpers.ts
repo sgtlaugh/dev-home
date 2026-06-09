@@ -3,7 +3,7 @@ import { createGitHubClient } from "../../clients/githubApiClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import { ACTIVITY_LOOKBACK_DAYS, LONG_CACHE_TTL } from "../../utils/constants";
-import { SEARCH_MY_PRS_QUERY } from "./queries";
+import { SEARCH_PRS_CONTRIBUTIONS_QUERY } from "./queries";
 
 /**
  * Get an ISO date string for months ago (YYYY-MM-DD).
@@ -310,7 +310,7 @@ export async function fetchPRsForSubRange(
       try {
         result = await graphql<{
           search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
-        }>(SEARCH_MY_PRS_QUERY, { query: q, first: 100, after: cursor }, "contributions/page");
+        }>(SEARCH_PRS_CONTRIBUTIONS_QUERY, { query: q, first: 100, after: cursor }, "contributions/page");
       } catch (error) {
         logger.error("fetchPRsForSubRange", `Failed to fetch PRs for ${currentStart}..${currentEnd}: ${error}`);
         break;

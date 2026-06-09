@@ -10,7 +10,6 @@ import {
   savePRs,
   getCachedCommitCounts,
   saveCommitCount,
-  bustRecentPRs,
   bustRecentCommitCounts,
 } from "./contributionCache";
 import {
@@ -65,7 +64,6 @@ export async function prefetchContributions(): Promise<void> {
   const allMonths = getMonthsBetween(joinDate, `${endMonth}-28`);
 
   const recentMonths = getRecentMonths(BUST_RECENT_MONTHS);
-  bustRecentPRs(recentMonths);
   bustRecentCommitCounts(recentMonths);
   logger.info("ContribPrefetch", `Busted cache for recent months: ${recentMonths.join(", ")}`);
 

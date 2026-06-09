@@ -57,7 +57,7 @@ export const SEARCH_PRS_QUERY = `
   }
 `;
 
-export const SEARCH_MY_PRS_QUERY = `
+export const SEARCH_PRS_FULL_QUERY = `
   query SearchMyPRs($query: String!, $first: Int!, $after: String) {
     search(query: $query, type: ISSUE, first: $first, after: $after) {
       pageInfo {
@@ -114,6 +114,49 @@ export const SEARCH_MY_PRS_QUERY = `
               state
               author { login avatarUrl }
               submittedAt
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const SEARCH_PRS_CONTRIBUTIONS_QUERY = `
+  query SearchPRsContributions($query: String!, $first: Int!, $after: String) {
+    search(query: $query, type: ISSUE, first: $first, after: $after) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        ... on PullRequest {
+          databaseId
+          number
+          title
+          url
+          state
+          isDraft
+          merged
+          mergedAt
+          mergedBy { login avatarUrl }
+          closedAt
+          createdAt
+          updatedAt
+          author { login avatarUrl }
+          body
+          headRefName
+          baseRefName
+          additions
+          deletions
+          repository { nameWithOwner url }
+          commits(last: 1) {
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                }
+              }
             }
           }
         }

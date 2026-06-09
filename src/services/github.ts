@@ -1,4 +1,4 @@
-import { GitHubPR, GitHubComment, GitHubReviewRequest } from "../types";
+import { GitHubPR, GitHubComment, GitHubReviewRequest, CheckRunInfo } from "../types";
 import { ActivityItem } from "./activity";
 import { apiClient } from "./config";
 import { apiCache } from "../utils/cache";
@@ -70,6 +70,23 @@ export async function fetchPRsByDateRange(
   const prs = data.prs || [];
   apiCache.set(cacheKey, prs);
   return prs;
+}
+
+export async function fetchPRChecks(
+  owner: string,
+  repo: string,
+  number: number,
+): Promise<CheckRunInfo[]> {
+  const cacheKey = `github:pr-checks:${owner}/${repo}#${number}`;
+  const cached = apiCache.get<CheckRunInfo[]>(cacheKey);
+  if (cached) return cached;
+
+  const { data } = await apiClient.get("/github/pr-checks", {
+    params: { owner, repo, number },
+  });
+  const checks = data.checks || [];
+  apiCache.set(cacheKey, checks);
+  return checks;
 }
 
 export async function fetchCommitCount(
