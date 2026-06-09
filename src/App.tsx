@@ -302,8 +302,7 @@ export default function App() {
                       })()}
                   </div>
                   <div className="content-header-actions">
-                    {loading && <Spinner animation="border" size="sm" variant="secondary" />}
-                    {!loading && lastRefreshTime && (
+                    {!refreshing && !loading && lastRefreshTime && (
                       <span
                         className="text-secondary sidebar-refresh-time sidebar-action-btn"
                         title={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}
