@@ -5,7 +5,7 @@ import { apiClient } from "./services/config";
 import {
   IconRefresh,
   IconSettings,
-  IconLayoutDashboard,
+  IconApps,
   IconNotes,
   IconSubtask,
   IconAt,
@@ -16,6 +16,9 @@ import {
   IconChartBar,
   IconUsers,
   IconTrophy,
+  IconBrandGithub,
+  IconBrandJira,
+  IconChevronDown,
 } from "@tabler/icons-react";
 import { useConfig } from "./hooks/useConfig";
 import { useDashboard } from "./hooks/useDashboard";
@@ -91,6 +94,11 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
+  const [githubExpanded, setGithubExpanded] = useState(true);
+  const [jiraExpanded, setJiraExpanded] = useState(true);
+
+  const githubTabs = ["activity", "contributions", "leaderboard", "prs", "reviews", "peers"];
+  const jiraTabs = ["jira-activity", "jira", "mentions", "velocity"];
 
   // If config is not yet loaded, show settings first
   const effectiveTab = !configured && !configLoading ? "settings" : activeTab;
@@ -104,145 +112,106 @@ export default function App() {
           {/* Sidebar navigation */}
           <nav className="sidebar">
             <div className="sidebar-header" />
-            {[
-              { key: "summary", label: "Overview", icon: IconLayoutDashboard },
-              { group: "separator" },
-              { group: "label", label: "GitHub" },
-              { key: "activity", label: "Activity", icon: IconHistory },
-              { key: "contributions", label: "Contributions", icon: IconCalendarStats },
-              { key: "leaderboard", label: "Leaderboard", icon: IconTrophy },
-              { key: "prs", label: "Pull Requests", icon: IconGitPullRequest },
-              { key: "reviews", label: "Review Requests", icon: IconEye },
-              { key: "peers", label: "Team Activity", icon: IconUsers },
-              { group: "separator" },
-              { group: "label", label: "JIRA" },
-              { key: "jira-activity", label: "Activity", icon: IconHistory },
-              { key: "jira", label: "Issues", icon: IconSubtask },
-              { key: "mentions", label: "Notifications", icon: IconAt },
-              { key: "velocity", label: "Velocity", icon: IconChartBar },
-              { group: "separator" },
-              { key: "notes", label: "Notes", icon: IconNotes },
-            ].map((item, idx) => {
-              if (item.group === "separator") {
-                return <div key={`sep-${idx}`} className="sidebar-separator" />;
+
+            {/* Overview */}
+            <button
+              className={`sidebar-top-item${effectiveTab === "summary" ? " active" : ""}`}
+              onClick={() => setActiveTab("summary")}
+            >
+              <IconApps size={22} />
+              <span className="sidebar-top-label">Overview</span>
+            </button>
+
+            <div className="sidebar-divider" />
+
+            {/* GitHub section */}
+            <button
+              className={`sidebar-top-item${githubExpanded ? " expanded" : ""}${githubTabs.includes(effectiveTab) ? " section-active" : ""}`}
+              onClick={() => setGithubExpanded(!githubExpanded)}
+              title={
+                rateLimit ? `API: ${rateLimit.remaining}/${rateLimit.limit} remaining` : undefined
               }
-              if (item.group === "label") {
-                const size = 12;
-                const stroke = 2;
-                const r = (size - stroke) / 2;
-                return (
-                  <div
-                    key={item.label}
-                    className={`sidebar-group-label ${item.label?.toLowerCase()}`}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      lineHeight: 1,
-                      paddingLeft: "14px",
-                    }}
+            >
+              <IconBrandGithub size={22} />
+              <span className="sidebar-top-label">GitHub</span>
+              <span className="sidebar-chevron">
+                <IconChevronDown size={10} />
+              </span>
+            </button>
+
+            {githubExpanded && (
+              <div className="sidebar-sub-items">
+                {(
+                  [
+                    { key: "activity", label: "Activity", icon: IconHistory },
+                    { key: "contributions", label: "Contributions", icon: IconCalendarStats },
+                    { key: "leaderboard", label: "Leaderboard", icon: IconTrophy },
+                    { key: "prs", label: "Pull Requests", icon: IconGitPullRequest },
+                    { key: "reviews", label: "Reviews", icon: IconEye },
+                    { key: "peers", label: "Team Activity", icon: IconUsers },
+                  ] as const
+                ).map((item) => (
+                  <button
+                    key={item.key}
+                    className={`sidebar-sub-item${effectiveTab === item.key ? " active" : ""}`}
+                    onClick={() => setActiveTab(item.key)}
                   >
-                    {item.label === "GitHub" &&
-                      (() => {
-                        if (!rateLimit) {
-                          return (
-                            <span style={{ display: "flex", alignItems: "center" }}>
-                              <svg width={size} height={size} className="rate-limit-ring">
-                                <circle
-                                  cx={size / 2}
-                                  cy={size / 2}
-                                  r={r}
-                                  fill="none"
-                                  stroke="rgba(255,255,255,0.15)"
-                                  strokeWidth={stroke}
-                                />
-                              </svg>
-                            </span>
-                          );
-                        }
-                        const pct = rateLimit.remaining / rateLimit.limit;
-                        const color = pct > 0.5 ? "#3fb950" : pct > 0.2 ? "#d29922" : "#f85149";
-                        const circ = 2 * Math.PI * r;
-                        const offset = circ * (1 - pct);
-                        return (
-                          <span
-                            className="rate-limit-indicator"
-                            title={`GitHub API: ${rateLimit.remaining}/${rateLimit.limit} remaining\nResets ${new Date(rateLimit.resetAt).toLocaleTimeString()}`}
-                            style={{ display: "flex", alignItems: "center" }}
-                          >
-                            <svg width={size} height={size} className="rate-limit-ring">
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke="rgba(255,255,255,0.15)"
-                                strokeWidth={stroke}
-                              />
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke={color}
-                                strokeWidth={stroke}
-                                strokeDasharray={circ}
-                                strokeDashoffset={offset}
-                                strokeLinecap="round"
-                                transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                              />
-                            </svg>
-                          </span>
-                        );
-                      })()}
-                    {item.label === "JIRA" && (
-                      <span style={{ display: "flex", alignItems: "center" }}>
-                        <svg width={size} height={size} className="rate-limit-ring">
-                          <circle
-                            cx={size / 2}
-                            cy={size / 2}
-                            r={r}
-                            fill="none"
-                            stroke="rgba(255,255,255,0.15)"
-                            strokeWidth={stroke}
-                          />
-                          <circle
-                            cx={size / 2}
-                            cy={size / 2}
-                            r={r}
-                            fill="none"
-                            stroke="#58a6ff"
-                            strokeWidth={stroke}
-                          />
-                        </svg>
-                      </span>
-                    )}
-                    {item.label}
-                  </div>
-                );
-              }
+                    <item.icon size={15} />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-              if (!item.icon) return null;
+            <div className="sidebar-divider" />
 
-              const count = item.key === "notes" ? unresolvedNotes.length : undefined;
+            {/* JIRA section */}
+            <button
+              className={`sidebar-top-item${jiraExpanded ? " expanded" : ""}${jiraTabs.includes(effectiveTab) ? " section-active" : ""}`}
+              onClick={() => setJiraExpanded(!jiraExpanded)}
+            >
+              <IconBrandJira size={22} />
+              <span className="sidebar-top-label">JIRA</span>
+              <span className="sidebar-chevron">
+                <IconChevronDown size={10} />
+              </span>
+            </button>
 
-              return (
-                <button
-                  key={item.key}
-                  className={`sidebar-tab${effectiveTab === item.key ? " active" : ""}`}
-                  onClick={() => setActiveTab(item.key!)}
-                  title={item.label}
-                >
-                  <item.icon size={16} className="sidebar-icon" />
-                  <span className="sidebar-tab-label">
-                    {item.label}
-                    {count !== undefined && count > 0 && (
-                      <span className="sidebar-count-sup">{count}</span>
-                    )}
-                  </span>
-                </button>
-              );
-            })}
+            {jiraExpanded && (
+              <div className="sidebar-sub-items">
+                {(
+                  [
+                    { key: "jira-activity", label: "Activity", icon: IconHistory },
+                    { key: "jira", label: "Issues", icon: IconSubtask },
+                    { key: "mentions", label: "Notifications", icon: IconAt },
+                    { key: "velocity", label: "Velocity", icon: IconChartBar },
+                  ] as const
+                ).map((item) => (
+                  <button
+                    key={item.key}
+                    className={`sidebar-sub-item${effectiveTab === item.key ? " active" : ""}`}
+                    onClick={() => setActiveTab(item.key)}
+                  >
+                    <item.icon size={15} />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="sidebar-divider" />
+
+            {/* Notes */}
+            <button
+              className={`sidebar-top-item${effectiveTab === "notes" ? " active" : ""}`}
+              onClick={() => setActiveTab("notes")}
+            >
+              <IconNotes size={22} />
+              <span className="sidebar-top-label">Notes</span>
+              {unresolvedNotes.length > 0 && (
+                <span className="sidebar-count-badge">{unresolvedNotes.length}</span>
+              )}
+            </button>
           </nav>
 
           {/* Main content panel */}
