@@ -3,23 +3,11 @@ import Badge from "react-bootstrap/Badge";
 import { IconGitPullRequest, IconGitMerge } from "@tabler/icons-react";
 import { GitHubPR } from "../types";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
+import { Timestamp } from "./Timestamp";
 
 interface PRListTableProps {
   prs: GitHubPR[];
   onPRClick: (pr: GitHubPR) => void;
-}
-
-function formatDate(timestamp: string) {
-  const d = new Date(timestamp);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return {
-    short: `${yyyy}-${mm}-${dd}`,
-    full: `${yyyy}-${mm}-${dd} ${hh}:${min}`,
-  };
 }
 
 function statusLabel(pr: GitHubPR): { text: string; cls: string } {
@@ -30,7 +18,6 @@ function statusLabel(pr: GitHubPR): { text: string; cls: string } {
 
 const PRRow = memo(function PRRow({ pr, onClick }: { pr: GitHubPR; onClick: () => void }) {
   const iconColor = pr.merged ? "#8250df" : pr.state === "open" ? "#1a7f37" : "#cf222e";
-  const { short, full } = formatDate(pr.created_at);
   const status = statusLabel(pr);
 
   return (
@@ -99,9 +86,7 @@ const PRRow = memo(function PRRow({ pr, onClick }: { pr: GitHubPR; onClick: () =
         </div>
       </td>
       <td style={{ whiteSpace: "nowrap", width: 80, verticalAlign: "middle" }}>
-        <span className="activity-time" title={full} style={{ fontSize: "0.75rem" }}>
-          {short}
-        </span>
+        <Timestamp format="date" timestamp={pr.created_at} />
       </td>
     </tr>
   );
