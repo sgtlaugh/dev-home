@@ -462,7 +462,6 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                 </Badge>
                               )}
                             </div>
-                            <Timestamp timestamp={collapsed.lastTimestamp} />
                           </div>
                           <a
                             href={collapsed.url}
@@ -474,6 +473,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                             {collapsed.title}
                           </a>
                         </div>
+                        <Timestamp timestamp={collapsed.lastTimestamp} />
                       </div>
                       <ExpandableSection expanded={isExpanded}>
                         <div className="activity-expanded">

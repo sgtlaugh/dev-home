@@ -2058,6 +2058,7 @@ a.note-row-title:hover {
   color: #656d76;
   margin-left: auto;
   flex-shrink: 0;
+  align-self: center;
 }
 
 .activity-title {
