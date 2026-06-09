@@ -1604,7 +1604,7 @@ a,
 }
 
 .notes-title {
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #0969da;
   margin: 0;
@@ -1615,13 +1615,13 @@ a,
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 14px;
+  gap: 6px;
+  padding: 7px 18px;
   border-radius: 6px;
   border: none;
   background: #0969da;
   color: #ffffff;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;

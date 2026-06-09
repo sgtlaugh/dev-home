@@ -106,7 +106,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
       <div className="notes-header">
         <h2 className="notes-title">Daily Planner</h2>
         <button className="notes-add-btn" onClick={onAdd}>
-          <IconPlus size={15} />
+          <IconPlus size={18} />
           <span>Add</span>
         </button>
       </div>
