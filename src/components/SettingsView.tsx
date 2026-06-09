@@ -49,7 +49,7 @@ interface CacheStats {
 const ACCENTS = {
   github: "#1a7f37",
   jira: "#0969da",
-  preferences: "#57606a",
+  preferences: "#e3795c",
   cache: "#8250df",
 };
 
