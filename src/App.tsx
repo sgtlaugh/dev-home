@@ -110,14 +110,49 @@ export default function App() {
       <FindInPage />
 
       <ErrorBoundary>
+        {/* Custom title bar */}
+        <div className="custom-titlebar">
+          <div className="titlebar-left">
+            <img src="/devhome-logo.svg" alt="Dev Home" className="titlebar-icon" />
+            <span className="titlebar-title">Dev Home</span>
+          </div>
+          <div className="titlebar-drag" />
+          <div className="titlebar-controls">
+            <button
+              className="titlebar-btn"
+              onClick={() => window.electronAPI?.windowMinimize()}
+              title="Minimize"
+            >
+              <svg width="10" height="1">
+                <rect width="10" height="1" fill="currentColor" />
+              </svg>
+            </button>
+            <button
+              className="titlebar-btn"
+              onClick={() => window.electronAPI?.windowMaximize()}
+              title="Maximize"
+            >
+              <svg width="10" height="10">
+                <rect width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+            </button>
+            <button
+              className="titlebar-btn titlebar-btn-close"
+              onClick={() => window.electronAPI?.windowClose()}
+              title="Close"
+            >
+              <svg width="10" height="10">
+                <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth="1.2" />
+                <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
         <div className="app-body">
           {/* Sidebar navigation */}
           <nav className="sidebar">
-            <div className="sidebar-header">
-              <img src="/devhome-logo.svg" alt="Dev Home" />
-              <span>Dev Home</span>
-            </div>
-            <div className="sidebar-divider" />
+            <div className="sidebar-header" />
 
             {/* Overview */}
             <button

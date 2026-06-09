@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   isConfigured: () => ipcRenderer.invoke("store:isConfigured"),
   getApiPort: () => ipcRenderer.invoke("app:getApiPort"),
 
+  // Window controls
+  windowMinimize: () => ipcRenderer.invoke("window-minimize"),
+  windowMaximize: () => ipcRenderer.invoke("window-maximize"),
+  windowClose: () => ipcRenderer.invoke("window-close"),
+
   // Find-in-page
   findInPage: (text: string, forward: boolean, findNext: boolean) =>
     ipcRenderer.invoke("find-in-page", text, forward, findNext),

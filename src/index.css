@@ -205,7 +205,7 @@ a:hover {
 /* --- App Body Layout --- */
 .app-body {
   display: flex;
-  height: 100vh;
+  height: calc(100vh - 36px);
   overflow: hidden;
 }
 
@@ -225,26 +225,75 @@ a:hover {
 }
 
 .sidebar-header {
+  display: none;
+}
+
+/* Custom title bar */
+.custom-titlebar {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 12px 10px 4px;
-  margin-bottom: 2px;
+  height: 36px;
+  background: #1e2228;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
   -webkit-app-region: drag;
 }
 
-.sidebar-header img {
-  width: 26px;
-  height: 26px;
-  border-radius: 5px;
-  -webkit-app-region: no-drag;
+.titlebar-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
 }
 
-.sidebar-header span {
-  font-size: 0.9rem;
+.titlebar-title {
+  font-size: 0.78rem;
   font-weight: 600;
   color: #656d76;
   letter-spacing: 0.02em;
+}
+
+.titlebar-drag {
+  flex: 1;
+  height: 100%;
+  -webkit-app-region: drag;
+}
+
+.titlebar-controls {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #8b949e;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.titlebar-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d1d5db;
+}
+
+.titlebar-btn-close:hover {
+  background: #cf222e;
+  color: #fff;
 }
 
 .sidebar-actions {

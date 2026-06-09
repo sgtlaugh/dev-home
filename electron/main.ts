@@ -55,7 +55,7 @@ function createWindow() {
     icon: process.env.VITE_DEV_SERVER_URL
       ? path.join(__dirname, "../public/favicon.png")
       : path.join(__dirname, "../dist/favicon.png"),
-    titleBarStyle: "hiddenInset",
+    frame: false,
     autoHideMenuBar: true,
     backgroundColor: "#0a0a0a",
     webPreferences: {
@@ -178,6 +178,13 @@ app.whenReady().then(async () => {
       mainWindow.webContents.stopFindInPage("clearSelection");
     }
   });
+
+  ipcMain.handle("window-minimize", () => mainWindow?.minimize());
+  ipcMain.handle("window-maximize", () => {
+    if (mainWindow?.isMaximized()) mainWindow.unmaximize();
+    else mainWindow?.maximize();
+  });
+  ipcMain.handle("window-close", () => mainWindow?.close());
 
   await startBackendServer();
   createWindow();
