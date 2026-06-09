@@ -212,6 +212,17 @@ export default function App() {
                 <span className="sidebar-count-badge">{unresolvedNotes.length}</span>
               )}
             </button>
+
+            <div className="sidebar-divider" />
+
+            {/* Settings */}
+            <button
+              className={`sidebar-top-item${effectiveTab === "settings" ? " active" : ""}`}
+              onClick={() => setActiveTab("settings")}
+            >
+              <IconSettings size={22} />
+              <span className="sidebar-top-label">Settings</span>
+            </button>
           </nav>
 
           {/* Main content panel */}
@@ -335,13 +346,61 @@ export default function App() {
                     >
                       <IconRefresh size={14} />
                     </button>
-                    <button
-                      className="sidebar-action-btn"
-                      onClick={() => setActiveTab("settings")}
-                      title="Settings"
-                    >
-                      <IconSettings size={14} />
-                    </button>
+                    {(() => {
+                      const size = 16;
+                      const stroke = 2.5;
+                      const r = (size - stroke) / 2;
+                      if (!rateLimit) {
+                        return (
+                          <span className="sidebar-action-btn" style={{ cursor: "default" }}>
+                            <svg width={size} height={size} className="rate-limit-ring">
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={r}
+                                fill="none"
+                                stroke="var(--bs-border-color)"
+                                strokeWidth={stroke}
+                              />
+                            </svg>
+                          </span>
+                        );
+                      }
+                      const pct = rateLimit.remaining / rateLimit.limit;
+                      const color = pct > 0.5 ? "#3fb950" : pct > 0.2 ? "#d29922" : "#f85149";
+                      const circ = 2 * Math.PI * r;
+                      const offset = circ * (1 - pct);
+                      return (
+                        <span
+                          className="sidebar-action-btn rate-limit-indicator"
+                          title={`GitHub API: ${rateLimit.remaining}/${rateLimit.limit} remaining\nResets ${new Date(rateLimit.resetAt).toLocaleTimeString()}`}
+                          style={{ cursor: "default" }}
+                        >
+                          <svg width={size} height={size} className="rate-limit-ring">
+                            <circle
+                              cx={size / 2}
+                              cy={size / 2}
+                              r={r}
+                              fill="none"
+                              stroke="var(--bs-border-color)"
+                              strokeWidth={stroke}
+                            />
+                            <circle
+                              cx={size / 2}
+                              cy={size / 2}
+                              r={r}
+                              fill="none"
+                              stroke={color}
+                              strokeWidth={stroke}
+                              strokeDasharray={circ}
+                              strokeDashoffset={offset}
+                              strokeLinecap="round"
+                              transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                            />
+                          </svg>
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
                 {toast && (

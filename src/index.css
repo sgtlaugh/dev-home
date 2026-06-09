@@ -243,14 +243,14 @@ a:hover {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.5);
+  color: #656d76;
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease;
 }
 
 .sidebar-action-btn:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.9);
+  background-color: #eaeef2;
+  color: #1f2328;
 }
 
 .sidebar-action-btn:disabled {
