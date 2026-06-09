@@ -219,16 +219,12 @@ export default function App() {
               if (!item.icon) return null;
 
               const countMap: Record<string, number | undefined> = {
-                prs: openPRs.length,
-                reviews: reviewRequests.length,
-                peers: teamActivities.length,
                 activity: isActivityTab
                   ? activities.filter((a) => a.type === "github").length
                   : activityCounts.github,
                 "jira-activity": isActivityTab
                   ? activities.filter((a) => a.type === "jira").length
                   : activityCounts.jira,
-                mentions: jiraComments.length,
                 notes: unresolvedNotes.length,
               };
               const count = item.key ? countMap[item.key] : undefined;
