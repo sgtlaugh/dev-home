@@ -48,8 +48,8 @@ function stopBackendServer() {
 function createWindow() {
   Menu.setApplicationMenu(null);
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 860,
+    width: 1440,
+    height: 960,
     minWidth: 900,
     minHeight: 600,
     icon: process.env.VITE_DEV_SERVER_URL
