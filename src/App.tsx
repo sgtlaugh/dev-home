@@ -278,14 +278,18 @@ export default function App() {
 
             {/* Show settings or dashboard */}
             {effectiveTab === "settings" ? (
-              <SettingsView
-                backendOnline={backendOnline}
-                configured={configured}
-                jiraBaseUrl={jiraBaseUrl}
-                githubUsername={githubUsername}
-                onBack={() => setActiveTab("summary")}
-                saveSettings={saveSettings}
-              />
+              <>
+                <div className="content-header" />
+                <div className="tab-content-area">
+                  <SettingsView
+                    backendOnline={backendOnline}
+                    configured={configured}
+                    jiraBaseUrl={jiraBaseUrl}
+                    githubUsername={githubUsername}
+                    saveSettings={saveSettings}
+                  />
+                </div>
+              </>
             ) : (
               <>
                 <div className="content-header">

@@ -6,7 +6,7 @@ import Card from "react-bootstrap/Card";
 import Alert from "react-bootstrap/Alert";
 import Form from "react-bootstrap/Form";
 import Spinner from "react-bootstrap/Spinner";
-import { IconArrowLeft, IconTrash, IconBrandGithub, IconBrandJira } from "@tabler/icons-react";
+import { IconTrash, IconBrandGithub, IconBrandJira } from "@tabler/icons-react";
 import { AppSettings, loadSettingsFromStore, apiClient } from "../services/config";
 import { useUserOrgs } from "../hooks/useOrgLeaderboard";
 
@@ -17,7 +17,6 @@ interface SettingsViewProps {
   configured: boolean;
   jiraBaseUrl: string;
   githubUsername: string;
-  onBack: () => void;
   saveSettings: (settings: AppSettings) => Promise<void>;
 }
 
@@ -40,7 +39,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   configured,
   jiraBaseUrl,
   githubUsername,
-  onBack,
   saveSettings,
 }) => {
   const [formState, setFormState] = useState<AppSettings>(EMPTY_SETTINGS);
@@ -113,22 +111,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   return (
     <div>
       <div className="d-flex align-items-center justify-content-between mb-3">
-        <div className="d-flex align-items-center gap-3">
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            className="d-flex align-items-center gap-2"
-            onClick={onBack}
-          >
-            <IconArrowLeft size={14} />
-            Back
-          </Button>
-          <div>
-            <h5 className="mb-0">Settings</h5>
-            <p className="text-secondary-custom mb-0" style={{ fontSize: "0.8125rem" }}>
-              Configure your integrations and preferences.
-            </p>
-          </div>
+        <div>
+          <h5 className="mb-0">Settings</h5>
+          <p className="text-secondary-custom mb-0" style={{ fontSize: "0.8125rem" }}>
+            Configure your integrations and preferences.
+          </p>
         </div>
         <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
           {saving ? (
@@ -379,14 +366,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       <Card className="mb-3" style={{ minHeight: "auto" }}>
         <Card.Body className="py-2 px-3">
           <div className="d-flex align-items-center gap-2" style={{ fontSize: "0.75rem" }}>
-            <IconBrandGithub size={14} />
+            <img src="/devhome-logo.svg" alt="Dev Home" width={14} height={14} />
             <span className="text-secondary-custom">dev-home v{__APP_VERSION__}</span>
             <a
               href="https://github.com/sgtlaugh/dev-home"
               target="_blank"
               rel="noopener noreferrer"
+              className="d-flex align-items-center gap-1"
               style={{ marginLeft: "auto", fontSize: "0.7rem" }}
             >
+              <IconBrandGithub size={12} />
               View on GitHub
             </a>
           </div>
