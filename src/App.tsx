@@ -310,241 +310,239 @@ export default function App() {
               </Alert>
             )}
 
-            {/* Show settings or dashboard */}
-            {effectiveTab === "settings" ? (
-              <>
-                <div className="content-header" style={{ minHeight: 32 }} />
-                <div className="tab-content-area">
-                  <SettingsView
-                    backendOnline={backendOnline}
-                    configured={configured}
-                    jiraBaseUrl={jiraBaseUrl}
-                    githubUsername={githubUsername}
-                    formState={settingsForm}
-                    setFormState={setSettingsForm}
-                    setToast={setToast}
-                    saving={settingsSaving}
-                    onSave={handleSaveSettings}
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="content-header">
-                  <div className="content-header-time">
-                    {effectiveTab === "summary" && (
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          fontStyle: "italic",
-                          color: "#656d76",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          letterSpacing: "0.01em",
-                        }}
-                      >
-                        {quote}
-                      </span>
-                    )}
-                    {(prefetch.running || prefetch.complete) &&
-                      effectiveTab === "leaderboard" &&
-                      (() => {
-                        const done = prefetch.complete;
-                        if (done) {
-                          return (
-                            <span
-                              style={{
-                                fontSize: "0.7rem",
-                                color: "#0969da",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              ✓ Org caching done
-                            </span>
-                          );
-                        }
-                        const pct = prefetch.percentage / 100;
-                        const color = "#0969da";
-                        const size = 14;
-                        const stroke = 2.5;
-                        const r = (size - stroke) / 2;
-                        const circ = 2 * Math.PI * r;
-                        const offset = circ * (1 - pct);
-                        return (
-                          <span className="rate-limit-widget">
-                            <svg width={size} height={size} className="rate-limit-ring">
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke="#e1e4e8"
-                                strokeWidth={stroke}
-                              />
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke={color}
-                                strokeWidth={stroke}
-                                strokeDasharray={circ}
-                                strokeDashoffset={offset}
-                                strokeLinecap="round"
-                                transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                              />
-                            </svg>
-                            <div className="rate-limit-popover popover-left">
-                              <div className="rlp-header">
-                                <IconBrandGithub size={14} />
-                                <span>Org Caching</span>
-                                <span className="rlp-status" style={{ color }}>
-                                  {prefetch.org || "org"}
-                                </span>
-                              </div>
-                              <div className="rlp-bar-track">
-                                <div
-                                  className="rlp-bar-fill"
-                                  style={{ width: `${pct * 100}%`, backgroundColor: color }}
-                                />
-                              </div>
-                              <div className="rlp-details">
-                                <span>
-                                  {prefetch.monthsDone} / {prefetch.totalMonths} months
-                                </span>
-                                <span>{Math.round(pct * 100)}%</span>
-                              </div>
-                            </div>
-                          </span>
-                        );
-                      })()}
-                  </div>
-                  <div className="content-header-actions">
-                    {!refreshing && !loading && lastRefreshTime && (
-                      <Tooltip text={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}>
+            <div className="content-header">
+              <div className="content-header-time">
+                {effectiveTab === "summary" && (
+                  <span
+                    style={{
+                      fontSize: "0.75rem",
+                      fontStyle: "italic",
+                      color: "#656d76",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      letterSpacing: "0.01em",
+                    }}
+                  >
+                    {quote}
+                  </span>
+                )}
+                {(prefetch.running || prefetch.complete) &&
+                  effectiveTab === "leaderboard" &&
+                  (() => {
+                    const done = prefetch.complete;
+                    if (done) {
+                      return (
                         <span
-                          className="text-secondary sidebar-refresh-time sidebar-action-btn"
                           style={{
-                            cursor: "default",
-                            padding: "0 8px",
-                            display: "flex",
-                            alignItems: "center",
+                            fontSize: "0.7rem",
+                            color: "#0969da",
+                            whiteSpace: "nowrap",
                           }}
                         >
-                          {Math.round((Date.now() - lastRefreshTime) / 60000)}m
-                        </span>
-                      </Tooltip>
-                    )}
-                    <Tooltip text="Clear cache and refresh all data">
-                      <button
-                        className={`sidebar-action-btn${refreshing ? " spinning" : ""}`}
-                        onClick={async () => {
-                          if (refreshing) return;
-                          setRefreshing(true);
-                          setToast("Clearing cache and refreshing...");
-                          try {
-                            apiCache.clear();
-                            localStorage.clear();
-                            await apiClient.post("/cache/purge");
-                            await Promise.all([
-                              refresh(),
-                              refreshNotes(),
-                              refreshActivity(),
-                              refreshTeamActivity(),
-                            ]);
-                            setToast("Refreshed successfully");
-                          } catch {
-                            setToast("Refresh failed — check connection");
-                          } finally {
-                            setRefreshing(false);
-                            setTimeout(() => setToast(null), 3000);
-                          }
-                        }}
-                        disabled={refreshing}
-                      >
-                        <IconRefresh size={14} />
-                      </button>
-                    </Tooltip>
-                    {(() => {
-                      const size = 14;
-                      const stroke = 2.5;
-                      const r = (size - stroke) / 2;
-                      const pct = rateLimit ? rateLimit.remaining / rateLimit.limit : 0;
-                      const color = !rateLimit
-                        ? "var(--bs-border-color)"
-                        : pct > 0.5
-                          ? "#3fb950"
-                          : pct > 0.2
-                            ? "#d29922"
-                            : "#f85149";
-                      const circ = 2 * Math.PI * r;
-                      const offset = rateLimit ? circ * (1 - pct) : circ;
-                      const resetTime = rateLimit ? new Date(rateLimit.resetAt) : null;
-                      const minsUntilReset = resetTime
-                        ? Math.max(0, Math.round((resetTime.getTime() - Date.now()) / 60000))
-                        : 0;
-                      const statusLabel = !rateLimit
-                        ? "Unknown"
-                        : pct > 0.5
-                          ? "Healthy"
-                          : pct > 0.2
-                            ? "Moderate"
-                            : "Critical";
-                      return (
-                        <span className="rate-limit-widget">
-                          <svg width={size} height={size} className="rate-limit-ring">
-                            <circle
-                              cx={size / 2}
-                              cy={size / 2}
-                              r={r}
-                              fill="none"
-                              stroke="#e1e4e8"
-                              strokeWidth={stroke}
-                            />
-                            {rateLimit && (
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={r}
-                                fill="none"
-                                stroke={color}
-                                strokeWidth={stroke}
-                                strokeDasharray={circ}
-                                strokeDashoffset={offset}
-                                strokeLinecap="round"
-                                transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                              />
-                            )}
-                          </svg>
-                          <div className="rate-limit-popover">
-                            <div className="rlp-header">
-                              <IconBrandGithub size={14} />
-                              <span>GitHub API</span>
-                              <span className="rlp-status" style={{ color }}>
-                                {statusLabel}
-                              </span>
-                            </div>
-                            <div className="rlp-bar-track">
-                              <div
-                                className="rlp-bar-fill"
-                                style={{ width: `${pct * 100}%`, backgroundColor: color }}
-                              />
-                            </div>
-                            <div className="rlp-details">
-                              <span>
-                                {rateLimit
-                                  ? `${rateLimit.remaining.toLocaleString()} / ${rateLimit.limit.toLocaleString()}`
-                                  : "—"}
-                              </span>
-                              <span>{rateLimit ? `Resets in ${minsUntilReset}m` : ""}</span>
-                            </div>
-                          </div>
+                          ✓ Org caching done
                         </span>
                       );
-                    })()}
-                  </div>
-                </div>
+                    }
+                    const pct = prefetch.percentage / 100;
+                    const color = "#0969da";
+                    const size = 14;
+                    const stroke = 2.5;
+                    const r = (size - stroke) / 2;
+                    const circ = 2 * Math.PI * r;
+                    const offset = circ * (1 - pct);
+                    return (
+                      <span className="rate-limit-widget">
+                        <svg width={size} height={size} className="rate-limit-ring">
+                          <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={r}
+                            fill="none"
+                            stroke="#e1e4e8"
+                            strokeWidth={stroke}
+                          />
+                          <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={r}
+                            fill="none"
+                            stroke={color}
+                            strokeWidth={stroke}
+                            strokeDasharray={circ}
+                            strokeDashoffset={offset}
+                            strokeLinecap="round"
+                            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                          />
+                        </svg>
+                        <div className="rate-limit-popover popover-left">
+                          <div className="rlp-header">
+                            <IconBrandGithub size={14} />
+                            <span>Org Caching</span>
+                            <span className="rlp-status" style={{ color }}>
+                              {prefetch.org || "org"}
+                            </span>
+                          </div>
+                          <div className="rlp-bar-track">
+                            <div
+                              className="rlp-bar-fill"
+                              style={{ width: `${pct * 100}%`, backgroundColor: color }}
+                            />
+                          </div>
+                          <div className="rlp-details">
+                            <span>
+                              {prefetch.monthsDone} / {prefetch.totalMonths} months
+                            </span>
+                            <span>{Math.round(pct * 100)}%</span>
+                          </div>
+                        </div>
+                      </span>
+                    );
+                  })()}
+              </div>
+              <div className="content-header-actions">
+                {!refreshing && !loading && lastRefreshTime && (
+                  <Tooltip text={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}>
+                    <span
+                      className="text-secondary sidebar-refresh-time sidebar-action-btn"
+                      style={{
+                        cursor: "default",
+                        padding: "0 8px",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      {Math.round((Date.now() - lastRefreshTime) / 60000)}m
+                    </span>
+                  </Tooltip>
+                )}
+                <Tooltip text="Clear cache and refresh all data">
+                  <button
+                    className={`sidebar-action-btn${refreshing ? " spinning" : ""}`}
+                    onClick={async () => {
+                      if (refreshing) return;
+                      setRefreshing(true);
+                      setToast("Clearing cache and refreshing...");
+                      try {
+                        apiCache.clear();
+                        localStorage.clear();
+                        await apiClient.post("/cache/purge");
+                        await Promise.all([
+                          refresh(),
+                          refreshNotes(),
+                          refreshActivity(),
+                          refreshTeamActivity(),
+                        ]);
+                        setToast("Refreshed successfully");
+                      } catch {
+                        setToast("Refresh failed — check connection");
+                      } finally {
+                        setRefreshing(false);
+                        setTimeout(() => setToast(null), 3000);
+                      }
+                    }}
+                    disabled={refreshing}
+                  >
+                    <IconRefresh size={14} />
+                  </button>
+                </Tooltip>
+                {(() => {
+                  const size = 14;
+                  const stroke = 2.5;
+                  const r = (size - stroke) / 2;
+                  const pct = rateLimit ? rateLimit.remaining / rateLimit.limit : 0;
+                  const color = !rateLimit
+                    ? "var(--bs-border-color)"
+                    : pct > 0.5
+                      ? "#3fb950"
+                      : pct > 0.2
+                        ? "#d29922"
+                        : "#f85149";
+                  const circ = 2 * Math.PI * r;
+                  const offset = rateLimit ? circ * (1 - pct) : circ;
+                  const resetTime = rateLimit ? new Date(rateLimit.resetAt) : null;
+                  const minsUntilReset = resetTime
+                    ? Math.max(0, Math.round((resetTime.getTime() - Date.now()) / 60000))
+                    : 0;
+                  const statusLabel = !rateLimit
+                    ? "Unknown"
+                    : pct > 0.5
+                      ? "Healthy"
+                      : pct > 0.2
+                        ? "Moderate"
+                        : "Critical";
+                  return (
+                    <span className="rate-limit-widget">
+                      <svg width={size} height={size} className="rate-limit-ring">
+                        <circle
+                          cx={size / 2}
+                          cy={size / 2}
+                          r={r}
+                          fill="none"
+                          stroke="#e1e4e8"
+                          strokeWidth={stroke}
+                        />
+                        {rateLimit && (
+                          <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={r}
+                            fill="none"
+                            stroke={color}
+                            strokeWidth={stroke}
+                            strokeDasharray={circ}
+                            strokeDashoffset={offset}
+                            strokeLinecap="round"
+                            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                          />
+                        )}
+                      </svg>
+                      <div className="rate-limit-popover">
+                        <div className="rlp-header">
+                          <IconBrandGithub size={14} />
+                          <span>GitHub API</span>
+                          <span className="rlp-status" style={{ color }}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                        <div className="rlp-bar-track">
+                          <div
+                            className="rlp-bar-fill"
+                            style={{ width: `${pct * 100}%`, backgroundColor: color }}
+                          />
+                        </div>
+                        <div className="rlp-details">
+                          <span>
+                            {rateLimit
+                              ? `${rateLimit.remaining.toLocaleString()} / ${rateLimit.limit.toLocaleString()}`
+                              : "—"}
+                          </span>
+                          <span>{rateLimit ? `Resets in ${minsUntilReset}m` : ""}</span>
+                        </div>
+                      </div>
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Show settings or dashboard */}
+            {effectiveTab === "settings" ? (
+              <div className="tab-content-area">
+                <SettingsView
+                  backendOnline={backendOnline}
+                  configured={configured}
+                  jiraBaseUrl={jiraBaseUrl}
+                  githubUsername={githubUsername}
+                  formState={settingsForm}
+                  setFormState={setSettingsForm}
+                  setToast={setToast}
+                  saving={settingsSaving}
+                  onSave={handleSaveSettings}
+                />
+              </div>
+            ) : (
+              <>
                 {toast && (
                   <div className="app-toast">
                     {refreshing && <Spinner animation="border" size="sm" />}
