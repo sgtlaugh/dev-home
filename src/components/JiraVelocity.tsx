@@ -1,5 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { IconChartBar } from "@tabler/icons-react";
+import {
+  IconChartBar,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconMinus,
+  IconInfoCircle,
+} from "@tabler/icons-react";
 import Badge from "react-bootstrap/Badge";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
@@ -73,8 +79,12 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
         ? "#cf222e"
         : "#9a6700";
 
-  const trendArrow =
-    metrics?.velocity.trendPercentage && metrics.velocity.trendPercentage > 0 ? "↑" : "↓";
+  const TrendIcon =
+    metrics?.velocity.trend === "improving"
+      ? IconTrendingUp
+      : metrics?.velocity.trend === "declining"
+        ? IconTrendingDown
+        : IconMinus;
 
   const visibleIssues = completedIssues;
 
@@ -115,9 +125,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
           <div style={{ fontSize: "1.35rem", fontWeight: 600, color: "#0969da" }}>
             {loading ? "—" : metrics?.totalCompleted || 0}
           </div>
-          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>
-            Completed Issues
-          </div>
+          <div className="stat-card-label">Completed</div>
         </div>
         <div
           className="stat-card"
@@ -130,9 +138,7 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
           <div style={{ fontSize: "1.35rem", fontWeight: 600, color: "#e3795c" }}>
             {loading ? "—" : metrics?.totalStoryPoints || 0}
           </div>
-          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>
-            Story Points
-          </div>
+          <div className="stat-card-label">Story Points</div>
         </div>
         <div
           className="stat-card"
@@ -140,7 +146,6 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
             flex: 1,
             textAlign: "center",
           }}
-          title={`Recent half vs older half (by ${metrics && metrics.totalStoryPoints > 0 ? "story points" : "task count"})`}
         >
           <div
             style={{
@@ -152,13 +157,36 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
             {loading ? (
               "—"
             ) : (
-              <>
-                {trendArrow}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                <TrendIcon size={20} stroke={2.2} />
                 {Math.abs(metrics?.velocity.trendPercentage || 0).toFixed(0)}%
-              </>
+              </span>
             )}
           </div>
-          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>Trend</div>
+          <div
+            className="stat-card-label"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              justifyContent: "center",
+            }}
+          >
+            Trend
+            {!loading && metrics && (
+              <span className="trend-info-wrap">
+                <IconInfoCircle
+                  size={11}
+                  stroke={1.8}
+                  style={{ color: "#8b949e", cursor: "help" }}
+                />
+                <span className="trend-info-tip">
+                  Compares recent half vs older half by{" "}
+                  {metrics.totalStoryPoints > 0 ? "story points" : "task count"}
+                </span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -279,12 +307,12 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
             </Card.Body>
           </Card>
 
-          {/* Completed Issues */}
+          {/* Completed */}
           {completedIssues.length > 0 && (
             <Card style={{ minHeight: "auto" }}>
               <Card.Body>
                 <h6 style={{ marginBottom: "1rem", fontWeight: 600 }}>
-                  Completed Issues
+                  Completed
                   <Badge
                     bg="secondary"
                     pill
