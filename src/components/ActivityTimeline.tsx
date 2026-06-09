@@ -253,7 +253,8 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
               <span className="activity-filter-count">{s.count}</span>
             </button>
           ))}
-          {dailyCounts &&
+          {!currentUsername &&
+            dailyCounts &&
             (() => {
               const streak = computeStreak(dailyCounts);
               return streak > 0 ? (
