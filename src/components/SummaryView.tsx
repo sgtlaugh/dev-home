@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
@@ -16,7 +16,6 @@ import {
 } from "@tabler/icons-react";
 import { JiraIssue, JiraComment, GitHubPR, Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
-import { DescriptionModal } from "./DescriptionModal";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
 import { Timestamp } from "./Timestamp";
 import { StatusBadge } from "./StatusBadge";
@@ -285,8 +284,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   onAddNote,
   onOpenNote,
 }) => {
-  const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
-
   const jiraBase = jiraBaseUrl?.replace(/\/+$/, "") || "";
 
   const thirtyDaysAgo = new Date();
@@ -386,7 +383,12 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                           colorName={issue.status.statusCategory.colorName}
                         />
                       }
-                      onClick={() => setSelectedIssue(issue)}
+                      onClick={() =>
+                        window.open(
+                          jiraBase ? `${jiraBase}/browse/${issue.key}` : `#${issue.key}`,
+                          "_blank",
+                        )
+                      }
                       hideTime={true}
                     />
                   ))
@@ -443,6 +445,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                       title={m.title}
                       subtitle={m.subtitle}
                       time={m.time}
+                      onClick={() => window.open(m.url, "_blank")}
                     />
                   ))
                 ) : (
@@ -501,15 +504,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
           </Section>
         </Col>
       </Row>
-
-      <DescriptionModal
-        show={!!selectedIssue}
-        onHide={() => setSelectedIssue(null)}
-        title={selectedIssue ? `${selectedIssue.key}: ${selectedIssue.summary}` : ""}
-        subtitle={selectedIssue?.project.name}
-        description={selectedIssue?.description || ""}
-        url={selectedIssue && jiraBase ? `${jiraBase}/browse/${selectedIssue.key}` : undefined}
-      />
     </>
   );
 };
