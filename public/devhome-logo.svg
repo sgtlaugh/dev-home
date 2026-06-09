@@ -29,8 +29,8 @@
   <text x="96" y="160" font-family="monospace" font-size="18" fill="#3b9eff" opacity="0.5">$</text>
 
   <!-- 0-0-0 main text -->
-  <text x="256" y="285" text-anchor="middle" font-family="monospace" font-weight="700"
-        font-size="220" fill="url(#accent)" letter-spacing="6">#!</text>
+  <text x="256" y="320" text-anchor="middle" font-family="monospace" font-weight="700"
+        font-size="250" fill="url(#accent)" letter-spacing="6">#!</text>
 
   <!-- Code lines decoration -->
   <rect x="96" y="330" width="90" height="3" rx="1.5" fill="#3b9eff" opacity="0.2"/>
