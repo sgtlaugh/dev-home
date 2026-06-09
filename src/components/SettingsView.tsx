@@ -13,6 +13,7 @@ import {
   IconCheck,
   IconAdjustments,
   IconDatabase,
+  IconBug,
 } from "@tabler/icons-react";
 import { AppSettings, apiClient } from "../services/config";
 import { useUserOrgs, usePrefetchStatus } from "../hooks/useOrgLeaderboard";
@@ -566,20 +567,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </Button>
       </div>
 
-      {/* Footer */}
-      <div className="settings-footer">
-        <img src="/devhome-logo.svg" alt="Dev Home" width={12} height={12} />
-        <span>dev-home v{__APP_VERSION__}</span>
-        <span className="settings-footer-sep">·</span>
-        <a
-          href="https://github.com/sgtlaugh/dev-home"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="d-flex align-items-center gap-1"
-        >
-          <IconBrandGithub size={11} />
-          View on GitHub
-        </a>
+      {/* About */}
+      <div className="settings-about">
+        <div className="settings-about-brand">
+          <img src="/devhome-logo.svg" alt="Dev Home" width={24} height={24} />
+          <div>
+            <div className="settings-about-name">
+              Dev Home <span className="settings-about-version">v{__APP_VERSION__}</span>
+            </div>
+            <div className="settings-about-tagline">Your developer dashboard</div>
+          </div>
+        </div>
+        <div className="settings-about-links">
+          <a
+            href="https://github.com/sgtlaugh/dev-home"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View on GitHub"
+          >
+            <IconBrandGithub size={14} />
+          </a>
+          <a
+            href="https://github.com/sgtlaugh/dev-home/issues/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Report issue"
+          >
+            <IconBug size={14} />
+          </a>
+        </div>
       </div>
     </div>
   );

@@ -1094,27 +1094,63 @@ a:hover {
   flex-shrink: 0;
 }
 
-.settings-footer {
+.settings-about {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 0 4px;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  border-radius: 8px;
+}
+
+.settings-about-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-about-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+.settings-about-tagline {
   font-size: 0.7rem;
   color: #656d76;
 }
 
-.settings-footer a {
+.settings-about-version {
+  font-size: 0.625rem;
   color: #656d76;
-  text-decoration: none;
+  background: #eaeef2;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
-.settings-footer a:hover {
-  color: #0969da;
+.settings-about-links {
+  display: flex;
+  gap: 4px;
 }
 
-.settings-footer-sep {
-  color: #d1d9e0;
+.settings-about-links a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: #656d76;
+  transition: background 0.15s, color 0.15s;
+}
+
+.settings-about-links a:hover {
+  background: #eaeef2;
+  color: #1f2328;
 }
 
 /* --- Type indicator dots (for summary view) --- */
