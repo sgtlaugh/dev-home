@@ -57,12 +57,6 @@ export interface JiraComment {
 }
 
 // GitHub Types
-export interface CheckRunInfo {
-  name: string;
-  status: string;
-  url: string | null;
-}
-
 export interface GitHubPR {
   id: number;
   number: number;
@@ -85,11 +79,9 @@ export interface GitHubPR {
   base: {
     ref: string;
   };
-  body: string;
   repository_url: string;
   repo_full_name: string;
   checks_status: string | null;
-  checks: CheckRunInfo[];
   review_status: string | null;
   additions: number;
   deletions: number;

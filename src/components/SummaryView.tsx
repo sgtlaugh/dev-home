@@ -286,7 +286,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   onOpenNote,
 }) => {
   const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
-  const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
 
   const jiraBase = jiraBaseUrl?.replace(/\/+$/, "") || "";
 
@@ -355,7 +354,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                       badge={pr.draft ? "Draft" : "Open"}
                       badgeClass={pr.draft ? "badge-status-neutral" : "badge-status-green"}
                       checksStatus={pr.checks_status}
-                      onClick={() => setSelectedPR(pr)}
+                      onClick={() => window.open(pr.html_url, "_blank")}
                     />
                   ))
                 ) : (
@@ -418,7 +417,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                       time={r.updated_at}
                       badgeClass="badge-status-yellow"
                       checksStatus={r.checks_status}
-                      onClick={() => setSelectedPR(r)}
+                      onClick={() => window.open(r.html_url, "_blank")}
                     />
                   ))
                 ) : (
@@ -510,16 +509,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
         subtitle={selectedIssue?.project.name}
         description={selectedIssue?.description || ""}
         url={selectedIssue && jiraBase ? `${jiraBase}/browse/${selectedIssue.key}` : undefined}
-      />
-
-      <DescriptionModal
-        show={!!selectedPR}
-        onHide={() => setSelectedPR(null)}
-        title={selectedPR ? `#${selectedPR.number} ${selectedPR.title}` : ""}
-        subtitle={selectedPR?.repo_full_name}
-        description={selectedPR?.body || ""}
-        url={selectedPR?.html_url}
-        checks={selectedPR?.checks}
       />
     </>
   );

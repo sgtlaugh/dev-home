@@ -4,61 +4,7 @@
  */
 
 export const SEARCH_PRS_QUERY = `
-  query SearchPRs($query: String!, $first: Int!) {
-    search(query: $query, type: ISSUE, first: $first) {
-      nodes {
-        ... on PullRequest {
-          databaseId
-          number
-          title
-          url
-          state
-          isDraft
-          merged
-          mergedAt
-          mergedBy { login avatarUrl }
-          closedAt
-          createdAt
-          updatedAt
-          author { login avatarUrl }
-          body
-          headRefName
-          baseRefName
-          additions
-          deletions
-          repository { nameWithOwner url }
-          commits(last: 1) {
-            nodes {
-              commit {
-                statusCheckRollup {
-                  state
-                  contexts(first: 50) {
-                    nodes {
-                      ... on CheckRun {
-                        name
-                        conclusion
-                        status
-                        detailsUrl
-                      }
-                      ... on StatusContext {
-                        context
-                        state
-                        targetUrl
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-export const SEARCH_PRS_FULL_QUERY = `
-  query SearchMyPRs($query: String!, $first: Int!, $after: String) {
+  query SearchPRs($query: String!, $first: Int!, $after: String) {
     search(query: $query, type: ISSUE, first: $first, after: $after) {
       pageInfo {
         hasNextPage
@@ -79,7 +25,6 @@ export const SEARCH_PRS_FULL_QUERY = `
           createdAt
           updatedAt
           author { login avatarUrl }
-          body
           headRefName
           baseRefName
           additions
@@ -90,21 +35,6 @@ export const SEARCH_PRS_FULL_QUERY = `
               commit {
                 statusCheckRollup {
                   state
-                  contexts(first: 50) {
-                    nodes {
-                      ... on CheckRun {
-                        name
-                        conclusion
-                        status
-                        detailsUrl
-                      }
-                      ... on StatusContext {
-                        context
-                        state
-                        targetUrl
-                      }
-                    }
-                  }
                 }
               }
             }
@@ -114,49 +44,6 @@ export const SEARCH_PRS_FULL_QUERY = `
               state
               author { login avatarUrl }
               submittedAt
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-export const SEARCH_PRS_CONTRIBUTIONS_QUERY = `
-  query SearchPRsContributions($query: String!, $first: Int!, $after: String) {
-    search(query: $query, type: ISSUE, first: $first, after: $after) {
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-      nodes {
-        ... on PullRequest {
-          databaseId
-          number
-          title
-          url
-          state
-          isDraft
-          merged
-          mergedAt
-          mergedBy { login avatarUrl }
-          closedAt
-          createdAt
-          updatedAt
-          author { login avatarUrl }
-          body
-          headRefName
-          baseRefName
-          additions
-          deletions
-          repository { nameWithOwner url }
-          commits(last: 1) {
-            nodes {
-              commit {
-                statusCheckRollup {
-                  state
-                }
-              }
             }
           }
         }
@@ -234,7 +121,6 @@ export const COMBINED_DASHBOARD_QUERY = `
           createdAt
           updatedAt
           author { login avatarUrl }
-          body
           headRefName
           baseRefName
           additions
@@ -245,21 +131,6 @@ export const COMBINED_DASHBOARD_QUERY = `
               commit {
                 statusCheckRollup {
                   state
-                  contexts(first: 50) {
-                    nodes {
-                      ... on CheckRun {
-                        name
-                        conclusion
-                        status
-                        detailsUrl
-                      }
-                      ... on StatusContext {
-                        context
-                        state
-                        targetUrl
-                      }
-                    }
-                  }
                 }
               }
             }
@@ -290,7 +161,6 @@ export const COMBINED_DASHBOARD_QUERY = `
           createdAt
           updatedAt
           author { login avatarUrl }
-          body
           headRefName
           baseRefName
           additions
@@ -301,23 +171,15 @@ export const COMBINED_DASHBOARD_QUERY = `
               commit {
                 statusCheckRollup {
                   state
-                  contexts(first: 50) {
-                    nodes {
-                      ... on CheckRun {
-                        name
-                        conclusion
-                        status
-                        detailsUrl
-                      }
-                      ... on StatusContext {
-                        context
-                        state
-                        targetUrl
-                      }
-                    }
-                  }
                 }
               }
+            }
+          }
+          reviews(last: 20) {
+            nodes {
+              state
+              author { login avatarUrl }
+              submittedAt
             }
           }
         }

@@ -12,7 +12,7 @@ import {
   fetchPRsForSubRange,
   gateStartDate,
 } from "./helpers";
-import { SEARCH_PRS_FULL_QUERY } from "./queries";
+import { SEARCH_PRS_QUERY } from "./queries";
 import { LONG_CACHE_TTL } from "../../utils/constants";
 import {
   getMonthsBetween,
@@ -47,7 +47,7 @@ router.get("/prs", async (_req: Request, res: Response) => {
 
   let result;
   try {
-    result = await graphql<{ search: { nodes: any[] } }>(SEARCH_PRS_FULL_QUERY, {
+    result = await graphql<{ search: { nodes: any[] } }>(SEARCH_PRS_QUERY, {
       query: q,
       first: 50,
     }, "prs/open");

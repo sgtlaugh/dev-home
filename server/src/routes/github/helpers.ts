@@ -3,7 +3,7 @@ import { createGitHubClient } from "../../clients/githubApiClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import { ACTIVITY_LOOKBACK_DAYS, LONG_CACHE_TTL } from "../../utils/constants";
-import { SEARCH_PRS_CONTRIBUTIONS_QUERY } from "./queries";
+import { SEARCH_PRS_QUERY } from "./queries";
 
 /**
  * Get an ISO date string for months ago (YYYY-MM-DD).
@@ -12,24 +12,6 @@ export function monthsAgo(months: number = 1): string {
   const d = new Date();
   d.setMonth(d.getMonth() - months);
   return d.toISOString().slice(0, 10);
-}
-
-/**
- * Map a statusCheckRollup context node to a normalized check run shape.
- */
-export function mapCheckContext(ctx: any) {
-  if (ctx.name !== undefined) {
-    return {
-      name: ctx.name,
-      status: (ctx.conclusion || ctx.status || "PENDING").toUpperCase(),
-      url: ctx.detailsUrl || null,
-    };
-  }
-  return {
-    name: ctx.context || "",
-    status: (ctx.state || "PENDING").toUpperCase(),
-    url: ctx.targetUrl || null,
-  };
 }
 
 /**
@@ -58,7 +40,6 @@ export function deriveReviewStatus(reviews: any[] | undefined): string | null {
  */
 export function mapGraphQLPr(node: any) {
   const rollup = node.commits?.nodes?.[0]?.commit?.statusCheckRollup;
-  const contextNodes = rollup?.contexts?.nodes || [];
   return {
     id: node.databaseId,
     number: node.number,
@@ -81,11 +62,9 @@ export function mapGraphQLPr(node: any) {
     base: {
       ref: node.baseRefName || "",
     },
-    body: node.body || "",
     repository_url: `https://api.github.com/repos/${node.repository?.nameWithOwner || ""}`,
     repo_full_name: node.repository?.nameWithOwner || "",
     checks_status: rollup?.state || null,
-    checks: contextNodes.map(mapCheckContext),
     review_status: deriveReviewStatus(node.reviews?.nodes),
     additions: node.additions || 0,
     deletions: node.deletions || 0,
@@ -310,7 +289,7 @@ export async function fetchPRsForSubRange(
       try {
         result = await graphql<{
           search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
-        }>(SEARCH_PRS_CONTRIBUTIONS_QUERY, { query: q, first: 100, after: cursor }, "contributions/page");
+        }>(SEARCH_PRS_QUERY, { query: q, first: 100, after: cursor }, "contributions/page");
       } catch (error) {
         logger.error("fetchPRsForSubRange", `Failed to fetch PRs for ${currentStart}..${currentEnd}: ${error}`);
         break;

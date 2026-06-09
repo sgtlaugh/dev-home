@@ -1415,13 +1415,6 @@ a,
   opacity: 0.8;
 }
 
-.description-modal .modal-checks-section {
-  padding: 20px 30px;
-  border-bottom: 1px solid #d1d9e0;
-  max-height: 20vh;
-  overflow-y: auto;
-}
-
 .description-modal .modal-body {
   padding: 30px;
   max-height: 50vh;

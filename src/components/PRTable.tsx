@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import { IconGitPullRequest, IconEye } from "@tabler/icons-react";
@@ -6,7 +6,6 @@ import { GitHubPR } from "../types";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
 import { Timestamp } from "./Timestamp";
 import { EmptyState } from "./EmptyState";
-import { DescriptionModal } from "./DescriptionModal";
 import { Tooltip } from "./Tooltip";
 
 const REVIEW_STATUS_CONFIG: Record<string, { label: string; badgeClass: string }> = {
@@ -23,22 +22,14 @@ function getAccentColor(pr: GitHubPR, isReview: boolean): string {
   return "#1a7f37";
 }
 
-function getBodyPreview(body: string): string {
-  if (!body) return "";
-  const firstLine = body.split("\n").find((l) => l.trim().length > 0) || "";
-  return firstLine.slice(0, 200) + (firstLine.length > 200 ? "..." : "");
-}
-
 interface PRCardProps {
   pr: GitHubPR;
   variant: "my-prs" | "review-requests";
-  onClick: () => void;
 }
 
-const PRCard: React.FC<PRCardProps> = ({ pr, variant, onClick }) => {
+const PRCard: React.FC<PRCardProps> = ({ pr, variant }) => {
   const isReview = variant === "review-requests";
   const accentColor = getAccentColor(pr, isReview);
-  const preview = getBodyPreview(pr.body);
   const reviewConfig = pr.review_status ? REVIEW_STATUS_CONFIG[pr.review_status] : null;
 
   return (
@@ -48,7 +39,7 @@ const PRCard: React.FC<PRCardProps> = ({ pr, variant, onClick }) => {
         borderLeftColor: accentColor,
         cursor: "pointer",
       }}
-      onClick={onClick}
+      onClick={() => window.open(pr.html_url, "_blank")}
     >
       <div className="activity-icon" style={{ color: accentColor }}>
         {isReview ? <IconEye size={16} /> : <IconGitPullRequest size={16} />}
@@ -135,21 +126,6 @@ const PRCard: React.FC<PRCardProps> = ({ pr, variant, onClick }) => {
             </span>
           )}
         </div>
-        {preview && (
-          <div
-            style={{
-              marginTop: "6px",
-              fontSize: "0.75rem",
-              color: "#656d76",
-              fontStyle: "italic",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {preview}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -162,7 +138,6 @@ interface PRTableProps {
 }
 
 export const PRTable: React.FC<PRTableProps> = ({ prs, loading, variant }) => {
-  const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
   const isMyPRs = variant === "my-prs";
 
   if (loading && prs.length === 0) {
@@ -233,22 +208,12 @@ export const PRTable: React.FC<PRTableProps> = ({ prs, loading, variant }) => {
             </div>
             <div className="activity-list">
               {datePRs.map((pr) => (
-                <PRCard key={pr.id} pr={pr} variant={variant} onClick={() => setSelectedPR(pr)} />
+                <PRCard key={pr.id} pr={pr} variant={variant} />
               ))}
             </div>
           </div>
         ))}
       </div>
-
-      <DescriptionModal
-        show={!!selectedPR}
-        onHide={() => setSelectedPR(null)}
-        title={selectedPR ? `#${selectedPR.number} ${selectedPR.title}` : ""}
-        subtitle={selectedPR?.repo_full_name}
-        description={selectedPR?.body || ""}
-        url={selectedPR?.html_url}
-        checks={selectedPR?.checks}
-      />
     </>
   );
 };
