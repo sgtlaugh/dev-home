@@ -67,24 +67,26 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
   );
   const hasPeak = primaryData.length > 2 && primaryData[peakIdx].value > 0;
 
-  // Moving average (3-week window) for primary series
-  const movingAvg = primaryData.map((_, i) => {
-    let sum = 0;
-    let count = 0;
-    for (let j = Math.max(0, i - 1); j <= Math.min(primaryData.length - 1, i + 1); j++) {
-      sum += primaryData[j].value;
-      count++;
-    }
-    return sum / count;
+  // Moving average (3-week window) for each series
+  const trendPointsBySeries = series.map((s) => {
+    const reversed = [...s.data].reverse();
+    const movingAvg = reversed.map((_, i) => {
+      let sum = 0;
+      let count = 0;
+      for (let j = Math.max(0, i - 1); j <= Math.min(reversed.length - 1, i + 1); j++) {
+        sum += reversed[j].value;
+        count++;
+      }
+      return sum / count;
+    });
+    return movingAvg
+      .map((avg, i) => {
+        const cx = PADDING.left + groupW * i + groupW / 2;
+        const y = PADDING.top + chartH - (avg / yMax) * chartH;
+        return `${cx},${y}`;
+      })
+      .join(" ");
   });
-
-  const trendPoints = movingAvg
-    .map((avg, i) => {
-      const cx = PADDING.left + groupW * i + groupW / 2;
-      const y = PADDING.top + chartH - (avg / yMax) * chartH;
-      return `${cx},${y}`;
-    })
-    .join(" ");
 
   return (
     <div ref={containerRef} style={{ width: "100%", position: "relative" }}>
@@ -207,18 +209,20 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
           );
         })}
 
-        {/* Moving average trend line */}
-        {primaryData.length > 2 && (
-          <polyline
-            points={trendPoints}
-            fill="none"
-            stroke={series[0].color}
-            strokeWidth={1.5}
-            strokeDasharray="4,3"
-            opacity={0.5}
-            style={{ transition: "all 0.3s ease" }}
-          />
-        )}
+        {/* Moving average trend lines */}
+        {primaryData.length > 2 &&
+          series.map((s, si) => (
+            <polyline
+              key={s.label}
+              points={trendPointsBySeries[si]}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={1.5}
+              strokeDasharray="4,3"
+              opacity={0.5}
+              style={{ transition: "all 0.3s ease" }}
+            />
+          ))}
 
         {/* Baseline */}
         <line
