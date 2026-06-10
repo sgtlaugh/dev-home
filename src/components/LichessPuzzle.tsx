@@ -233,7 +233,7 @@ export const LichessPuzzle: React.FC = () => {
     return null;
   }
 
-  const statusColor = status === "wrong" ? "#cf222e" : status === "playing" ? "#656d76" : "#1a7f37";
+  const statusColor = status === "wrong" ? "#cf222e" : status === "playing" ? "#4A5680" : "#1a7f37";
 
   const statusText =
     status === "solved"
