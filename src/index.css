@@ -2244,6 +2244,26 @@ a.note-row-title:hover {
   color: #1f2328;
 }
 
+.activity-show-more {
+  background: none;
+  border: 1px dashed #d1d9e0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  width: 100%;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #656d76;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 150ms ease;
+}
+
+.activity-show-more:hover {
+  background: #f6f8fa;
+  color: #1f2328;
+  border-color: #8b949e;
+}
+
 /* ── Find-in-page bar ── */
 .find-bar {
   position: fixed;

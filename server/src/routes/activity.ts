@@ -97,11 +97,127 @@ function truncatePreview(text: string): string {
   return trimmed + (text.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
 }
 
+async function fetchJiraCreated(jira: any, config: any): Promise<ActivityItem[]> {
+  const { data } = await jira.post("/search/jql", {
+    jql: `creator = currentUser() AND created >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY created DESC`,
+    fields: ["summary", "created"],
+    maxResults: 20,
+  });
+
+  return (data.issues || []).map((issue: any) => ({
+    id: `jira-created-${issue.key}`,
+    type: "jira" as const,
+    action: "Created ticket",
+    title: `${issue.key}: ${issue.fields.summary}`,
+    url: `${config.jiraBaseUrl}/browse/${issue.key}`,
+    timestamp: issue.fields.created,
+    entityKey: issue.key,
+  }));
+}
+
+async function fetchJiraComments(jira: any, config: any, userAccountId: string, cutoffTime: number): Promise<ActivityItem[]> {
+  const { data: commentedIssues } = await jira.post("/search/jql", {
+    jql: `comment ~ currentUser() AND updated >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
+    fields: ["summary"],
+    maxResults: 100,
+  });
+
+  const issues = commentedIssues.issues || [];
+  logger.info("Activity/JIRA", `Fetching comments for ${issues.length} issues`);
+
+  const issueComments = await Promise.all(
+    issues.slice(0, 30).map(async (issue: any) => {
+      try {
+        const { data } = await jira.get(`/issue/${issue.key}/comment`, { params: { maxResults: 50, orderBy: "-created" } });
+        return { issue, comments: data.comments || [] };
+      } catch {
+        return { issue, comments: [] };
+      }
+    }),
+  );
+
+  const activities: ActivityItem[] = [];
+  let commentCount = 0;
+  for (const { issue, comments } of issueComments) {
+    for (const comment of comments) {
+      if (comment.author?.accountId !== userAccountId) continue;
+      if (new Date(comment.created).getTime() < cutoffTime) continue;
+
+      const plainText = adfToPlainText(comment.body);
+      const commentPreview = plainText ? truncatePreview(plainText) : "";
+      activities.push({
+        id: `jira-comment-${comment.id}`,
+        type: "jira",
+        action: "Commented on ticket",
+        title: `${issue.key}: ${issue.fields.summary}`,
+        url: `${config.jiraBaseUrl}/browse/${issue.key}?focusedCommentId=${comment.id}`,
+        timestamp: comment.created,
+        entityKey: issue.key,
+        metadata: { commentBody: commentPreview || undefined },
+      });
+      commentCount++;
+    }
+  }
+  logger.info("Activity/JIRA", `Comments: ${commentCount} from ${issues.length} issues`);
+  return activities;
+}
+
+async function fetchJiraTransitions(jira: any, config: any, userAccountId: string, cutoffTime: number): Promise<ActivityItem[]> {
+  const { data: transitionIssues } = await jira.post("/search/jql", {
+    jql: `assignee was currentUser() AND status changed AFTER -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
+    fields: ["summary"],
+    maxResults: 50,
+  });
+
+  const issueKeys = (transitionIssues.issues || []).map((i: any) => i.key);
+  const summaryMap = new Map<string, string>();
+  for (const issue of transitionIssues.issues || []) {
+    summaryMap.set(issue.key, issue.fields?.summary || "");
+  }
+
+  const changelogs = await Promise.all(
+    issueKeys.slice(0, 20).map(async (key: string) => {
+      try {
+        const { data } = await jira.get(`/issue/${key}/changelog`, { params: { maxResults: 50 } });
+        return { key, histories: data.values || [] };
+      } catch {
+        return { key, histories: [] };
+      }
+    }),
+  );
+
+  const activities: ActivityItem[] = [];
+  for (const { key, histories } of changelogs) {
+    for (const history of histories) {
+      if (history.author?.accountId !== userAccountId) continue;
+      if (new Date(history.created).getTime() < cutoffTime) continue;
+
+      for (const item of history.items || []) {
+        if (item.field !== "status") continue;
+        activities.push({
+          id: `jira-transition-${key}-${history.id}`,
+          type: "jira",
+          action: "Changed status",
+          title: `${key}: ${summaryMap.get(key) || ""}`,
+          url: `${config.jiraBaseUrl}/browse/${key}`,
+          timestamp: history.created,
+          entityKey: key,
+          metadata: {
+            fromStatus: item.fromString,
+            toStatus: item.toString,
+            commentBody: `${item.fromString} → ${item.toString}`,
+          },
+        });
+      }
+    }
+  }
+  logger.info("Activity/JIRA", `Transitions checked: ${issueKeys.length} issues, ${changelogs.reduce((s, c) => s + c.histories.length, 0)} changelog entries`);
+  return activities;
+}
+
 async function fetchJiraActivity(): Promise<ActivityItem[]> {
   const config = getConfig();
   const jira = createJiraClient();
-  const activities: ActivityItem[] = [];
-  const cutoffTime = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
 
   let userAccountId: string;
   try {
@@ -109,137 +225,18 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
     userAccountId = userData.accountId;
   } catch (err) {
     logError("Activity/JIRA /myself", err);
-    return activities;
+    return [];
   }
 
-  try {
-    const { data: createdData } = await jira.post("/search/jql", {
-      jql: `creator = currentUser() AND created >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY created DESC`,
-      fields: ["summary", "created"],
-      maxResults: 20,
-    });
+  const cutoffTime = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
 
-    for (const issue of createdData.issues || []) {
-      activities.push({
-        id: `jira-created-${issue.key}`,
-        type: "jira",
-        action: "Created ticket",
-        title: `${issue.key}: ${issue.fields.summary}`,
-        url: `${config.jiraBaseUrl}/browse/${issue.key}`,
-        timestamp: issue.fields.created,
-        entityKey: issue.key,
-      });
-    }
-  } catch (err) {
-    logError("Activity/JIRA created", err, { query: `creator = currentUser() AND created >= -${ACTIVITY_LOOKBACK_DAYS}d` });
-  }
+  const [created, comments, transitions] = await Promise.all([
+    fetchJiraCreated(jira, config).catch((err) => { logError("Activity/JIRA created", err); return [] as ActivityItem[]; }),
+    fetchJiraComments(jira, config, userAccountId, cutoffTime).catch((err) => { logError("Activity/JIRA comments", err); return [] as ActivityItem[]; }),
+    fetchJiraTransitions(jira, config, userAccountId, cutoffTime).catch((err) => { logError("Activity/JIRA transitions", err); return [] as ActivityItem[]; }),
+  ]);
 
-  try {
-    // Query issues the user commented on recently
-    const { data: commentedIssues } = await jira.post("/search/jql", {
-      jql: `comment ~ currentUser() AND updated >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
-      fields: ["summary"],
-      maxResults: 100,
-    });
-
-    const issues = commentedIssues.issues || [];
-    logger.info("Activity/JIRA", `Fetching comments for ${issues.length} issues`);
-
-    // Fetch comments per issue to get full list (search only returns partial)
-    const commentPromises = issues.slice(0, 30).map(async (issue: any) => {
-      try {
-        const { data } = await jira.get(`/issue/${issue.key}/comment`, { params: { maxResults: 50, orderBy: "-created" } });
-        return { issue, comments: data.comments || [] };
-      } catch {
-        return { issue, comments: [] };
-      }
-    });
-    const issueComments = await Promise.all(commentPromises);
-
-    let commentCount = 0;
-    for (const { issue, comments } of issueComments) {
-      for (const comment of comments) {
-        if (comment.author?.accountId !== userAccountId) continue;
-        const commentTime = new Date(comment.created).getTime();
-        if (commentTime < cutoffTime) continue;
-
-        const plainText = adfToPlainText(comment.body);
-        const commentPreview = plainText ? truncatePreview(plainText) : "";
-        activities.push({
-          id: `jira-comment-${comment.id}`,
-          type: "jira",
-          action: "Commented on ticket",
-          title: `${issue.key}: ${issue.fields.summary}`,
-          url: `${config.jiraBaseUrl}/browse/${issue.key}?focusedCommentId=${comment.id}`,
-          timestamp: comment.created,
-          entityKey: issue.key,
-          metadata: { commentBody: commentPreview || undefined },
-        });
-        commentCount++;
-      }
-    }
-
-    logger.info("Activity/JIRA", `Comments: ${commentCount} from ${issues.length} issues`);
-  } catch (err) {
-    logError("Activity/JIRA comments", err);
-  }
-
-  try {
-    const { data: transitionIssues } = await jira.post("/search/jql", {
-      jql: `assignee was currentUser() AND status changed AFTER -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
-      fields: ["summary"],
-      maxResults: 50,
-    });
-
-    const issueKeys = (transitionIssues.issues || []).map((i: any) => i.key);
-    const summaryMap = new Map<string, string>();
-    for (const issue of transitionIssues.issues || []) {
-      summaryMap.set(issue.key, issue.fields?.summary || "");
-    }
-
-    // Fetch changelogs in parallel (batched to avoid rate limits)
-    const changelogPromises = issueKeys.slice(0, 20).map(async (key: string) => {
-      try {
-        const { data } = await jira.get(`/issue/${key}/changelog`, { params: { maxResults: 50 } });
-        return { key, histories: data.values || [] };
-      } catch {
-        return { key, histories: [] };
-      }
-    });
-    const changelogs = await Promise.all(changelogPromises);
-
-    for (const { key, histories } of changelogs) {
-      for (const history of histories) {
-        if (history.author?.accountId !== userAccountId) continue;
-        const historyTime = new Date(history.created).getTime();
-        if (historyTime < cutoffTime) continue;
-
-        for (const item of history.items || []) {
-          if (item.field !== "status") continue;
-          activities.push({
-            id: `jira-transition-${key}-${history.id}`,
-            type: "jira",
-            action: "Changed status",
-            title: `${key}: ${summaryMap.get(key) || ""}`,
-            url: `${config.jiraBaseUrl}/browse/${key}`,
-            timestamp: history.created,
-            entityKey: key,
-            metadata: {
-              fromStatus: item.fromString,
-              toStatus: item.toString,
-              commentBody: `${item.fromString} → ${item.toString}`,
-            },
-          });
-        }
-      }
-    }
-
-    logger.info("Activity/JIRA", `Transitions checked: ${issueKeys.length} issues, ${changelogs.reduce((s, c) => s + c.histories.length, 0)} changelog entries`);
-  } catch (err) {
-    logError("Activity/JIRA transitions", err);
-  }
-
-  return activities;
+  return [...created, ...comments, ...transitions];
 }
 
 async function fetchGitHubActivity(): Promise<ActivityItem[]> {

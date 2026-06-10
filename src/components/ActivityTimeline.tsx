@@ -99,8 +99,11 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   currentUsername,
 }) => {
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
+  const [expandedDateGroups, setExpandedDateGroups] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeActors, setActiveActors] = useState<Set<string>>(new Set());
+
+  const VISIBLE_ENTITY_LIMIT = 5;
 
   const stats = useMemo(() => {
     const counts = new Map<string, number>();
@@ -298,6 +301,21 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
             (i) => i.actions.length > 1 || i.actions.some((a) => a.metadata?.commentBody),
           );
           const allExpanded = expandableItems.every((i) => expandedEntities.has(i.entityKey));
+          const dateGroupExpanded = expandedDateGroups.has(dateLabel);
+          const isTruncated = items.length > VISIBLE_ENTITY_LIMIT && !dateGroupExpanded;
+          const visibleItems = isTruncated ? items.slice(0, VISIBLE_ENTITY_LIMIT) : items;
+          const hiddenCount = items.length - VISIBLE_ENTITY_LIMIT;
+
+          const isFullyExpanded = allExpanded && dateGroupExpanded;
+          const handleExpandAll = () => {
+            toggleDateGroup(items);
+            setExpandedDateGroups((prev) => {
+              const next = new Set(prev);
+              if (isFullyExpanded) next.delete(dateLabel);
+              else next.add(dateLabel);
+              return next;
+            });
+          };
 
           return (
             <div key={dateLabel} className="activity-section">
@@ -310,16 +328,20 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 >
                   {actionCount}
                 </Badge>
-                {expandableItems.length > 0 && (
-                  <Tooltip text={allExpanded ? "Collapse all" : "Expand all"}>
-                    <button className="activity-date-toggle" onClick={() => toggleDateGroup(items)}>
-                      {allExpanded ? <IconChevronsUp size={14} /> : <IconChevronsDown size={14} />}
+                {(expandableItems.length > 0 || isTruncated) && (
+                  <Tooltip text={isFullyExpanded ? "Collapse all" : "Expand all"}>
+                    <button className="activity-date-toggle" onClick={handleExpandAll}>
+                      {isFullyExpanded ? (
+                        <IconChevronsUp size={14} />
+                      ) : (
+                        <IconChevronsDown size={14} />
+                      )}
                     </button>
                   </Tooltip>
                 )}
               </div>
               <div className="activity-list">
-                {items.map((collapsed) => {
+                {visibleItems.map((collapsed) => {
                   const latestAction = collapsed.actions[0];
                   const entityActionCount = collapsed.actions.length;
                   const reviewBadge = getReviewBadgeLabel(collapsed.reviewState);
@@ -550,6 +572,20 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                     </div>
                   );
                 })}
+                {isTruncated && (
+                  <button
+                    className="activity-show-more"
+                    onClick={() =>
+                      setExpandedDateGroups((prev) => {
+                        const next = new Set(prev);
+                        next.add(dateLabel);
+                        return next;
+                      })
+                    }
+                  >
+                    +{hiddenCount} more
+                  </button>
+                )}
               </div>
             </div>
           );
