@@ -329,6 +329,17 @@ a:hover {
   animation: spin 800ms linear infinite;
 }
 
+.sidebar-refresh-btn {
+  margin-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 0 0 8px 8px !important;
+  padding-top: 10px !important;
+}
+
+.sidebar-refresh-btn.spinning svg:first-child {
+  animation: spin 800ms linear infinite;
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
