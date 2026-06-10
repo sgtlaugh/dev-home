@@ -1,7 +1,7 @@
 import React from "react";
 
-const W_FILL = "#F0E4C8";
-const W_STROKE = "#7A6040";
+const W_FILL = "#F5EDE0";
+const W_STROKE = "#6B5840";
 const B_FILL = "#8C2020";
 const B_STROKE = "#551111";
 const B_DETAIL = "#D4A070";

@@ -195,8 +195,8 @@ export const LichessPuzzle: React.FC = () => {
   const lastMoveHighlight = useMemo(() => {
     if (!lastMove) return {};
     return {
-      [lastMove.from]: { backgroundColor: "rgba(130, 170, 220, 0.4)" },
-      [lastMove.to]: { backgroundColor: "rgba(130, 170, 220, 0.55)" },
+      [lastMove.from]: { backgroundColor: "rgba(100, 140, 200, 0.3)" },
+      [lastMove.to]: { backgroundColor: "rgba(100, 140, 200, 0.45)" },
     };
   }, [lastMove]);
 
@@ -302,8 +302,8 @@ export const LichessPuzzle: React.FC = () => {
             boardOrientation={playerColor}
             customSquareStyles={customSquareStyles}
             customPieces={chessmaster5500Pieces}
-            customDarkSquareStyle={{ backgroundColor: "#2A3568" }}
-            customLightSquareStyle={{ backgroundColor: "#D6CDBF" }}
+            customDarkSquareStyle={{ backgroundColor: "#4A5680" }}
+            customLightSquareStyle={{ backgroundColor: "#E8E2D8" }}
             animationDuration={200}
             arePiecesDraggable={status !== "solved"}
             isDraggablePiece={({ piece }) =>
