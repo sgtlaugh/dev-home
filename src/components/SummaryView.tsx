@@ -474,22 +474,22 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
           {topNotes.length > 0 ? (
             <div className="summary-notes-grid">
               {topNotes.map((note) => (
-                <Tooltip key={note.id} text={getNoteDisplayTitle(note)}>
-                  <div className="summary-note-chip" onClick={() => onOpenNote(note)}>
+                <div key={note.id} className="summary-note-chip" onClick={() => onOpenNote(note)}>
+                  <Tooltip text={getNoteDisplayTitle(note)}>
                     <span className="summary-note-chip-text">{getNoteDisplayTitle(note)}</span>
-                    <Tooltip text="Resolve">
-                      <button
-                        className="summary-note-resolve"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onResolveNote(note.id);
-                        }}
-                      >
-                        <IconCheck size={10} />
-                      </button>
-                    </Tooltip>
-                  </div>
-                </Tooltip>
+                  </Tooltip>
+                  <Tooltip text="Resolve">
+                    <button
+                      className="summary-note-resolve"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onResolveNote(note.id);
+                      }}
+                    >
+                      <IconCheck size={10} />
+                    </button>
+                  </Tooltip>
+                </div>
               ))}
             </div>
           ) : (
