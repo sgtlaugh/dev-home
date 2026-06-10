@@ -66,19 +66,20 @@ export default function App() {
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
   const fetchTimeCache = useRef<Record<string, number>>({});
+  const tabLabelMap: Record<string, string> = {
+    summary: "Dashboard",
+    activity: "Activity",
+    "jira-activity": "Team Activity",
+    contributions: "Contributions",
+    leaderboard: "Leaderboard",
+    velocity: "Velocity",
+  };
+  const labelTabMap: Record<string, string> = {};
+  for (const [tab, label] of Object.entries(tabLabelMap)) labelTabMap[label] = tab;
   const showFetchTime = useCallback((label: string, ms: number) => {
     fetchTimeCache.current[label] = ms;
-    const tab = activeTabRef.current;
-    const labelTabMap: Record<string, string[]> = {
-      Dashboard: ["summary"],
-      Activity: ["activity"],
-      "Team Activity": ["jira-activity"],
-      Contributions: ["contributions"],
-      Leaderboard: ["leaderboard"],
-      Velocity: ["velocity"],
-    };
-    const tabs = labelTabMap[label];
-    if (tabs && !tabs.includes(tab)) return;
+    const expectedTab = labelTabMap[label];
+    if (expectedTab && expectedTab !== activeTabRef.current) return;
     setFetchTime({ label, ms });
   }, []);
   const {
@@ -105,34 +106,24 @@ export default function App() {
     removeNote,
     refresh: refreshNotes,
   } = useNotes(configured);
-  const tabSwitchTime = useRef(performance.now());
-  const FETCH_TABS = new Set([
-    "summary",
-    "activity",
-    "jira-activity",
-    "contributions",
-    "leaderboard",
-    "velocity",
-  ]);
-  const tabLabelMap: Record<string, string> = {
-    summary: "Dashboard",
-    activity: "Activity",
-    "jira-activity": "Team Activity",
-    contributions: "Contributions",
-    leaderboard: "Leaderboard",
-    velocity: "Velocity",
-  };
   useLayoutEffect(() => {
-    tabSwitchTime.current = performance.now();
     const label = tabLabelMap[activeTab];
     const cached = label ? fetchTimeCache.current[label] : undefined;
     if (cached !== undefined) {
       setFetchTime({ label, ms: cached });
-    } else if (FETCH_TABS.has(activeTab)) {
+    } else if (label) {
       setFetchTime(null);
     } else {
-      const ms = Math.round(performance.now() - tabSwitchTime.current);
-      setFetchTime({ label: "Render", ms });
+      const tabNames: Record<string, string> = {
+        jira: "Issues",
+        mentions: "Notifications",
+        prs: "Pull Requests",
+        reviews: "Reviews",
+        notes: "Notes",
+        settings: "Settings",
+        peers: "Peers",
+      };
+      setFetchTime({ label: tabNames[activeTab] || activeTab, ms: 0 });
     }
   }, [activeTab]);
 
@@ -472,7 +463,7 @@ export default function App() {
                     </span>
                   </Tooltip>
                 ) : (
-                  FETCH_TABS.has(effectiveTab) && (
+                  tabLabelMap[effectiveTab] && (
                     <span style={{ padding: "0 6px", display: "flex", alignItems: "center" }}>
                       <Spinner
                         animation="border"
