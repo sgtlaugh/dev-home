@@ -3,7 +3,7 @@ import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import Spinner from "react-bootstrap/Spinner";
 import {
-  IconPuzzle,
+  IconChessKnight,
   IconExternalLink,
   IconRefresh,
   IconBulb,
@@ -254,8 +254,18 @@ export const LichessPuzzle: React.FC = () => {
           marginBottom: "0.5rem",
         }}
       >
-        <IconPuzzle size={18} stroke={1.8} style={{ color: "#58a6ff" }} />
-        <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Puzzle of the Day</h3>
+        <IconChessKnight size={18} stroke={1.8} style={{ color: "#8C2020" }} />
+        <h3
+          style={{
+            margin: 0,
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            color: "#4A5680",
+            letterSpacing: "0.02em",
+          }}
+        >
+          Puzzle of the Day
+        </h3>
         <div style={{ flex: 1 }} />
         <Tooltip text="Reset puzzle">
           <button
