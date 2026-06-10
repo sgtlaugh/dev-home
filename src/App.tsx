@@ -154,6 +154,21 @@ export default function App() {
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
   const [githubExpanded, setGithubExpanded] = useState(true);
   const [jiraExpanded, setJiraExpanded] = useState(true);
+  const refreshBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "r" && refreshing === false) {
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement?.tagName !== "INPUT" && activeElement?.tagName !== "TEXTAREA") {
+          e.preventDefault();
+          refreshBtnRef.current?.click();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [refreshing]);
 
   const EMPTY_SETTINGS: AppSettings = {
     jiraBaseUrl: "",
@@ -359,11 +374,12 @@ export default function App() {
             <Tooltip
               text={
                 lastRefreshTime
-                  ? `Last refresh: ${Math.round((Date.now() - lastRefreshTime) / 60000)}m ago`
-                  : "Clear cache and refresh all data"
+                  ? `Last refresh: ${Math.round((Date.now() - lastRefreshTime) / 60000)}m ago (Alt+R)`
+                  : "Clear cache and refresh all data (Alt+R)"
               }
             >
               <button
+                ref={refreshBtnRef}
                 className={`sidebar-top-item sidebar-refresh-btn${refreshing ? " spinning" : ""}`}
                 onClick={async () => {
                   if (refreshing) return;
