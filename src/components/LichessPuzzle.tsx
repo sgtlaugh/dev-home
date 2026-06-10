@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import Spinner from "react-bootstrap/Spinner";
+import Card from "react-bootstrap/Card";
 import {
   IconChessKnight,
   IconExternalLink,
@@ -245,124 +246,116 @@ export const LichessPuzzle: React.FC = () => {
           : `${playerColor === "white" ? "White" : "Black"} to play`;
 
   return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          marginBottom: "0.5rem",
-        }}
-      >
-        <IconChessKnight size={18} stroke={1.8} style={{ color: "#8C2020" }} />
-        <h3
-          style={{
-            margin: 0,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            color: "#4A5680",
-            letterSpacing: "0.02em",
-          }}
-        >
-          Puzzle of the Day
-        </h3>
-        <div style={{ flex: 1 }} />
-        <Tooltip text="Reset puzzle">
-          <button
-            onClick={reset}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#656d76",
-              padding: "2px",
-              display: "flex",
-            }}
-          >
-            <IconRefresh size={14} />
-          </button>
-        </Tooltip>
-        <Tooltip text="Show hint">
-          <button
-            onClick={() => setShowHint(!showHint)}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: showHint ? "#f0883e" : "#656d76",
-              padding: "2px",
-              display: "flex",
-            }}
-          >
-            <IconBulb size={14} />
-          </button>
-        </Tooltip>
-        <Tooltip text="Open on Lichess">
-          <a
-            href="https://lichess.org/training/daily"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "#656d76", display: "flex", padding: "2px" }}
-          >
-            <IconExternalLink size={14} />
-          </a>
-        </Tooltip>
-      </div>
-
-      <div ref={containerRef} style={{ width: "100%" }}>
-        {boardWidth > 0 && (
+    <Card className="h-100 summary-card" style={{ borderLeft: "3px solid #4A5680" }}>
+      <Card.Body className="p-0">
+        <div className="section-header px-3 pt-3 mb-0">
+          <Tooltip text="Lichess daily puzzle">
+            <span
+              className="section-icon-bg"
+              style={{ backgroundColor: "#4A568015", color: "#4A5680" }}
+            >
+              <IconChessKnight size={16} stroke={1.8} />
+            </span>
+          </Tooltip>
+          <span>Puzzle of the Day</span>
+          <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+            <Tooltip text="Reset puzzle">
+              <button
+                onClick={reset}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#656d76",
+                  padding: "2px",
+                  display: "flex",
+                }}
+              >
+                <IconRefresh size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Show hint">
+              <button
+                onClick={() => setShowHint(!showHint)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: showHint ? "#f0883e" : "#656d76",
+                  padding: "2px",
+                  display: "flex",
+                }}
+              >
+                <IconBulb size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Open on Lichess">
+              <a
+                href="https://lichess.org/training/daily"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#656d76", display: "flex", padding: "2px" }}
+              >
+                <IconExternalLink size={14} />
+              </a>
+            </Tooltip>
+          </span>
+        </div>
+        <div ref={containerRef} style={{ marginTop: 8, padding: "0 12px 12px" }}>
+          {boardWidth > 0 && (
+            <div
+              style={{
+                border: "2px solid #3D4A6B",
+                borderRadius: "4px",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+                display: "inline-block",
+                overflow: "hidden",
+              }}
+            >
+              <Chessboard
+                position={fen}
+                onPieceDrop={onDrop}
+                boardWidth={boardWidth}
+                boardOrientation={playerColor}
+                customSquareStyles={customSquareStyles}
+                customPieces={chessmaster5500Pieces}
+                customDarkSquareStyle={{ backgroundColor: "#4A5680" }}
+                customLightSquareStyle={{ backgroundColor: "#E8E2D8" }}
+                customBoardStyle={{
+                  borderRadius: "2px",
+                }}
+                customNotationStyle={{
+                  fontSize: "0.55rem",
+                  fontWeight: 600,
+                  color: "#8890A4",
+                }}
+                showBoardNotation={true}
+                animationDuration={200}
+                arePiecesDraggable={status !== "solved"}
+                isDraggablePiece={({ piece }) =>
+                  status !== "solved" && piece[0] === (playerColor === "white" ? "w" : "b")
+                }
+              />
+            </div>
+          )}
           <div
             style={{
-              border: "2px solid #3D4A6B",
-              borderRadius: "4px",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
-              display: "inline-block",
-              overflow: "hidden",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              color: statusColor,
+              marginTop: "0.5rem",
+              textAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.3rem",
             }}
           >
-            <Chessboard
-              position={fen}
-              onPieceDrop={onDrop}
-              boardWidth={boardWidth}
-              boardOrientation={playerColor}
-              customSquareStyles={customSquareStyles}
-              customPieces={chessmaster5500Pieces}
-              customDarkSquareStyle={{ backgroundColor: "#4A5680" }}
-              customLightSquareStyle={{ backgroundColor: "#E8E2D8" }}
-              customBoardStyle={{
-                borderRadius: "2px",
-              }}
-              customNotationStyle={{
-                fontSize: "0.55rem",
-                fontWeight: 600,
-                color: "#8890A4",
-              }}
-              showBoardNotation={true}
-              animationDuration={200}
-              arePiecesDraggable={status !== "solved"}
-              isDraggablePiece={({ piece }) =>
-                status !== "solved" && piece[0] === (playerColor === "white" ? "w" : "b")
-              }
-            />
+            {statusText}
+            {status === "solved" && <IconCheck size={14} stroke={2.5} />}
           </div>
-        )}
-        <div
-          style={{
-            fontSize: "0.8rem",
-            fontWeight: 600,
-            color: statusColor,
-            marginTop: "0.5rem",
-            textAlign: "center",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.3rem",
-          }}
-        >
-          {statusText}
-          {status === "solved" && <IconCheck size={14} stroke={2.5} />}
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 };
