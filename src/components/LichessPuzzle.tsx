@@ -92,7 +92,7 @@ export const LichessPuzzle: React.FC = () => {
     const el = containerRef.current;
     if (!el) return;
     const obs = new ResizeObserver(([entry]) => {
-      setBoardWidth(Math.floor(entry.contentRect.width));
+      setBoardWidth(Math.floor(entry.contentRect.width) - 4);
     });
     obs.observe(el);
     return () => obs.disconnect();
@@ -309,35 +309,42 @@ export const LichessPuzzle: React.FC = () => {
         </Tooltip>
       </div>
 
-      <div ref={containerRef} style={{ overflow: "hidden", width: "100%" }}>
+      <div ref={containerRef} style={{ width: "100%" }}>
         {boardWidth > 0 && (
-          <Chessboard
-            position={fen}
-            onPieceDrop={onDrop}
-            boardWidth={boardWidth}
-            boardOrientation={playerColor}
-            customSquareStyles={customSquareStyles}
-            customPieces={chessmaster5500Pieces}
-            customDarkSquareStyle={{ backgroundColor: "#4A5680" }}
-            customLightSquareStyle={{ backgroundColor: "#E8E2D8" }}
-            customBoardStyle={{
+          <div
+            style={{
+              border: "2px solid #3D4A6B",
               borderRadius: "4px",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
-              border: "2px solid #3D4A6B",
-              boxSizing: "border-box",
+              display: "inline-block",
+              overflow: "hidden",
             }}
-            customNotationStyle={{
-              fontSize: "0.55rem",
-              fontWeight: 600,
-              color: "#8890A4",
-            }}
-            showBoardNotation={true}
-            animationDuration={200}
-            arePiecesDraggable={status !== "solved"}
-            isDraggablePiece={({ piece }) =>
-              status !== "solved" && piece[0] === (playerColor === "white" ? "w" : "b")
-            }
-          />
+          >
+            <Chessboard
+              position={fen}
+              onPieceDrop={onDrop}
+              boardWidth={boardWidth}
+              boardOrientation={playerColor}
+              customSquareStyles={customSquareStyles}
+              customPieces={chessmaster5500Pieces}
+              customDarkSquareStyle={{ backgroundColor: "#4A5680" }}
+              customLightSquareStyle={{ backgroundColor: "#E8E2D8" }}
+              customBoardStyle={{
+                borderRadius: "2px",
+              }}
+              customNotationStyle={{
+                fontSize: "0.55rem",
+                fontWeight: 600,
+                color: "#8890A4",
+              }}
+              showBoardNotation={true}
+              animationDuration={200}
+              arePiecesDraggable={status !== "solved"}
+              isDraggablePiece={({ piece }) =>
+                status !== "solved" && piece[0] === (playerColor === "white" ? "w" : "b")
+              }
+            />
+          </div>
         )}
         <div
           style={{
