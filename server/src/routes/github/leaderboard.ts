@@ -278,13 +278,22 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
       }
     }
 
-    for (const [month, logins] of missingByMonth) {
+    const missingEntries = Array.from(missingByMonth.entries());
+    for (let i = 0; i < missingEntries.length; i += MAX_CONCURRENT_BATCHES) {
       if (abort.signal.aborted) break;
-      const chunk = monthToChunk(month);
-      const batch = await fetchBatchFromApi(logins, [chunk], MAX_BATCH_SIZE, `leaderboard/${month}`, orgId, abort.signal);
-      fetchHasErrors ||= batch.hasErrors;
-      saveContributions(org, batch.entries.map((r) => ({ login: r.login, yearMonth: month, commits: r.commits, prs: r.prs, reviews: r.reviews })));
-      addToTotals(totals, batch.entries);
+      const slice = missingEntries.slice(i, i + MAX_CONCURRENT_BATCHES);
+      const results = await Promise.all(
+        slice.map(([month, logins]) => {
+          const chunk = monthToChunk(month);
+          return fetchBatchFromApi(logins, [chunk], MAX_BATCH_SIZE, `leaderboard/${month}`, orgId, abort.signal)
+            .then((batch) => ({ month, batch }));
+        }),
+      );
+      for (const { month, batch } of results) {
+        fetchHasErrors ||= batch.hasErrors;
+        saveContributions(org, batch.entries.map((r) => ({ login: r.login, yearMonth: month, commits: r.commits, prs: r.prs, reviews: r.reviews })));
+        addToTotals(totals, batch.entries);
+      }
     }
 
     if (partialMonths.length > 0) {
@@ -299,13 +308,14 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
       };
 
       for (const month of currentMonthPartials) {
-        const cmKey = `leaderboard:current:${org}:${month}:${startDate}:${effectiveEnd}`;
+        const partialChunk = monthToChunkRange(month, "p0");
+        const cmKey = `leaderboard:current:${org}:${partialChunk.from}:${partialChunk.to}`;
         const cmCached = apiCache.get<LeaderboardEntry[]>(cmKey);
         if (cmCached) {
           logger.info("Leaderboard", `Current month ${month} from cache`);
           addToTotals(totals, cmCached);
         } else {
-          const batch = await fetchBatchFromApi(members, [monthToChunkRange(month, "p0")], MAX_BATCH_SIZE, `leaderboard/current`, orgId, abort.signal);
+          const batch = await fetchBatchFromApi(members, [partialChunk], MAX_BATCH_SIZE, `leaderboard/current`, orgId, abort.signal);
           fetchHasErrors ||= batch.hasErrors;
           if (!batch.hasErrors) apiCache.set(cmKey, batch.entries, SHORT_CACHE_TTL);
           addToTotals(totals, batch.entries);
