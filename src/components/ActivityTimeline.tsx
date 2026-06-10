@@ -179,6 +179,26 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
     [filteredActivities],
   );
 
+  const firstDateLabel = useMemo(() => {
+    const first = groupedActivities.entries().next();
+    return first.done ? null : first.value[0];
+  }, [groupedActivities]);
+
+  useEffect(() => {
+    if (firstDateLabel && expandedDateGroups.size === 0) {
+      setExpandedDateGroups(new Set([firstDateLabel]));
+      const firstGroup = groupedActivities.get(firstDateLabel);
+      if (firstGroup) {
+        const keys = firstGroup.collapsed
+          .filter((i) => i.actions.length > 1 || i.actions.some((a) => a.metadata?.commentBody))
+          .map((i) => i.entityKey);
+        if (keys.length > 0) {
+          setExpandedEntities(new Set(keys));
+        }
+      }
+    }
+  }, [firstDateLabel]);
+
   const toggleExpanded = (entityKey: string) => {
     const newSet = new Set(expandedEntities);
     if (newSet.has(entityKey)) {
