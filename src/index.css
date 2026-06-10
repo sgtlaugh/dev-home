@@ -2893,3 +2893,12 @@ a.note-row-title:hover {
   transition: width 0.3s ease;
   min-width: 3px;
 }
+
+/* Chess puzzle cursor overrides — inline style uses cursor:move, need !important */
+[data-piece] {
+  cursor: pointer !important;
+}
+
+[data-square] {
+  transition: background-color 150ms ease;
+}

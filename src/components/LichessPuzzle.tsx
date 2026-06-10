@@ -250,7 +250,9 @@ export const LichessPuzzle: React.FC = () => {
     }
 
     if (selectedSquare) {
-      styles[selectedSquare] = { backgroundColor: "rgba(100, 140, 200, 0.55)" };
+      styles[selectedSquare] = {
+        boxShadow: "inset 0 0 2px 3px rgba(100, 140, 200, 0.6)",
+      };
     }
 
     return { ...lastMoveHighlight, ...hintSquare, ...styles };
@@ -364,8 +366,12 @@ export const LichessPuzzle: React.FC = () => {
                 customPieces={chessmaster5500Pieces}
                 customDarkSquareStyle={{ backgroundColor: "#4A5680" }}
                 customLightSquareStyle={{ backgroundColor: "#E8E2D8" }}
+                customDropSquareStyle={{
+                  boxShadow: "inset 0 0 1px 4px rgba(100, 140, 200, 0.5)",
+                }}
                 customBoardStyle={{
                   borderRadius: "2px",
+                  cursor: "default",
                 }}
                 customNotationStyle={{
                   fontSize: "0.55rem",
