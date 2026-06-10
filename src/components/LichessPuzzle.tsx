@@ -2,7 +2,13 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import Spinner from "react-bootstrap/Spinner";
-import { IconPuzzle, IconExternalLink, IconRefresh, IconBulb } from "@tabler/icons-react";
+import {
+  IconPuzzle,
+  IconExternalLink,
+  IconRefresh,
+  IconBulb,
+  IconCheck,
+} from "@tabler/icons-react";
 import { Tooltip } from "./Tooltip";
 import { chessmaster5500Pieces } from "./chessPieces";
 
@@ -304,6 +310,17 @@ export const LichessPuzzle: React.FC = () => {
             customPieces={chessmaster5500Pieces}
             customDarkSquareStyle={{ backgroundColor: "#4A5680" }}
             customLightSquareStyle={{ backgroundColor: "#E8E2D8" }}
+            customBoardStyle={{
+              borderRadius: "4px",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+              border: "2px solid #3D4A6B",
+            }}
+            customNotationStyle={{
+              fontSize: "0.55rem",
+              fontWeight: 600,
+              color: "#8890A4",
+            }}
+            showBoardNotation={true}
             animationDuration={200}
             arePiecesDraggable={status !== "solved"}
             isDraggablePiece={({ piece }) =>
@@ -318,8 +335,13 @@ export const LichessPuzzle: React.FC = () => {
             color: statusColor,
             marginTop: "0.5rem",
             textAlign: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.3rem",
           }}
         >
+          {status === "solved" && <IconCheck size={14} stroke={2.5} />}
           {statusText}
         </div>
       </div>
