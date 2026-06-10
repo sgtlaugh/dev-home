@@ -387,7 +387,7 @@ export default function App() {
                 }}
                 disabled={refreshing}
               >
-                <IconRefresh size={18} />
+                <IconRefresh size={22} />
                 <span className="sidebar-top-label">Refresh</span>
               </button>
             </Tooltip>
