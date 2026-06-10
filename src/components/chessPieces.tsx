@@ -2,9 +2,9 @@ import React from "react";
 
 const W_FILL = "#F5EDE0";
 const W_STROKE = "#6B5840";
-const B_FILL = "#8C2020";
-const B_STROKE = "#551111";
-const B_DETAIL = "#D4A070";
+const B_FILL = "#7A3333";
+const B_STROKE = "#4C1E1E";
+const B_DETAIL = "#C4956A";
 
 interface PieceArgs {
   isDragging: boolean;
