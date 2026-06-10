@@ -373,12 +373,7 @@ export const LichessPuzzle: React.FC = () => {
                   borderRadius: "2px",
                   cursor: "default",
                 }}
-                customNotationStyle={{
-                  fontSize: "0.55rem",
-                  fontWeight: 600,
-                  color: "#8890A4",
-                }}
-                showBoardNotation={true}
+                showBoardNotation={false}
                 animationDuration={200}
                 arePiecesDraggable={status !== "solved"}
                 isDraggablePiece={({ piece }) =>
