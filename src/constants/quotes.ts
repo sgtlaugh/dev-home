@@ -1,7 +1,9 @@
 export const QUOTES: string[] = [
   "“A bad plan is infinitely better than no plan at all” – Garry Kasparov",
   "“A language that doesn’t affect the way you think about programming is not worth knowing” – Alan Perlis",
+  "“A sacrifice is best refuted by accepting it” – Wilhelm Steinitz",
   "“Always code as if the guy who ends up maintaining your code will be a violent psychopath who knows where you live” – John Woods",
+  "“Am I a man who dreamt of being a butterfly, or a butterfly dreaming of being a man?” – Zhuangzi",
   "“Any fool can write code that a computer can understand, good programmers write code that humans can understand” – Martin Fowler",
   "“Code is like humor. When you have to explain it, it’s bad” – Cory House",
   "“Deleted code is debugged code” – Jeff Sickel",
@@ -36,6 +38,7 @@ export const QUOTES: string[] = [
   "“The code works, don’t ask me why” – Every developer ever",
   "“The hardest bug to find is the one you’re sure isn’t there” – Unknown",
   "“The most dangerous phrase in the language is ‘we’ve always done it this way’” – Grace Hopper",
+  "“The obstacle is the way” – Marcus Aurelius",
   "“The only way to get smarter is by playing a smarter opponent” – Fundamentals of Chess",
   "“The pin is mightier than the sword” – Fred Reinfeld",
   "“The threat is stronger than the execution” – Aron Nimzowitsch",
