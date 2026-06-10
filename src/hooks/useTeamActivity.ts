@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { fetchTeamActivity } from "../services/github";
 import { ActivityItem } from "../services/activity";
 
-export function useTeamActivity(active: boolean) {
+export function useTeamActivity(
+  active: boolean,
+  onFetchComplete?: (label: string, ms: number) => void,
+) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -14,10 +17,12 @@ export function useTeamActivity(active: boolean) {
 
     setLoading(true);
     setError(null);
+    const start = Date.now();
 
     try {
       const data = await fetchTeamActivity(abortRef.current.signal);
       setActivities(data);
+      onFetchComplete?.("Team Activity", Date.now() - start);
     } catch (err: any) {
       if (err.name !== "AbortError") {
         const msg = err.message || "Failed to fetch team activity";

@@ -107,6 +107,7 @@ export function useOrgLeaderboard(
   org: string | null,
   startDate: string,
   endDate: string,
+  onFetchComplete?: (label: string, ms: number) => void,
 ) {
   const [members, setMembers] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -129,6 +130,7 @@ export function useOrgLeaderboard(
 
     setLoading(true);
     setError(null);
+    const start = Date.now();
     try {
       const { data } = await apiClient.get<{ members: LeaderboardEntry[] }>(
         "/github/org-leaderboard",
@@ -136,6 +138,7 @@ export function useOrgLeaderboard(
       );
       setMembers(data.members);
       apiCache.set(cacheKey, data.members);
+      onFetchComplete?.("Leaderboard", Date.now() - start);
     } catch (err) {
       if (axios.isCancel(err)) return;
       setError(err instanceof Error ? err.message : "Failed to fetch leaderboard");

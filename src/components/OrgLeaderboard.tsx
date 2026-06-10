@@ -43,10 +43,11 @@ function SortHeader({
   );
 }
 
-export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string }> = ({
-  active,
-  githubUsername,
-}) => {
+export const OrgLeaderboard: React.FC<{
+  active: boolean;
+  githubUsername?: string;
+  onFetchComplete?: (label: string, ms: number) => void;
+}> = ({ active, githubUsername, onFetchComplete }) => {
   const { orgs, loading: orgsLoading } = useUserOrgs(active);
 
   const [org, setOrg] = useState<string | null>(
@@ -68,7 +69,13 @@ export const OrgLeaderboard: React.FC<{ active: boolean; githubUsername?: string
   }, [orgs, org]);
 
   const prefetch = usePrefetchStatus(active);
-  const { members, loading, error } = useOrgLeaderboard(active, org, startDate, endDate);
+  const { members, loading, error } = useOrgLeaderboard(
+    active,
+    org,
+    startDate,
+    endDate,
+    onFetchComplete,
+  );
 
   const sorted = useMemo(() => {
     const copy = [...members];

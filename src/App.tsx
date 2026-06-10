@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
 import { apiClient, AppSettings, loadSettingsFromStore } from "./services/config";
@@ -61,6 +61,26 @@ export default function App() {
     githubUsername,
     saveSettings,
   } = useConfig();
+  const [toast, setToast] = useState<string | null>(null);
+  const [fetchTime, setFetchTime] = useState<{ label: string; ms: number } | null>(null);
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  const fetchTimeCache = useRef<Record<string, number>>({});
+  const showFetchTime = useCallback((label: string, ms: number) => {
+    fetchTimeCache.current[label] = ms;
+    const tab = activeTabRef.current;
+    const labelTabMap: Record<string, string[]> = {
+      Dashboard: ["summary"],
+      Activity: ["activity"],
+      "Team Activity": ["jira-activity"],
+      Contributions: ["contributions"],
+      Leaderboard: ["leaderboard"],
+      Velocity: ["velocity"],
+    };
+    const tabs = labelTabMap[label];
+    if (tabs && !tabs.includes(tab)) return;
+    setFetchTime({ label, ms });
+  }, []);
   const {
     jiraIssues,
     jiraComments,
@@ -74,7 +94,7 @@ export default function App() {
     error,
     refresh,
     lastRefreshTime,
-  } = useDashboard(configured);
+  } = useDashboard(configured, showFetchTime);
   const {
     notes,
     unresolvedNotes,
@@ -85,19 +105,52 @@ export default function App() {
     removeNote,
     refresh: refreshNotes,
   } = useNotes(configured);
+  const tabSwitchTime = useRef(performance.now());
+  const FETCH_TABS = new Set([
+    "summary",
+    "activity",
+    "jira-activity",
+    "contributions",
+    "leaderboard",
+    "velocity",
+  ]);
+  const tabLabelMap: Record<string, string> = {
+    summary: "Dashboard",
+    activity: "Activity",
+    "jira-activity": "Team Activity",
+    contributions: "Contributions",
+    leaderboard: "Leaderboard",
+    velocity: "Velocity",
+  };
+  useLayoutEffect(() => {
+    tabSwitchTime.current = performance.now();
+    const label = tabLabelMap[activeTab];
+    const cached = label ? fetchTimeCache.current[label] : undefined;
+    if (cached !== undefined) {
+      setFetchTime({ label, ms: cached });
+    } else if (FETCH_TABS.has(activeTab)) {
+      setFetchTime(null);
+    } else {
+      const ms = Math.round(performance.now() - tabSwitchTime.current);
+      setFetchTime({ label: "Render", ms });
+    }
+  }, [activeTab]);
+
   const isActivityTab = activeTab === "activity" || activeTab === "jira-activity";
   const {
     activities,
     loading: activityLoading,
     refresh: refreshActivity,
-  } = useActivity(configured && isActivityTab);
+  } = useActivity(configured && isActivityTab, showFetchTime);
   const activityCounts = useActivityCount(configured);
-  const { activities: teamActivities, refresh: refreshTeamActivity } = useTeamActivity(configured);
+  const { activities: teamActivities, refresh: refreshTeamActivity } = useTeamActivity(
+    configured,
+    showFetchTime,
+  );
   const { rateLimit } = useGitHubRateLimit(configured);
   const prefetch = usePrefetchStatus(configured);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
   const [githubExpanded, setGithubExpanded] = useState(true);
   const [jiraExpanded, setJiraExpanded] = useState(true);
@@ -401,6 +454,33 @@ export default function App() {
                   })()}
               </div>
               <div className="content-header-actions">
+                {fetchTime ? (
+                  <Tooltip text={`${fetchTime.label} fetch time`}>
+                    <span
+                      style={{
+                        color: "#1a7f37",
+                        fontSize: "0.7rem",
+                        fontWeight: 500,
+                        padding: "0 6px",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      {fetchTime.ms >= 10000
+                        ? `${Math.round(fetchTime.ms / 1000)} s`
+                        : `${fetchTime.ms} ms`}
+                    </span>
+                  </Tooltip>
+                ) : (
+                  FETCH_TABS.has(effectiveTab) && (
+                    <span style={{ padding: "0 6px", display: "flex", alignItems: "center" }}>
+                      <Spinner
+                        animation="border"
+                        style={{ width: 10, height: 10, borderWidth: 1.5, color: "#1a7f37" }}
+                      />
+                    </span>
+                  )
+                )}
                 {!refreshing && !loading && lastRefreshTime && (
                   <Tooltip text={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}>
                     <span
@@ -608,16 +688,21 @@ export default function App() {
                     <Contributions
                       onCountChange={setCurrentMonthPRsCount}
                       active={effectiveTab === "contributions"}
+                      onFetchComplete={showFetchTime}
                     />
                   )}
                   {effectiveTab === "leaderboard" && (
                     <OrgLeaderboard
                       active={effectiveTab === "leaderboard"}
                       githubUsername={githubUsername}
+                      onFetchComplete={showFetchTime}
                     />
                   )}
                   {effectiveTab === "velocity" && (
-                    <JiraVelocity active={effectiveTab === "velocity"} />
+                    <JiraVelocity
+                      active={effectiveTab === "velocity"}
+                      onFetchComplete={showFetchTime}
+                    />
                   )}
                   {effectiveTab === "activity" && (
                     <Activity activities={activities} loading={activityLoading} />

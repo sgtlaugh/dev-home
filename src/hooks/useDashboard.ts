@@ -21,7 +21,10 @@ interface UseDashboardReturn {
   lastRefreshTime: number | null;
 }
 
-export function useDashboard(active: boolean): UseDashboardReturn {
+export function useDashboard(
+  active: boolean,
+  onFetchComplete?: (label: string, ms: number) => void,
+): UseDashboardReturn {
   const [jiraIssues, setJiraIssues] = useState<JiraIssue[]>([]);
   const [jiraComments, setJiraComments] = useState<JiraComment[]>([]);
   const [openPRs, setOpenPRs] = useState<GitHubPR[]>([]);
@@ -52,6 +55,7 @@ export function useDashboard(active: boolean): UseDashboardReturn {
     setReviewRequestsLoading(true);
     setError(null);
 
+    const start = Date.now();
     let pendingCount = 3;
     const errors: string[] = [];
 
@@ -66,6 +70,7 @@ export function useDashboard(active: boolean): UseDashboardReturn {
         } else {
           setError(null);
           setLastRefreshTime(Date.now());
+          onFetchComplete?.("Dashboard", Date.now() - start);
         }
       }
     };

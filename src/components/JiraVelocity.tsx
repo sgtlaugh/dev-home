@@ -39,7 +39,10 @@ const TYPE_BAR_COLORS: Record<string, string> = {
   "Sub-task": "#656d76",
 };
 
-export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
+export const JiraVelocity: React.FC<{
+  active: boolean;
+  onFetchComplete?: (label: string, ms: number) => void;
+}> = ({ active, onFetchComplete }) => {
   const [preset, setPreset] = useState<Preset>(() => {
     try {
       const stored = localStorage.getItem("jira-velocity:preset");
@@ -71,7 +74,12 @@ export const JiraVelocity: React.FC<{ active: boolean }> = ({ active }) => {
     return { startDate: getLocalDateString(from.toISOString()), endDate: end };
   }, [preset]);
 
-  const { metrics, completedIssues, loading, error } = useJiraVelocity(startDate, endDate, active);
+  const { metrics, completedIssues, loading, error } = useJiraVelocity(
+    startDate,
+    endDate,
+    active,
+    onFetchComplete,
+  );
 
   const trendColor =
     metrics?.velocity.trend === "improving"

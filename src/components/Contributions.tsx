@@ -16,9 +16,14 @@ type StateFilter = "all" | "open" | "merged" | "closed";
 interface ContributionsProps {
   onCountChange?: (count: number) => void;
   active?: boolean;
+  onFetchComplete?: (label: string, ms: number) => void;
 }
 
-export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, active = true }) => {
+export const Contributions: React.FC<ContributionsProps> = ({
+  onCountChange,
+  active = true,
+  onFetchComplete,
+}) => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [modeInfo, setModeInfo] = useState<DateModeInfo>({
@@ -67,6 +72,7 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
       setCommitCount(0);
       setLoading(true);
       setError(null);
+      const start = Date.now();
       try {
         const [prsResult, commits] = await Promise.all([
           fetchPRsByDateRange(startDate, endDate, signal),
@@ -76,6 +82,7 @@ export const Contributions: React.FC<ContributionsProps> = ({ onCountChange, act
         setPrs(prsResult);
         setCommitCount(commits);
         onCountChange?.(prsResult.length);
+        onFetchComplete?.("Contributions", Date.now() - start);
       } catch (err) {
         if (signal.aborted) return;
         setError(`Failed to load PRs: ${err instanceof Error ? err.message : "Unknown error"}`);

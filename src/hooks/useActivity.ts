@@ -3,7 +3,10 @@ import { ActivityItem, fetchActivity } from "../services/activity";
 
 const POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-export function useActivity(active: boolean) {
+export function useActivity(
+  active: boolean,
+  onFetchComplete?: (label: string, ms: number) => void,
+) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,11 +22,13 @@ export function useActivity(active: boolean) {
 
     setLoading(true);
     setError(null);
+    const start = Date.now();
 
     try {
       const data = await fetchActivity();
       if (controller.signal.aborted) return;
       setActivities(data);
+      onFetchComplete?.("Activity", Date.now() - start);
     } catch (err: any) {
       if (controller.signal.aborted) return;
       setError(err?.message || "Failed to fetch activity");
@@ -31,7 +36,7 @@ export function useActivity(active: boolean) {
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [active]);
+  }, [active, onFetchComplete]);
 
   useEffect(() => {
     if (!active) return;

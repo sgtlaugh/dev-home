@@ -2,7 +2,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { JiraVelocityMetrics, CompletedIssue } from "../types";
 import { fetchVelocityData } from "../services/jira";
 
-export function useJiraVelocity(startDate: string, endDate: string, active: boolean) {
+export function useJiraVelocity(
+  startDate: string,
+  endDate: string,
+  active: boolean,
+  onFetchComplete?: (label: string, ms: number) => void,
+) {
   const [metrics, setMetrics] = useState<JiraVelocityMetrics | null>(null);
   const [completedIssues, setCompletedIssues] = useState<CompletedIssue[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -23,11 +28,13 @@ export function useJiraVelocity(startDate: string, endDate: string, active: bool
     setLoading(true);
     setError(null);
 
+    const start = Date.now();
     try {
       const data = await fetchVelocityData(startDate, endDate, signal);
       if (!signal.aborted) {
         setMetrics(data.metrics);
         setCompletedIssues(data.completedIssues);
+        onFetchComplete?.("Velocity", Date.now() - start);
       }
     } catch (err: any) {
       if (!signal.aborted) {
