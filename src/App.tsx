@@ -472,22 +472,13 @@ export default function App() {
                     </span>
                   )
                 )}
-                {!refreshing && !loading && lastRefreshTime && (
-                  <Tooltip text={`Last refresh: ${new Date(lastRefreshTime).toLocaleString()}`}>
-                    <span
-                      className="text-secondary sidebar-refresh-time sidebar-action-btn"
-                      style={{
-                        cursor: "default",
-                        padding: "0 8px",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      {Math.round((Date.now() - lastRefreshTime) / 60000)}m
-                    </span>
-                  </Tooltip>
-                )}
-                <Tooltip text="Clear cache and refresh all data">
+                <Tooltip
+                  text={
+                    lastRefreshTime
+                      ? `Last refresh: ${Math.round((Date.now() - lastRefreshTime) / 60000)}m ago`
+                      : "Clear cache and refresh all data"
+                  }
+                >
                   <button
                     className={`sidebar-action-btn${refreshing ? " spinning" : ""}`}
                     onClick={async () => {
