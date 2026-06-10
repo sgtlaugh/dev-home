@@ -6,7 +6,8 @@ import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
 import { logError } from "../utils/errors";
 import { logger } from "../utils/logger";
-import { ACTIVITY_LOOKBACK_DAYS, COMMENT_PREVIEW_LENGTH, SHORT_CACHE_TTL } from "../utils/constants";
+import { ACTIVITY_LOOKBACK_DAYS, ACTIVITY_LIVE_DAYS, COMMENT_PREVIEW_LENGTH, SHORT_CACHE_TTL } from "../utils/constants";
+import { getCachedActivities, saveActivities, purgeOldActivities } from "../services/activityCache";
 import { adfToPlainText } from "../utils/adf";
 
 const router = Router();
@@ -49,19 +50,60 @@ const ACTIVITY_CACHE_KEY = "activity:recent";
 
 async function refreshActivityCache(): Promise<{ activities: ActivityItem[] }> {
   const [jiraActivities, githubActivities] = await Promise.all([
-    fetchJiraActivity(),
-    fetchGitHubActivity(),
+    fetchJiraActivity(ACTIVITY_LIVE_DAYS),
+    fetchGitHubActivity(ACTIVITY_LIVE_DAYS),
   ]);
 
-  const allActivities = [...jiraActivities, ...githubActivities].sort(
+  const liveActivities = [...jiraActivities, ...githubActivities];
+  logger.info("Activity", `Live fetch (${ACTIVITY_LIVE_DAYS}d): ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub`);
+
+  // Save live activities to SQLite
+  saveActivities(liveActivities);
+
+  // Read cached activities for the older window (LIVE_DAYS .. LOOKBACK_DAYS)
+  const now = Date.now();
+  const liveCutoff = new Date(now - ACTIVITY_LIVE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const lookbackCutoff = new Date(now - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const cachedActivities = getCachedActivities(lookbackCutoff, liveCutoff);
+  logger.info("Activity", `SQLite cache: ${cachedActivities.length} activities (days ${ACTIVITY_LIVE_DAYS}-${ACTIVITY_LOOKBACK_DAYS})`);
+
+  // Merge: live wins on id conflict
+  const byId = new Map<string, ActivityItem>();
+  for (const item of cachedActivities) byId.set(item.id, item);
+  for (const item of liveActivities) byId.set(item.id, item);
+
+  const allActivities = Array.from(byId.values()).sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
   );
 
-  logger.info("Activity", `Found ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub = ${allActivities.length} total`);
+  logger.info("Activity", `Total: ${allActivities.length} activities`);
 
   const result = { activities: allActivities };
   apiCache.set(ACTIVITY_CACHE_KEY, result, SHORT_CACHE_TTL);
   return result;
+}
+
+export async function prefetchActivity(): Promise<void> {
+  logger.info("Activity/Prefetch", "Starting full 30-day activity fetch");
+  const [jiraActivities, githubActivities] = await Promise.all([
+    fetchJiraActivity(ACTIVITY_LOOKBACK_DAYS),
+    fetchGitHubActivity(ACTIVITY_LOOKBACK_DAYS),
+  ]);
+
+  const allActivities = [...jiraActivities, ...githubActivities];
+  logger.info("Activity/Prefetch", `Fetched ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub = ${allActivities.length} total`);
+
+  saveActivities(allActivities);
+
+  const cutoff = new Date(Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const purged = purgeOldActivities(cutoff);
+  if (purged > 0) logger.info("Activity/Prefetch", `Purged ${purged} activities older than ${ACTIVITY_LOOKBACK_DAYS} days`);
+
+  const sorted = allActivities.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  );
+  apiCache.set(ACTIVITY_CACHE_KEY, { activities: sorted }, SHORT_CACHE_TTL);
+  logger.info("Activity/Prefetch", "Done, apiCache warmed");
 }
 
 router.get("/", async (_req: Request, res: Response) => {
@@ -97,9 +139,9 @@ function truncatePreview(text: string): string {
   return trimmed + (text.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
 }
 
-async function fetchJiraCreated(jira: any, config: any): Promise<ActivityItem[]> {
+async function fetchJiraCreated(jira: any, config: any, lookbackDays: number): Promise<ActivityItem[]> {
   const { data } = await jira.post("/search/jql", {
-    jql: `creator = currentUser() AND created >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY created DESC`,
+    jql: `creator = currentUser() AND created >= -${lookbackDays}d ORDER BY created DESC`,
     fields: ["summary", "created"],
     maxResults: 20,
   });
@@ -115,9 +157,9 @@ async function fetchJiraCreated(jira: any, config: any): Promise<ActivityItem[]>
   }));
 }
 
-async function fetchJiraComments(jira: any, config: any, userAccountId: string, cutoffTime: number): Promise<ActivityItem[]> {
+async function fetchJiraComments(jira: any, config: any, userAccountId: string, cutoffTime: number, lookbackDays: number): Promise<ActivityItem[]> {
   const { data: commentedIssues } = await jira.post("/search/jql", {
-    jql: `comment ~ currentUser() AND updated >= -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
+    jql: `comment ~ currentUser() AND updated >= -${lookbackDays}d ORDER BY updated DESC`,
     fields: ["summary"],
     maxResults: 100,
   });
@@ -162,9 +204,9 @@ async function fetchJiraComments(jira: any, config: any, userAccountId: string, 
   return activities;
 }
 
-async function fetchJiraTransitions(jira: any, config: any, userAccountId: string, cutoffTime: number): Promise<ActivityItem[]> {
+async function fetchJiraTransitions(jira: any, config: any, userAccountId: string, cutoffTime: number, lookbackDays: number): Promise<ActivityItem[]> {
   const { data: transitionIssues } = await jira.post("/search/jql", {
-    jql: `assignee was currentUser() AND status changed AFTER -${ACTIVITY_LOOKBACK_DAYS}d ORDER BY updated DESC`,
+    jql: `assignee was currentUser() AND status changed AFTER -${lookbackDays}d ORDER BY updated DESC`,
     fields: ["summary"],
     maxResults: 50,
   });
@@ -215,7 +257,7 @@ async function fetchJiraTransitions(jira: any, config: any, userAccountId: strin
   return activities;
 }
 
-async function fetchJiraActivity(): Promise<ActivityItem[]> {
+async function fetchJiraActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS): Promise<ActivityItem[]> {
   const config = getConfig();
   const jira = createJiraClient();
 
@@ -228,22 +270,22 @@ async function fetchJiraActivity(): Promise<ActivityItem[]> {
     return [];
   }
 
-  const cutoffTime = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+  const cutoffTime = Date.now() - lookbackDays * 24 * 60 * 60 * 1000;
 
   const [created, comments, transitions] = await Promise.all([
-    fetchJiraCreated(jira, config).catch((err) => { logError("Activity/JIRA created", err); return [] as ActivityItem[]; }),
-    fetchJiraComments(jira, config, userAccountId, cutoffTime).catch((err) => { logError("Activity/JIRA comments", err); return [] as ActivityItem[]; }),
-    fetchJiraTransitions(jira, config, userAccountId, cutoffTime).catch((err) => { logError("Activity/JIRA transitions", err); return [] as ActivityItem[]; }),
+    fetchJiraCreated(jira, config, lookbackDays).catch((err) => { logError("Activity/JIRA created", err); return [] as ActivityItem[]; }),
+    fetchJiraComments(jira, config, userAccountId, cutoffTime, lookbackDays).catch((err) => { logError("Activity/JIRA comments", err); return [] as ActivityItem[]; }),
+    fetchJiraTransitions(jira, config, userAccountId, cutoffTime, lookbackDays).catch((err) => { logError("Activity/JIRA transitions", err); return [] as ActivityItem[]; }),
   ]);
 
   return [...created, ...comments, ...transitions];
 }
 
-async function fetchGitHubActivity(): Promise<ActivityItem[]> {
+async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS): Promise<ActivityItem[]> {
   const config = getConfig();
   const github = createGitHubClient();
   const activities: ActivityItem[] = [];
-  const thirtyDaysAgo = Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+  const thirtyDaysAgo = Date.now() - lookbackDays * 24 * 60 * 60 * 1000;
   const since = new Date(thirtyDaysAgo).toISOString();
   const seenShas = new Set<string>();
   const pushBranches = new Map<string, Set<string>>();

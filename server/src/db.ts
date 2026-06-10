@@ -170,6 +170,23 @@ const MIGRATIONS: Migration[] = [
       );
     `);
   },
+
+  // 10 – create activity_cache for persistent activity storage
+  (d) => {
+    d.exec(`
+      CREATE TABLE IF NOT EXISTS activity_cache (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        action TEXT NOT NULL,
+        title TEXT NOT NULL,
+        url TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        entity_key TEXT NOT NULL,
+        metadata_json TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_activity_cache_timestamp ON activity_cache(timestamp);
+    `);
+  },
 ];
 
 function runMigrations(d: Database.Database): void {

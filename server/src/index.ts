@@ -115,6 +115,12 @@ export function scheduleStartupPrefetch(): void {
       logger.warn("Prefetch", `Contributions prefetch failed: ${err.message}`);
     }
     try {
+      const { prefetchActivity } = await import("./routes/activity");
+      await prefetchActivity();
+    } catch (err: any) {
+      logger.warn("Prefetch", `Activity prefetch failed: ${err.message}`);
+    }
+    try {
       const github = createGitHubClient();
       const { data: orgs } = await github.get("/user/orgs", { params: { per_page: 100 } });
       if (orgs.length === 0) {
