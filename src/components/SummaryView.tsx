@@ -1,6 +1,5 @@
 import React from "react";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
+import { LichessPuzzle } from "./LichessPuzzle";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
@@ -302,7 +301,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
     .slice(0, 5);
   const topNotes = [...notes]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 10);
+    .slice(0, 5);
 
   // JIRA mentions, sort by date, take 5
   const allMentions = jiraComments
@@ -327,183 +326,179 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
         onNavigate={onNavigate}
       />
 
-      <Row className="g-3">
-        <Col md="9" className="d-flex flex-column">
-          <Row className="g-2 flex-grow-1">
-            <Col md={6}>
-              <Section
-                icon={<IconGitPullRequest size={13} stroke={1.8} />}
-                title="Open Pull Requests"
-                count={openPRs.length}
-                accent={SECTION_COLORS.prs}
-                onSeeMore={openPRs.length > 5 ? () => onNavigate("prs") : undefined}
-                loading={openPRsLoading}
-                tooltip="Pull requests awaiting merge"
-              >
-                {topPRs.length > 0 ? (
-                  topPRs.map((pr) => (
-                    <ItemRow
-                      key={pr.id}
-                      url={pr.html_url}
-                      title={`#${pr.number} ${pr.title}`}
-                      subtitle={pr.repo_full_name}
-                      time={pr.updated_at}
-                      badge={pr.draft ? "Draft" : "Open"}
-                      badgeClass={pr.draft ? "badge-status-neutral" : "badge-status-green"}
-                      checksStatus={pr.checks_status}
-                      onClick={() => window.open(pr.html_url, "_blank")}
-                    />
-                  ))
-                ) : (
-                  <EmptyRow text="No open pull requests" />
-                )}
-              </Section>
-            </Col>
-            <Col md={6}>
-              <Section
-                icon={<IconSubtask size={13} stroke={1.8} />}
-                title="JIRA Tasks"
-                count={issuesThisMonth.length}
-                accent={SECTION_COLORS.jira}
-                onSeeMore={issuesThisMonth.length > 5 ? () => onNavigate("jira") : undefined}
-                loading={jiraIssuesLoading}
-                tooltip="Issues updated in the last 30 days"
-              >
-                {topIssues.length > 0 ? (
-                  topIssues.map((issue) => (
-                    <ItemRow
-                      key={issue.key}
-                      url={jiraBase ? `${jiraBase}/browse/${issue.key}` : `#${issue.key}`}
-                      title={`${issue.key}: ${issue.summary}`}
-                      subtitle={issue.project.name}
-                      time={issue.updated}
-                      badge={
-                        <StatusBadge
-                          statusName={issue.status.name}
-                          colorName={issue.status.statusCategory.colorName}
-                        />
-                      }
-                      onClick={() =>
-                        window.open(
-                          jiraBase ? `${jiraBase}/browse/${issue.key}` : `#${issue.key}`,
-                          "_blank",
-                        )
-                      }
-                      hideTime={true}
-                    />
-                  ))
-                ) : (
-                  <EmptyRow text="No assigned issues" />
-                )}
-              </Section>
-            </Col>
-
-            {/* Row 2 */}
-            <Col md={6}>
-              <Section
-                icon={<IconEye size={13} stroke={1.8} />}
-                title="Review Requests"
-                count={reviewRequests.length}
-                accent={SECTION_COLORS.reviews}
-                onSeeMore={reviewRequests.length > 5 ? () => onNavigate("reviews") : undefined}
-                loading={reviewRequestsLoading}
-                tooltip="Pull requests awaiting your review"
-              >
-                {topReviews.length > 0 ? (
-                  topReviews.map((r) => (
-                    <ItemRow
-                      key={r.id}
-                      url={r.html_url}
-                      title={`#${r.number} ${r.title}`}
-                      subtitle={`${r.repo_full_name} · ${r.user.login}`}
-                      time={r.updated_at}
-                      badgeClass="badge-status-yellow"
-                      checksStatus={r.checks_status}
-                      onClick={() => window.open(r.html_url, "_blank")}
-                    />
-                  ))
-                ) : (
-                  <EmptyRow text="No pending reviews" />
-                )}
-              </Section>
-            </Col>
-            <Col md={6}>
-              <Section
-                icon={<IconAt size={13} stroke={1.8} />}
-                title="JIRA Notifications"
-                count={jiraComments.length}
-                accent={SECTION_COLORS.notifications}
-                onSeeMore={jiraComments.length > 5 ? () => onNavigate("mentions") : undefined}
-                loading={jiraCommentsLoading}
-                tooltip="Comments where you were mentioned"
-              >
-                {allMentions.length > 0 ? (
-                  allMentions.map((m) => (
-                    <ItemRow
-                      key={m.id}
-                      url={m.url}
-                      title={m.title}
-                      subtitle={m.subtitle}
-                      time={m.time}
-                      onClick={() => window.open(m.url, "_blank")}
-                    />
-                  ))
-                ) : (
-                  <EmptyRow text="No recent mentions" />
-                )}
-              </Section>
-            </Col>
-          </Row>
-        </Col>
-        <Col md="3">
+      <div className="summary-grid">
+        <div>
           <Section
-            icon={<IconNote size={13} stroke={1.8} />}
-            title="Notes"
-            count={notes.length}
-            accent={SECTION_COLORS.notes}
-            onSeeMore={notes.length > 10 ? () => onNavigate("notes") : undefined}
-            loading={notesLoading}
-            tooltip="Personal notes and reminders"
-            headerAction={
-              <Tooltip text="Add note">
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  style={{ padding: "1px 5px", lineHeight: 1 }}
-                  onClick={onAddNote}
-                >
-                  <IconPlus size={12} />
-                </Button>
-              </Tooltip>
-            }
+            icon={<IconGitPullRequest size={13} stroke={1.8} />}
+            title="Open Pull Requests"
+            count={openPRs.length}
+            accent={SECTION_COLORS.prs}
+            onSeeMore={openPRs.length > 5 ? () => onNavigate("prs") : undefined}
+            loading={openPRsLoading}
+            tooltip="Pull requests awaiting merge"
           >
-            {topNotes.length > 0 ? (
-              <div className="summary-notes-grid">
-                {topNotes.map((note) => (
-                  <Tooltip key={note.id} text={getNoteDisplayTitle(note)}>
-                    <div className="summary-note-chip" onClick={() => onOpenNote(note)}>
-                      <span className="summary-note-chip-text">{getNoteDisplayTitle(note)}</span>
-                      <Tooltip text="Resolve">
-                        <button
-                          className="summary-note-resolve"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onResolveNote(note.id);
-                          }}
-                        >
-                          <IconCheck size={10} />
-                        </button>
-                      </Tooltip>
-                    </div>
-                  </Tooltip>
-                ))}
-              </div>
+            {topPRs.length > 0 ? (
+              topPRs.map((pr) => (
+                <ItemRow
+                  key={pr.id}
+                  url={pr.html_url}
+                  title={`#${pr.number} ${pr.title}`}
+                  subtitle={pr.repo_full_name}
+                  time={pr.updated_at}
+                  badge={pr.draft ? "Draft" : "Open"}
+                  badgeClass={pr.draft ? "badge-status-neutral" : "badge-status-green"}
+                  checksStatus={pr.checks_status}
+                  onClick={() => window.open(pr.html_url, "_blank")}
+                />
+              ))
             ) : (
-              <EmptyRow text="No notes" />
+              <EmptyRow text="No open pull requests" />
             )}
           </Section>
-        </Col>
-      </Row>
+        </div>
+        <div>
+          <Section
+            icon={<IconSubtask size={13} stroke={1.8} />}
+            title="JIRA Tasks"
+            count={issuesThisMonth.length}
+            accent={SECTION_COLORS.jira}
+            onSeeMore={issuesThisMonth.length > 5 ? () => onNavigate("jira") : undefined}
+            loading={jiraIssuesLoading}
+            tooltip="Issues updated in the last 30 days"
+          >
+            {topIssues.length > 0 ? (
+              topIssues.map((issue) => (
+                <ItemRow
+                  key={issue.key}
+                  url={jiraBase ? `${jiraBase}/browse/${issue.key}` : `#${issue.key}`}
+                  title={`${issue.key}: ${issue.summary}`}
+                  subtitle={issue.project.name}
+                  time={issue.updated}
+                  badge={
+                    <StatusBadge
+                      statusName={issue.status.name}
+                      colorName={issue.status.statusCategory.colorName}
+                    />
+                  }
+                  onClick={() =>
+                    window.open(
+                      jiraBase ? `${jiraBase}/browse/${issue.key}` : `#${issue.key}`,
+                      "_blank",
+                    )
+                  }
+                  hideTime={true}
+                />
+              ))
+            ) : (
+              <EmptyRow text="No assigned issues" />
+            )}
+          </Section>
+        </div>
+
+        <div>
+          <Section
+            icon={<IconEye size={13} stroke={1.8} />}
+            title="Review Requests"
+            count={reviewRequests.length}
+            accent={SECTION_COLORS.reviews}
+            onSeeMore={reviewRequests.length > 5 ? () => onNavigate("reviews") : undefined}
+            loading={reviewRequestsLoading}
+            tooltip="Pull requests awaiting your review"
+          >
+            {topReviews.length > 0 ? (
+              topReviews.map((r) => (
+                <ItemRow
+                  key={r.id}
+                  url={r.html_url}
+                  title={`#${r.number} ${r.title}`}
+                  subtitle={`${r.repo_full_name} · ${r.user.login}`}
+                  time={r.updated_at}
+                  badgeClass="badge-status-yellow"
+                  checksStatus={r.checks_status}
+                  onClick={() => window.open(r.html_url, "_blank")}
+                />
+              ))
+            ) : (
+              <EmptyRow text="No pending reviews" />
+            )}
+          </Section>
+        </div>
+        <div>
+          <Section
+            icon={<IconAt size={13} stroke={1.8} />}
+            title="JIRA Notifications"
+            count={jiraComments.length}
+            accent={SECTION_COLORS.notifications}
+            onSeeMore={jiraComments.length > 5 ? () => onNavigate("mentions") : undefined}
+            loading={jiraCommentsLoading}
+            tooltip="Comments where you were mentioned"
+          >
+            {allMentions.length > 0 ? (
+              allMentions.map((m) => (
+                <ItemRow
+                  key={m.id}
+                  url={m.url}
+                  title={m.title}
+                  subtitle={m.subtitle}
+                  time={m.time}
+                  onClick={() => window.open(m.url, "_blank")}
+                />
+              ))
+            ) : (
+              <EmptyRow text="No recent mentions" />
+            )}
+          </Section>
+        </div>
+
+        <Section
+          icon={<IconNote size={13} stroke={1.8} />}
+          title="Notes"
+          count={notes.length}
+          accent={SECTION_COLORS.notes}
+          onSeeMore={notes.length > 5 ? () => onNavigate("notes") : undefined}
+          loading={notesLoading}
+          tooltip="Personal notes and reminders"
+          headerAction={
+            <Tooltip text="Add note">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                style={{ padding: "1px 5px", lineHeight: 1 }}
+                onClick={onAddNote}
+              >
+                <IconPlus size={12} />
+              </Button>
+            </Tooltip>
+          }
+        >
+          {topNotes.length > 0 ? (
+            <div className="summary-notes-grid">
+              {topNotes.map((note) => (
+                <Tooltip key={note.id} text={getNoteDisplayTitle(note)}>
+                  <div className="summary-note-chip" onClick={() => onOpenNote(note)}>
+                    <span className="summary-note-chip-text">{getNoteDisplayTitle(note)}</span>
+                    <Tooltip text="Resolve">
+                      <button
+                        className="summary-note-resolve"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onResolveNote(note.id);
+                        }}
+                      >
+                        <IconCheck size={10} />
+                      </button>
+                    </Tooltip>
+                  </div>
+                </Tooltip>
+              ))}
+            </div>
+          ) : (
+            <EmptyRow text="No notes" />
+          )}
+        </Section>
+
+        <LichessPuzzle />
+      </div>
     </>
   );
 };

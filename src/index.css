@@ -110,6 +110,21 @@ a:hover {
 }
 
 /* --- Summary Cards --- */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 3fr 3fr 2fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.summary-grid > * { min-width: 0; }
+.summary-grid > :nth-child(1) { grid-area: 1 / 1; }
+.summary-grid > :nth-child(2) { grid-area: 1 / 2; }
+.summary-grid > :nth-child(3) { grid-area: 2 / 1; }
+.summary-grid > :nth-child(4) { grid-area: 2 / 2; }
+.summary-grid > :nth-child(5) { grid-area: 1 / 3; }
+.summary-grid > :nth-child(6) { grid-area: 2 / 3; }
+
 .summary-card {
   min-height: 280px;
   transition: box-shadow 150ms ease, border-color 150ms ease;
