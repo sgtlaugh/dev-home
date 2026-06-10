@@ -493,7 +493,6 @@ export default function App() {
                     onClick={async () => {
                       if (refreshing) return;
                       setRefreshing(true);
-                      setToast("Clearing cache and refreshing...");
                       try {
                         apiCache.clear();
                         localStorage.clear();
@@ -504,12 +503,11 @@ export default function App() {
                           refreshActivity(),
                           refreshTeamActivity(),
                         ]);
-                        setToast("Refreshed successfully");
                       } catch {
                         setToast("Refresh failed — check connection");
+                        setTimeout(() => setToast(null), 3000);
                       } finally {
                         setRefreshing(false);
-                        setTimeout(() => setToast(null), 3000);
                       }
                     }}
                     disabled={refreshing}
