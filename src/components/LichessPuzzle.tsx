@@ -324,6 +324,7 @@ export const LichessPuzzle: React.FC = () => {
               borderRadius: "4px",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
               border: "2px solid #3D4A6B",
+              boxSizing: "border-box",
             }}
             customNotationStyle={{
               fontSize: "0.55rem",
