@@ -69,17 +69,20 @@ export default function App() {
   const tabLabelMap: Record<string, string> = {
     summary: "Dashboard",
     activity: "Activity",
-    "jira-activity": "Team Activity",
+    "jira-activity": "Activity",
     contributions: "Contributions",
     leaderboard: "Leaderboard",
     velocity: "Velocity",
+    peers: "Team Activity",
   };
-  const labelTabMap: Record<string, string> = {};
-  for (const [tab, label] of Object.entries(tabLabelMap)) labelTabMap[label] = tab;
+  const labelTabsMap: Record<string, string[]> = {};
+  for (const [tab, label] of Object.entries(tabLabelMap)) {
+    (labelTabsMap[label] ??= []).push(tab);
+  }
   const showFetchTime = useCallback((label: string, ms: number) => {
     fetchTimeCache.current[label] = ms;
-    const expectedTab = labelTabMap[label];
-    if (expectedTab && expectedTab !== activeTabRef.current) return;
+    const tabs = labelTabsMap[label];
+    if (tabs && !tabs.includes(activeTabRef.current)) return;
     setFetchTime({ label, ms });
   }, []);
   const {
