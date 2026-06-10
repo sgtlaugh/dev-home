@@ -21,6 +21,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ text, children, position = "to
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     setCoords({ x: e.clientX, y: e.clientY });
   }, []);
+  const handleClickCapture = useCallback(() => setVisible(false), []);
 
   useEffect(() => {
     if (!visible || !tipRef.current) return;
@@ -43,6 +44,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ text, children, position = "to
     onMouseEnter: handleMouseEnter,
     onMouseLeave: handleMouseLeave,
     onMouseMove: handleMouseMove,
+    onClickCapture: handleClickCapture,
   };
 
   let trigger: React.ReactNode;
