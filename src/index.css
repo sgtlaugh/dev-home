@@ -2272,24 +2272,28 @@ a.note-row-title:hover {
   color: #1f2328;
 }
 
+.activity-show-more-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+}
+
 .activity-show-more {
-  background: none;
-  border: 1px dashed #d1d9e0;
-  border-radius: 8px;
-  padding: 8px 16px;
-  width: 100%;
-  font-size: 0.8rem;
+  background: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.7rem;
   font-weight: 500;
   color: #656d76;
   cursor: pointer;
-  margin-top: 4px;
-  transition: all 150ms ease;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 
 .activity-show-more:hover {
-  background: #f6f8fa;
+  background: #eaeef2;
   color: #1f2328;
-  border-color: #8b949e;
+  border-color: #bcc3cd;
 }
 
 /* ── Find-in-page bar ── */

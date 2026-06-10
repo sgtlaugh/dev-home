@@ -573,18 +573,20 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                   );
                 })}
                 {isTruncated && (
-                  <button
-                    className="activity-show-more"
-                    onClick={() =>
-                      setExpandedDateGroups((prev) => {
-                        const next = new Set(prev);
-                        next.add(dateLabel);
-                        return next;
-                      })
-                    }
-                  >
-                    +{hiddenCount} more
-                  </button>
+                  <div className="activity-show-more-wrapper">
+                    <button
+                      className="activity-show-more"
+                      onClick={() =>
+                        setExpandedDateGroups((prev) => {
+                          const next = new Set(prev);
+                          next.add(dateLabel);
+                          return next;
+                        })
+                      }
+                    >
+                      +{hiddenCount} more
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
