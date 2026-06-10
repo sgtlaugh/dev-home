@@ -284,7 +284,7 @@ export const LichessPuzzle: React.FC = () => {
           : `${playerColor === "white" ? "White" : "Black"} to play`;
 
   return (
-    <Card className="h-100 summary-card" style={{ borderLeft: "3px solid #4A5680" }}>
+    <Card className="h-100 summary-card" style={{ borderLeft: "3px solid #7A4040" }}>
       <Card.Body className="p-0">
         <div className="section-header px-3 pt-3 mb-0">
           <Tooltip text="Lichess daily puzzle">
