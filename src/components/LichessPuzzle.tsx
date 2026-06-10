@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Chessboard } from "react-chessboard";
+import type { Square } from "react-chessboard/dist/chessboard/types";
 import { Chess } from "chess.js";
 import Spinner from "react-bootstrap/Spinner";
 import Card from "react-bootstrap/Card";
@@ -69,6 +70,7 @@ export const LichessPuzzle: React.FC = () => {
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [boardWidth, setBoardWidth] = useState(0);
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
 
   useEffect(() => {
     if (puzzle) return;
@@ -107,6 +109,7 @@ export const LichessPuzzle: React.FC = () => {
     setStatus("playing");
     setShowHint(false);
     setLastMove(null);
+    setSelectedSquare(null);
   }, []);
 
   useEffect(() => {
@@ -190,6 +193,37 @@ export const LichessPuzzle: React.FC = () => {
     [moveIndex, solution, status, playOpponentMove],
   );
 
+  const playerPrefix = playerColor === "white" ? "w" : "b";
+
+  const handlePieceClick = useCallback(
+    (_piece: string, square: Square) => {
+      if (status === "solved") return;
+      if (_piece[0] !== playerPrefix) return;
+      setSelectedSquare(selectedSquare === square ? null : square);
+    },
+    [status, playerPrefix, selectedSquare],
+  );
+
+  const handleSquareClick = useCallback(
+    (square: Square) => {
+      if (!selectedSquare || status === "solved") return;
+
+      const pieceOnSquare = gameRef.current.get(square as any);
+      if (pieceOnSquare && pieceOnSquare.color === playerPrefix[0]) {
+        setSelectedSquare(square);
+        return;
+      }
+
+      const selPiece = gameRef.current.get(selectedSquare as any);
+      const pieceStr = selPiece
+        ? `${selPiece.color === "w" ? "w" : "b"}${selPiece.type.toUpperCase()}`
+        : "";
+      setSelectedSquare(null);
+      onDrop(selectedSquare, square, pieceStr);
+    },
+    [selectedSquare, status, onDrop, playerPrefix],
+  );
+
   const hintSquare = useMemo(() => {
     if (!showHint || moveIndex >= solution.length) return {};
     const move = uciToMove(solution[moveIndex]);
@@ -215,8 +249,12 @@ export const LichessPuzzle: React.FC = () => {
       styles[move.from] = { backgroundColor: "rgba(207, 34, 46, 0.4)" };
     }
 
+    if (selectedSquare) {
+      styles[selectedSquare] = { backgroundColor: "rgba(100, 140, 200, 0.55)" };
+    }
+
     return { ...lastMoveHighlight, ...hintSquare, ...styles };
-  }, [lastMoveHighlight, hintSquare, status, moveIndex, solution]);
+  }, [lastMoveHighlight, hintSquare, status, moveIndex, solution, selectedSquare]);
 
   const reset = useCallback(() => {
     if (puzzle) resetBoard(puzzle);
@@ -314,7 +352,12 @@ export const LichessPuzzle: React.FC = () => {
             >
               <Chessboard
                 position={fen}
-                onPieceDrop={onDrop}
+                onPieceDrop={(s, t, p) => {
+                  setSelectedSquare(null);
+                  return onDrop(s, t, p);
+                }}
+                onPieceClick={handlePieceClick}
+                onSquareClick={handleSquareClick}
                 boardWidth={boardWidth}
                 boardOrientation={playerColor}
                 customSquareStyles={customSquareStyles}
