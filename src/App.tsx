@@ -414,6 +414,7 @@ export default function App() {
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                       letterSpacing: "0.01em",
+                      paddingRight: "2px",
                     }}
                   >
                     {quote}
