@@ -4,6 +4,7 @@ import { Chess } from "chess.js";
 import Spinner from "react-bootstrap/Spinner";
 import { IconPuzzle, IconExternalLink, IconRefresh, IconBulb } from "@tabler/icons-react";
 import { Tooltip } from "./Tooltip";
+import { chessmaster5500Pieces } from "./chessPieces";
 
 interface PuzzleData {
   game: { id: string };
@@ -186,16 +187,16 @@ export const LichessPuzzle: React.FC = () => {
     if (!showHint || moveIndex >= solution.length) return {};
     const move = uciToMove(solution[moveIndex]);
     return {
-      [move.from]: { backgroundColor: "rgba(255, 170, 0, 0.4)" },
-      [move.to]: { backgroundColor: "rgba(255, 170, 0, 0.25)" },
+      [move.from]: { backgroundColor: "rgba(255, 185, 50, 0.5)" },
+      [move.to]: { backgroundColor: "rgba(255, 185, 50, 0.3)" },
     };
   }, [showHint, moveIndex, solution]);
 
   const lastMoveHighlight = useMemo(() => {
     if (!lastMove) return {};
     return {
-      [lastMove.from]: { backgroundColor: "rgba(155, 199, 0, 0.3)" },
-      [lastMove.to]: { backgroundColor: "rgba(155, 199, 0, 0.4)" },
+      [lastMove.from]: { backgroundColor: "rgba(130, 170, 220, 0.4)" },
+      [lastMove.to]: { backgroundColor: "rgba(130, 170, 220, 0.55)" },
     };
   }, [lastMove]);
 
@@ -300,8 +301,9 @@ export const LichessPuzzle: React.FC = () => {
             boardWidth={boardWidth}
             boardOrientation={playerColor}
             customSquareStyles={customSquareStyles}
-            customDarkSquareStyle={{ backgroundColor: "#779952" }}
-            customLightSquareStyle={{ backgroundColor: "#edeed1" }}
+            customPieces={chessmaster5500Pieces}
+            customDarkSquareStyle={{ backgroundColor: "#2A3568" }}
+            customLightSquareStyle={{ backgroundColor: "#D6CDBF" }}
             animationDuration={200}
             arePiecesDraggable={status !== "solved"}
             isDraggablePiece={({ piece }) =>
