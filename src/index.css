@@ -1627,7 +1627,7 @@ a.note-row-title:hover {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  opacity: 0;
+  opacity: 0.4;
   transition: opacity 120ms ease;
 }
 
