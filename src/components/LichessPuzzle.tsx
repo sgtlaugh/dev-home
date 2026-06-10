@@ -237,7 +237,7 @@ export const LichessPuzzle: React.FC = () => {
 
   const statusText =
     status === "solved"
-      ? "Solved!"
+      ? "Solved"
       : status === "correct"
         ? "Correct!"
         : status === "wrong"
@@ -341,8 +341,8 @@ export const LichessPuzzle: React.FC = () => {
             gap: "0.3rem",
           }}
         >
-          {status === "solved" && <IconCheck size={14} stroke={2.5} />}
           {statusText}
+          {status === "solved" && <IconCheck size={14} stroke={2.5} />}
         </div>
       </div>
     </div>
