@@ -54,6 +54,7 @@ export function useDashboard(
     setOpenPRsLoading(true);
     setReviewRequestsLoading(true);
     setError(null);
+    onFetchComplete?.("Dashboard", -1);
 
     const start = Date.now();
     let pendingCount = 3;

@@ -17,6 +17,7 @@ export function useTeamActivity(
 
     setLoading(true);
     setError(null);
+    onFetchComplete?.("Team Activity", -1);
     const start = Date.now();
 
     try {

@@ -80,6 +80,12 @@ export default function App() {
     (labelTabsMap[label] ??= []).push(tab);
   }
   const showFetchTime = useCallback((label: string, ms: number) => {
+    if (ms < 0) {
+      delete fetchTimeCache.current[label];
+      const tabs = labelTabsMap[label];
+      if (tabs && tabs.includes(activeTabRef.current)) setFetchTime(null);
+      return;
+    }
     fetchTimeCache.current[label] = ms;
     const tabs = labelTabsMap[label];
     if (tabs && !tabs.includes(activeTabRef.current)) return;

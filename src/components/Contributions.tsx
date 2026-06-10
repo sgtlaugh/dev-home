@@ -72,6 +72,7 @@ export const Contributions: React.FC<ContributionsProps> = ({
       setCommitCount(0);
       setLoading(true);
       setError(null);
+      onFetchComplete?.("Contributions", -1);
       const start = Date.now();
       try {
         const [prsResult, commits] = await Promise.all([

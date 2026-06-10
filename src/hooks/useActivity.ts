@@ -22,6 +22,7 @@ export function useActivity(
 
     setLoading(true);
     setError(null);
+    onFetchComplete?.("Activity", -1);
     const start = Date.now();
 
     try {

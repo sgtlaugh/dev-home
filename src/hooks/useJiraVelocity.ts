@@ -27,6 +27,7 @@ export function useJiraVelocity(
 
     setLoading(true);
     setError(null);
+    onFetchComplete?.("Velocity", -1);
 
     const start = Date.now();
     try {

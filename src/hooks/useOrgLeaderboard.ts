@@ -130,6 +130,7 @@ export function useOrgLeaderboard(
 
     setLoading(true);
     setError(null);
+    onFetchComplete?.("Leaderboard", -1);
     const start = Date.now();
     try {
       const { data } = await apiClient.get<{ members: LeaderboardEntry[] }>(
