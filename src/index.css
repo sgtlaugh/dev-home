@@ -555,6 +555,17 @@ a:hover {
   margin-left: auto;
 }
 
+.sidebar-top-item .sidebar-count-badge {
+  margin-right: 6px;
+}
+
+.sidebar-chevron-hint {
+  margin-left: auto;
+  margin-right: 4px;
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 0.75rem;
+}
+
 /* --- Section Divider --- */
 .sidebar-divider {
   height: 1px;

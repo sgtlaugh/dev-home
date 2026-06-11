@@ -299,13 +299,8 @@ export default function App() {
                       icon: IconHistory,
                       count: activityCounts.github,
                     },
-                    {
-                      key: "contributions",
-                      label: "Contributions",
-                      icon: IconCalendarStats,
-                      count: 0,
-                    },
-                    { key: "leaderboard", label: "Leaderboard", icon: IconTrophy, count: 0 },
+                    { key: "contributions", label: "Contributions", icon: IconCalendarStats },
+                    { key: "leaderboard", label: "Leaderboard", icon: IconTrophy },
                     {
                       key: "prs",
                       label: "Pull Requests",
@@ -333,7 +328,11 @@ export default function App() {
                   >
                     <item.icon size={15} />
                     <span>{item.label}</span>
-                    {item.count > 0 && <span className="sidebar-count-badge">{item.count}</span>}
+                    {"count" in item && item.count > 0 ? (
+                      <span className="sidebar-count-badge">{item.count}</span>
+                    ) : !("count" in item) ? (
+                      <span className="sidebar-chevron-hint">›</span>
+                    ) : null}
                   </button>
                 ))}
               </div>
@@ -370,7 +369,7 @@ export default function App() {
                       icon: IconAt,
                       count: jiraComments.length,
                     },
-                    { key: "velocity", label: "Velocity", icon: IconChartBar, count: 0 },
+                    { key: "velocity", label: "Velocity", icon: IconChartBar },
                   ] as const
                 ).map((item) => (
                   <button
@@ -380,7 +379,11 @@ export default function App() {
                   >
                     <item.icon size={15} />
                     <span>{item.label}</span>
-                    {item.count > 0 && <span className="sidebar-count-badge">{item.count}</span>}
+                    {"count" in item && item.count > 0 ? (
+                      <span className="sidebar-count-badge">{item.count}</span>
+                    ) : !("count" in item) ? (
+                      <span className="sidebar-chevron-hint">›</span>
+                    ) : null}
                   </button>
                 ))}
               </div>
