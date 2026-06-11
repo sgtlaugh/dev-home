@@ -232,17 +232,17 @@ export default function App() {
           <div className="titlebar-controls">
             <Tooltip text="Minimize">
               <button className="titlebar-btn" onClick={() => window.electronAPI?.windowMinimize()}>
-                <svg width="10" height="1">
-                  <rect width="10" height="1" fill="currentColor" />
+                <svg width="12" height="1">
+                  <rect width="12" height="1" fill="currentColor" />
                 </svg>
               </button>
             </Tooltip>
             <Tooltip text="Maximize">
               <button className="titlebar-btn" onClick={() => window.electronAPI?.windowMaximize()}>
-                <svg width="10" height="10">
+                <svg width="12" height="12">
                   <rect
-                    width="10"
-                    height="10"
+                    width="12"
+                    height="12"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1.2"
@@ -255,9 +255,9 @@ export default function App() {
                 className="titlebar-btn titlebar-btn-close"
                 onClick={() => window.electronAPI?.windowClose()}
               >
-                <svg width="10" height="10">
-                  <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth="1.2" />
-                  <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth="1.2" />
+                <svg width="12" height="12">
+                  <line x1="0" y1="0" x2="12" y2="12" stroke="currentColor" strokeWidth="1.2" />
+                  <line x1="12" y1="0" x2="0" y2="12" stroke="currentColor" strokeWidth="1.2" />
                 </svg>
               </button>
             </Tooltip>

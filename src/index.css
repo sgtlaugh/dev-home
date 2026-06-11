@@ -249,8 +249,9 @@ a:hover {
 .custom-titlebar {
   display: flex;
   align-items: center;
-  height: 36px;
+  height: 38px;
   background: #1e2228;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
   -webkit-app-region: drag;
   user-select: none;
