@@ -234,8 +234,9 @@ export const LichessPuzzle: React.FC = () => {
     if (!showHint || moveIndex >= solution.length) return {};
     const move = uciToMove(solution[moveIndex]);
     return {
-      [move.from]: { backgroundColor: "rgba(255, 185, 50, 0.5)" },
-      [move.to]: { backgroundColor: "rgba(255, 185, 50, 0.3)" },
+      [move.from]: {
+        backgroundColor: "rgba(180, 40, 50, 0.3)",
+      },
     };
   }, [showHint, moveIndex, solution]);
 
