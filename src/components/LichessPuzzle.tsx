@@ -59,8 +59,8 @@ function cachePuzzle(data: PuzzleData): void {
 }
 
 export const LichessPuzzle: React.FC = () => {
-  const [puzzle, setPuzzle] = useState<PuzzleData | null>(getCachedPuzzle);
-  const [loading, setLoading] = useState(!puzzle);
+  const [puzzle, setPuzzle] = useState<PuzzleData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [moveIndex, setMoveIndex] = useState(0);
   const [status, setStatus] = useState<PuzzleStatus>("playing");
@@ -73,7 +73,13 @@ export const LichessPuzzle: React.FC = () => {
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
 
   useEffect(() => {
-    if (puzzle) return;
+    const cached = getCachedPuzzle();
+    if (cached) {
+      setPuzzle(cached);
+      setLoading(false);
+      return;
+    }
+
     const controller = new AbortController();
     fetch("https://lichess.org/api/puzzle/daily", { signal: controller.signal })
       .then((r) => r.json())
@@ -89,7 +95,7 @@ export const LichessPuzzle: React.FC = () => {
         }
       });
     return () => controller.abort();
-  }, [puzzle]);
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;
