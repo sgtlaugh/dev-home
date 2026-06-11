@@ -20,6 +20,7 @@ interface PuzzleData {
     id: string;
     solution: string[];
     fen: string;
+    lastMove?: string;
   };
 }
 
@@ -31,6 +32,56 @@ function uciToMove(uci: string): { from: string; to: string; promotion?: string 
     to: uci.slice(2, 4),
     promotion: uci.length > 4 ? uci[4] : undefined,
   };
+}
+
+function buildPreMoveFen(fen: string, move: { from: string; to: string }): string {
+  const sqIdx = (sq: string) => {
+    const file = sq.charCodeAt(0) - 97;
+    const rank = parseInt(sq[1]) - 1;
+    return rank * 8 + file;
+  };
+
+  const parts = fen.split(" ");
+  const rows = parts[0].split("/").reverse();
+  const board: string[] = [];
+  for (const row of rows) {
+    for (const ch of row) {
+      if (ch >= "1" && ch <= "8") {
+        for (let i = 0; i < parseInt(ch); i++) board.push("");
+      } else {
+        board.push(ch);
+      }
+    }
+  }
+
+  const toIdx = sqIdx(move.to);
+  const fromIdx = sqIdx(move.from);
+  const piece = board[toIdx];
+  board[fromIdx] = piece;
+  board[toIdx] = "";
+
+  const newRows: string[] = [];
+  for (let rank = 0; rank < 8; rank++) {
+    let row = "";
+    let empty = 0;
+    for (let file = 0; file < 8; file++) {
+      const p = board[rank * 8 + file];
+      if (p) {
+        if (empty > 0) {
+          row += empty;
+          empty = 0;
+        }
+        row += p;
+      } else {
+        empty++;
+      }
+    }
+    if (empty > 0) row += empty;
+    newRows.push(row);
+  }
+
+  parts[0] = newRows.reverse().join("/");
+  return parts.join(" ");
 }
 
 const CACHE_KEY = "lichess-puzzle-daily";
@@ -110,12 +161,24 @@ export const LichessPuzzle: React.FC = () => {
   const resetBoard = useCallback((p: PuzzleData) => {
     const game = new Chess(p.puzzle.fen);
     gameRef.current = game;
-    setFen(game.fen());
     setMoveIndex(0);
     setStatus("playing");
     setShowHint(false);
-    setLastMove(null);
     setSelectedSquare(null);
+
+    if (p.puzzle.lastMove) {
+      const move = uciToMove(p.puzzle.lastMove);
+      const setupFen = buildPreMoveFen(p.puzzle.fen, move);
+      setFen(setupFen);
+      setLastMove(null);
+      setTimeout(() => {
+        setFen(game.fen());
+        setLastMove({ from: move.from, to: move.to });
+      }, 400);
+    } else {
+      setFen(game.fen());
+      setLastMove(null);
+    }
   }, []);
 
   useEffect(() => {
