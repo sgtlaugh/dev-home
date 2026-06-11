@@ -136,6 +136,12 @@ export default function App() {
     }
   }, [activeTab]);
 
+  const jiraIssueCount = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    return jiraIssues.filter((i) => new Date(i.updated) >= cutoff).length;
+  }, [jiraIssues]);
+
   const isActivityTab = activeTab === "activity" || activeTab === "jira-activity";
   const {
     activities,
@@ -287,12 +293,37 @@ export default function App() {
               <div className="sidebar-sub-items">
                 {(
                   [
-                    { key: "activity", label: "Activity", icon: IconHistory },
-                    { key: "contributions", label: "Contributions", icon: IconCalendarStats },
-                    { key: "leaderboard", label: "Leaderboard", icon: IconTrophy },
-                    { key: "prs", label: "Pull Requests", icon: IconGitPullRequest },
-                    { key: "reviews", label: "Reviews", icon: IconEye },
-                    { key: "peers", label: "Team Activity", icon: IconUsers },
+                    {
+                      key: "activity",
+                      label: "Activity",
+                      icon: IconHistory,
+                      count: activityCounts.github,
+                    },
+                    {
+                      key: "contributions",
+                      label: "Contributions",
+                      icon: IconCalendarStats,
+                      count: 0,
+                    },
+                    { key: "leaderboard", label: "Leaderboard", icon: IconTrophy, count: 0 },
+                    {
+                      key: "prs",
+                      label: "Pull Requests",
+                      icon: IconGitPullRequest,
+                      count: openPRs.length,
+                    },
+                    {
+                      key: "reviews",
+                      label: "Reviews",
+                      icon: IconEye,
+                      count: reviewRequests.length,
+                    },
+                    {
+                      key: "peers",
+                      label: "Team Activity",
+                      icon: IconUsers,
+                      count: teamActivities.length,
+                    },
                   ] as const
                 ).map((item) => (
                   <button
@@ -302,6 +333,7 @@ export default function App() {
                   >
                     <item.icon size={15} />
                     <span>{item.label}</span>
+                    {item.count > 0 && <span className="sidebar-count-badge">{item.count}</span>}
                   </button>
                 ))}
               </div>
@@ -325,10 +357,20 @@ export default function App() {
               <div className="sidebar-sub-items">
                 {(
                   [
-                    { key: "jira-activity", label: "Activity", icon: IconHistory },
-                    { key: "jira", label: "Issues", icon: IconSubtask },
-                    { key: "mentions", label: "Notifications", icon: IconAt },
-                    { key: "velocity", label: "Velocity", icon: IconChartBar },
+                    {
+                      key: "jira-activity",
+                      label: "Activity",
+                      icon: IconHistory,
+                      count: activityCounts.jira,
+                    },
+                    { key: "jira", label: "Issues", icon: IconSubtask, count: jiraIssueCount },
+                    {
+                      key: "mentions",
+                      label: "Notifications",
+                      icon: IconAt,
+                      count: jiraComments.length,
+                    },
+                    { key: "velocity", label: "Velocity", icon: IconChartBar, count: 0 },
                   ] as const
                 ).map((item) => (
                   <button
@@ -338,6 +380,7 @@ export default function App() {
                   >
                     <item.icon size={15} />
                     <span>{item.label}</span>
+                    {item.count > 0 && <span className="sidebar-count-badge">{item.count}</span>}
                   </button>
                 ))}
               </div>
