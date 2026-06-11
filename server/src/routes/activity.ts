@@ -123,15 +123,27 @@ router.get("/", async (_req: Request, res: Response) => {
   res.json(result);
 });
 
-router.get("/count", (_req: Request, res: Response) => {
+function activityCounts(activities: ActivityItem[]) {
+  return {
+    github: activities.filter(a => a.type === "github").length,
+    jira: activities.filter(a => a.type === "jira").length,
+    total: activities.length,
+  };
+}
+
+router.get("/count", async (_req: Request, res: Response) => {
   const stale = apiCache.getStale<{ activities: ActivityItem[] }>(ACTIVITY_CACHE_KEY);
-  if (!stale) return res.json({ github: 0, jira: 0, total: 0 });
-  const acts = stale.data.activities;
-  res.json({
-    github: acts.filter(a => a.type === "github").length,
-    jira: acts.filter(a => a.type === "jira").length,
-    total: acts.length,
-  });
+  if (stale) {
+    res.json(activityCounts(stale.data.activities));
+    if (!stale.fresh && !refreshInProgress) {
+      refreshInProgress = true;
+      refreshActivityCache().finally(() => { refreshInProgress = false; });
+    }
+    return;
+  }
+
+  const result = await refreshActivityCache();
+  res.json(activityCounts(result.activities));
 });
 
 function truncatePreview(text: string): string {
