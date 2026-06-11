@@ -70,29 +70,15 @@ a:hover {
 }
 
 /* --- Summary Hero Stats --- */
-.system-stats-group {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.system-stat-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #f6f8fa;
-  border: 1px solid #d1d9e0;
-  white-space: nowrap;
-}
-
 .summary-hero-bar {
-  display: flex;
-  gap: 0;
+  display: grid;
+  grid-template-columns: 3fr 3fr 2fr;
+  gap: 0.5rem;
   margin-bottom: 12px;
+}
+
+.summary-hero-group {
+  display: flex;
   background: #f6f8fa;
   border: 1px solid #d1d9e0;
   border-radius: 12px;
@@ -126,6 +112,21 @@ a:hover {
   font-size: 0.65rem;
   color: #656d76;
   margin-top: 2px;
+}
+
+.summary-hero-stat--system {
+  cursor: default;
+}
+
+.summary-hero-stat--system:hover {
+  background-color: transparent;
+}
+
+.summary-hero-count--system {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
 }
 
 /* --- Summary Cards --- */

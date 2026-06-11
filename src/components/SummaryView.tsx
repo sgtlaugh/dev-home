@@ -12,7 +12,10 @@ import {
   IconNote,
   IconCheck,
   IconPlus,
+  IconDeviceDesktop,
+  IconDatabase,
 } from "@tabler/icons-react";
+import { SystemStats } from "../services/system";
 import { JiraIssue, JiraComment, GitHubPR, Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
@@ -37,6 +40,7 @@ interface SummaryViewProps {
   onResolveNote: (id: number) => Promise<void>;
   onAddNote: () => void;
   onOpenNote: (note: Note) => void;
+  systemStats: SystemStats | null;
 }
 
 const SECTION_COLORS: Record<string, string> = {
@@ -196,22 +200,34 @@ function EmptyRow({ text }: { text: string }) {
   );
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)}G`;
+  if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(0)}M`;
+  return `${(bytes / 1e3).toFixed(0)}K`;
+}
+
+function usageColor(usedPct: number): string {
+  if (usedPct >= 90) return "#cf222e";
+  if (usedPct >= 70) return "#d4a72c";
+  return "#1a7f37";
+}
+
 function HeroStats({
   prCount,
   reviewCount,
   jiraCount,
   notifCount,
-  noteCount,
+  systemStats,
   onNavigate,
 }: {
   prCount: number;
   reviewCount: number;
   jiraCount: number;
   notifCount: number;
-  noteCount: number;
+  systemStats: SystemStats | null;
   onNavigate: (tab: string) => void;
 }) {
-  const stats = [
+  const taskStats = [
     {
       label: "Open PRs",
       count: prCount,
@@ -240,27 +256,67 @@ function HeroStats({
       tab: "mentions",
       tooltip: "Comments where you were mentioned",
     },
-    {
-      label: "Notes",
-      count: noteCount,
-      color: SECTION_COLORS.notes,
-      tab: "notes",
-      tooltip: "Personal notes and reminders",
-    },
   ];
+
+  const memUsage = systemStats
+    ? Math.round(
+        ((systemStats.memory.total - systemStats.memory.free) / systemStats.memory.total) * 100,
+      )
+    : 0;
+  const diskUsage = systemStats
+    ? Math.round(((systemStats.disk.total - systemStats.disk.free) / systemStats.disk.total) * 100)
+    : 0;
+
+  const taskGroups = [taskStats.slice(0, 2), taskStats.slice(2, 4)];
 
   return (
     <div className="summary-hero-bar">
-      {stats.map((s) => (
-        <Tooltip key={s.label} text={s.tooltip}>
-          <div className="summary-hero-stat" onClick={() => onNavigate(s.tab)}>
-            <div className="summary-hero-count" style={{ color: s.color }}>
-              {s.count}
-            </div>
-            <div className="summary-hero-label">{s.label}</div>
-          </div>
-        </Tooltip>
+      {taskGroups.map((group, gi) => (
+        <div key={gi} className="summary-hero-group">
+          {group.map((s) => (
+            <Tooltip key={s.label} text={s.tooltip}>
+              <div className="summary-hero-stat" onClick={() => onNavigate(s.tab)}>
+                <div className="summary-hero-count" style={{ color: s.color }}>
+                  {s.count}
+                </div>
+                <div className="summary-hero-label">{s.label}</div>
+              </div>
+            </Tooltip>
+          ))}
+        </div>
       ))}
+      {systemStats && (
+        <div className="summary-hero-group summary-hero-group--system">
+          <Tooltip
+            text={`${formatBytes(systemStats.memory.free)} free of ${formatBytes(systemStats.memory.total)}`}
+          >
+            <div className="summary-hero-stat summary-hero-stat--system">
+              <div
+                className="summary-hero-count summary-hero-count--system"
+                style={{ color: usageColor(memUsage) }}
+              >
+                <IconDeviceDesktop size={18} stroke={1.8} />
+                {formatBytes(systemStats.memory.free)}
+              </div>
+              <div className="summary-hero-label">Memory</div>
+            </div>
+          </Tooltip>
+          <Tooltip
+            text={`${formatBytes(systemStats.disk.free)} free of ${formatBytes(systemStats.disk.total)}`}
+          >
+            <div className="summary-hero-stat summary-hero-stat--system">
+              <div
+                className="summary-hero-count summary-hero-count--system"
+                style={{ color: usageColor(diskUsage) }}
+              >
+                <IconDatabase size={18} stroke={1.8} />
+                {formatBytes(systemStats.disk.free)}
+              </div>
+              <div className="summary-hero-label">Disk</div>
+            </div>
+          </Tooltip>
+        </div>
+      )}
     </div>
   );
 }
@@ -282,6 +338,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   onResolveNote,
   onAddNote,
   onOpenNote,
+  systemStats,
 }) => {
   const jiraBase = jiraBaseUrl?.replace(/\/+$/, "") || "";
 
@@ -322,7 +379,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
         reviewCount={reviewRequests.length}
         jiraCount={issuesThisMonth.length}
         notifCount={jiraComments.length}
-        noteCount={notes.length}
+        systemStats={systemStats}
         onNavigate={onNavigate}
       />
 
