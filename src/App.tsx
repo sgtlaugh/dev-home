@@ -19,6 +19,9 @@ import {
   IconBrandGithub,
   IconBrandJira,
   IconChevronDown,
+  IconCpu,
+  IconDeviceDesktop,
+  IconDatabase,
 } from "@tabler/icons-react";
 import { useConfig } from "./hooks/useConfig";
 import { useDashboard } from "./hooks/useDashboard";
@@ -46,6 +49,19 @@ import { usePrefetchStatus } from "./hooks/useOrgLeaderboard";
 import { apiCache } from "./utils/cache";
 import { getRandomQuote } from "./constants/quotes";
 import { Tooltip } from "./components/Tooltip";
+import { useSystemStats } from "./hooks/useSystemStats";
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)}G`;
+  if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(0)}M`;
+  return `${(bytes / 1e3).toFixed(0)}K`;
+}
+
+function usageColor(usedPct: number): string {
+  if (usedPct >= 90) return "#cf222e";
+  if (usedPct >= 70) return "#d4a72c";
+  return "#1a7f37";
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(
@@ -149,6 +165,7 @@ export default function App() {
     refresh: refreshActivity,
   } = useActivity(configured && isActivityTab, showFetchTime);
   const activityCounts = useActivityCount(configured);
+  const systemStats = useSystemStats(configured);
   const { activities: teamActivities, refresh: refreshTeamActivity } = useTeamActivity(
     configured,
     showFetchTime,
@@ -470,20 +487,73 @@ export default function App() {
             <div className="content-header">
               <div className="content-header-time">
                 {effectiveTab === "summary" && (
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      fontStyle: "italic",
-                      color: "#656d76",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      letterSpacing: "0.01em",
-                      paddingRight: "2px",
-                    }}
-                  >
-                    {quote}
-                  </span>
+                  <>
+                    {systemStats && (
+                      <div className="system-stats-group">
+                        <Tooltip text={`${systemStats.cpu.usage}% CPU usage`}>
+                          <span
+                            className="system-stat-pill"
+                            style={{ color: usageColor(systemStats.cpu.usage) }}
+                          >
+                            <IconCpu size={12} stroke={1.8} />
+                            {systemStats.cpu.usage}%
+                          </span>
+                        </Tooltip>
+                        <Tooltip
+                          text={`${formatBytes(systemStats.memory.free)} free of ${formatBytes(systemStats.memory.total)}`}
+                        >
+                          <span
+                            className="system-stat-pill"
+                            style={{
+                              color: usageColor(
+                                Math.round(
+                                  ((systemStats.memory.total - systemStats.memory.free) /
+                                    systemStats.memory.total) *
+                                    100,
+                                ),
+                              ),
+                            }}
+                          >
+                            <IconDeviceDesktop size={12} stroke={1.8} />
+                            {formatBytes(systemStats.memory.free)}
+                          </span>
+                        </Tooltip>
+                        <Tooltip
+                          text={`${formatBytes(systemStats.disk.free)} free of ${formatBytes(systemStats.disk.total)}`}
+                        >
+                          <span
+                            className="system-stat-pill"
+                            style={{
+                              color: usageColor(
+                                Math.round(
+                                  ((systemStats.disk.total - systemStats.disk.free) /
+                                    systemStats.disk.total) *
+                                    100,
+                                ),
+                              ),
+                            }}
+                          >
+                            <IconDatabase size={12} stroke={1.8} />
+                            {formatBytes(systemStats.disk.free)}
+                          </span>
+                        </Tooltip>
+                      </div>
+                    )}
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        fontStyle: "italic",
+                        color: "#656d76",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "0.01em",
+                        paddingRight: "2px",
+                      }}
+                    >
+                      {quote}
+                    </span>
+                  </>
                 )}
                 {(prefetch.running || prefetch.complete) &&
                   effectiveTab === "leaderboard" &&

@@ -70,6 +70,25 @@ a:hover {
 }
 
 /* --- Summary Hero Stats --- */
+.system-stats-group {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.system-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  white-space: nowrap;
+}
+
 .summary-hero-bar {
   display: flex;
   gap: 0;

@@ -9,6 +9,7 @@ import configRoutes from "./routes/config";
 import githubRoutes from "./routes/github";
 import jiraRoutes, { resetJiraCache } from "./routes/jira";
 import notesRoutes from "./routes/notes";
+import systemRoutes from "./routes/system";
 import { fetchOrgMembers } from "./routes/github/leaderboard";
 import { clearProfiles } from "./services/contributionCache";
 import { startPrefetch } from "./services/contributionPrefetch";
@@ -50,6 +51,7 @@ export function createServer() {
   app.use("/api/github", githubRoutes);
   app.use("/api/config", configRoutes);
   app.use("/api/notes", notesRoutes);
+  app.use("/api/system", systemRoutes);
   // Health check
   app.get("/api/health", (_req: Request, res: Response) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
