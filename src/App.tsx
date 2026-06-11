@@ -197,6 +197,9 @@ export default function App() {
   const handleSaveSettings = useCallback(async () => {
     setSettingsSaving(true);
     try {
+      apiCache.clear();
+      localStorage.clear();
+      await apiClient.post("/cache/purge");
       await saveSettings(settingsForm);
       setToast("Settings saved");
       setTimeout(() => setToast(null), 3000);
