@@ -3,7 +3,7 @@ import {
   IconChartBar,
   IconTrendingUp,
   IconTrendingDown,
-  IconMinus,
+  IconEqual,
   IconInfoCircle,
 } from "@tabler/icons-react";
 import Badge from "react-bootstrap/Badge";
@@ -93,7 +93,7 @@ export const JiraVelocity: React.FC<{
       ? IconTrendingUp
       : metrics?.velocity.trend === "declining"
         ? IconTrendingDown
-        : IconMinus;
+        : IconEqual;
 
   const visibleIssues = completedIssues;
 
