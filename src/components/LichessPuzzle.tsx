@@ -105,7 +105,7 @@ export const LichessPuzzle: React.FC = () => {
     });
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [puzzle]);
 
   const resetBoard = useCallback((p: PuzzleData) => {
     const game = new Chess(p.puzzle.fen);
