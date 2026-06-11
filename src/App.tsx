@@ -225,7 +225,7 @@ export default function App() {
         {/* Custom title bar */}
         <div className="custom-titlebar">
           <div className="titlebar-left">
-            <img src="/devhome-logo.svg" alt="Dev Home" className="titlebar-icon" />
+            <img src="/devhome-logo-small.svg" alt="Dev Home" className="titlebar-icon" />
             <span className="titlebar-title">Dev Home</span>
           </div>
           <div className="titlebar-drag" />
