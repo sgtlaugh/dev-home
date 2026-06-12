@@ -575,9 +575,7 @@ export default function App() {
                         alignItems: "center",
                       }}
                     >
-                      {fetchTime.ms >= 10000
-                        ? `${Math.round(fetchTime.ms / 1000)} s`
-                        : `${fetchTime.ms} ms`}
+                      {fetchTime.ms.toLocaleString()} ms
                     </span>
                   </Tooltip>
                 ) : (
