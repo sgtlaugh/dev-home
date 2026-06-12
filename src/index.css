@@ -72,7 +72,7 @@ a:hover {
 /* --- Summary Hero Stats --- */
 .summary-hero-bar {
   display: grid;
-  grid-template-columns: 3fr 3fr 2fr;
+  grid-template-columns: 3fr 3fr 2.07fr;
   gap: 0.5rem;
   margin-bottom: 12px;
 }
@@ -132,7 +132,7 @@ a:hover {
 /* --- Summary Cards --- */
 .summary-grid {
   display: grid;
-  grid-template-columns: 3fr 3fr 2fr;
+  grid-template-columns: 3fr 3fr 2.07fr;
   grid-template-rows: 1fr 1fr;
   gap: 0.5rem;
   flex: 1;
