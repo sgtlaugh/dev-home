@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { SystemStats, fetchSystemStats } from "../services/system";
 
-const POLL_INTERVAL = 30_000;
+const POLL_INTERVAL = 1_000;
 
 export function useSystemStats(active: boolean) {
   const [stats, setStats] = useState<SystemStats | null>(null);
