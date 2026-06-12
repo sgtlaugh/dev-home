@@ -12,15 +12,16 @@ import {
   IconCheck,
 } from "@tabler/icons-react";
 import { Tooltip } from "./Tooltip";
-import { chessmaster5500Pieces } from "./chessPieces";
+import { kosalPieces } from "./chessPieces";
 
 interface PuzzleData {
-  game: { id: string };
+  game: { id: string; pgn: string };
   puzzle: {
     id: string;
     solution: string[];
     fen: string;
     lastMove?: string;
+    initialPly: number;
   };
 }
 
@@ -34,54 +35,19 @@ function uciToMove(uci: string): { from: string; to: string; promotion?: string 
   };
 }
 
-function buildPreMoveFen(fen: string, move: { from: string; to: string }): string {
-  const sqIdx = (sq: string) => {
-    const file = sq.charCodeAt(0) - 97;
-    const rank = parseInt(sq[1]) - 1;
-    return rank * 8 + file;
-  };
-
-  const parts = fen.split(" ");
-  const rows = parts[0].split("/").reverse();
-  const board: string[] = [];
-  for (const row of rows) {
-    for (const ch of row) {
-      if (ch >= "1" && ch <= "8") {
-        for (let i = 0; i < parseInt(ch); i++) board.push("");
-      } else {
-        board.push(ch);
-      }
+function buildPreMoveFen(pgn: string, initialPly: number): string | null {
+  try {
+    const game = new Chess();
+    const tempGame = new Chess();
+    tempGame.loadPgn(pgn);
+    const moves = tempGame.history();
+    for (let i = 0; i < initialPly && i < moves.length; i++) {
+      game.move(moves[i]);
     }
+    return game.fen();
+  } catch {
+    return null;
   }
-
-  const toIdx = sqIdx(move.to);
-  const fromIdx = sqIdx(move.from);
-  const piece = board[toIdx];
-  board[fromIdx] = piece;
-  board[toIdx] = "";
-
-  const newRows: string[] = [];
-  for (let rank = 0; rank < 8; rank++) {
-    let row = "";
-    let empty = 0;
-    for (let file = 0; file < 8; file++) {
-      const p = board[rank * 8 + file];
-      if (p) {
-        if (empty > 0) {
-          row += empty;
-          empty = 0;
-        }
-        row += p;
-      } else {
-        empty++;
-      }
-    }
-    if (empty > 0) row += empty;
-    newRows.push(row);
-  }
-
-  parts[0] = newRows.reverse().join("/");
-  return parts.join(" ");
 }
 
 const CACHE_KEY = "lichess-puzzle-daily";
@@ -168,13 +134,18 @@ export const LichessPuzzle: React.FC = () => {
 
     if (p.puzzle.lastMove) {
       const move = uciToMove(p.puzzle.lastMove);
-      const setupFen = buildPreMoveFen(p.puzzle.fen, move);
-      setFen(setupFen);
-      setLastMove(null);
-      setTimeout(() => {
+      const preMoveFen = buildPreMoveFen(p.game.pgn, p.puzzle.initialPly);
+      if (preMoveFen) {
+        setFen(preMoveFen);
+        setLastMove(null);
+        setTimeout(() => {
+          setFen(game.fen());
+          setLastMove({ from: move.from, to: move.to });
+        }, 400);
+      } else {
         setFen(game.fen());
         setLastMove({ from: move.from, to: move.to });
-      }, 400);
+      }
     } else {
       setFen(game.fen());
       setLastMove(null);
@@ -433,7 +404,7 @@ export const LichessPuzzle: React.FC = () => {
                 boardWidth={boardWidth}
                 boardOrientation={playerColor}
                 customSquareStyles={customSquareStyles}
-                customPieces={chessmaster5500Pieces}
+                customPieces={kosalPieces}
                 customDarkSquareStyle={{ backgroundColor: "#4A5680" }}
                 customLightSquareStyle={{ backgroundColor: "#E8E2D8" }}
                 customDropSquareStyle={{
