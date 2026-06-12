@@ -170,40 +170,6 @@ a:hover {
 }
 
 /* --- Note Chips --- */
-.summary-notes-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0 12px 8px;
-}
-
-.summary-note-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background-color: #f6f8fa;
-  border: 1px solid #d1d9e0;
-  cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
-}
-
-.summary-note-chip:hover {
-  background-color: #eaeef2;
-  border-color: #bcc3cd;
-}
-
-.summary-note-chip-text {
-  flex: 1;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #24292f;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
 
 .summary-note-resolve {
   display: flex;
@@ -1389,6 +1355,7 @@ a:hover {
   border-bottom: 1px solid #d1d9e0;
   transition: background-color 120ms ease;
   cursor: pointer;
+
 }
 
 .summary-item:hover {

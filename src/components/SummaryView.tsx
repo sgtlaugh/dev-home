@@ -529,26 +529,40 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
           }
         >
           {topNotes.length > 0 ? (
-            <div className="summary-notes-grid">
-              {topNotes.map((note) => (
-                <div key={note.id} className="summary-note-chip" onClick={() => onOpenNote(note)}>
-                  <Tooltip text={getNoteDisplayTitle(note)}>
-                    <span className="summary-note-chip-text">{getNoteDisplayTitle(note)}</span>
-                  </Tooltip>
-                  <Tooltip text="Resolve">
-                    <button
-                      className="summary-note-resolve"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onResolveNote(note.id);
-                      }}
-                    >
-                      <IconCheck size={10} />
-                    </button>
-                  </Tooltip>
+            topNotes.map((note) => (
+              <div
+                key={note.id}
+                className="summary-item d-flex align-items-center gap-3 px-3 py-2"
+                onClick={() => onOpenNote(note)}
+                style={{ cursor: "pointer" }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    className="text-truncate-custom d-block"
+                    style={{ fontWeight: 500, fontSize: "0.8125rem" }}
+                  >
+                    {getNoteDisplayTitle(note)}
+                  </div>
+                  <div
+                    className="text-secondary-custom text-truncate-custom"
+                    style={{ fontSize: "0.75rem", marginTop: 1 }}
+                  >
+                    <Timestamp timestamp={note.created_at} />
+                  </div>
                 </div>
-              ))}
-            </div>
+                <Tooltip text="Resolve">
+                  <button
+                    className="summary-note-resolve"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResolveNote(note.id);
+                    }}
+                  >
+                    <IconCheck size={10} />
+                  </button>
+                </Tooltip>
+              </div>
+            ))
           ) : (
             <EmptyRow text="No notes" />
           )}
