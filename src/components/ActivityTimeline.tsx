@@ -19,12 +19,11 @@ import {
   getActivityBadgeClass,
   getReviewBadgeClass,
   getReviewBadgeLabel,
-  getActionSummary,
-  getBadgeColor,
+  getActionSummaries,
   groupActivitiesByDate,
   CollapsedActivity,
 } from "../utils/activityUtils";
-import { categorizeAction, ACTION_CATEGORIES } from "../utils/activityCategories";
+import { categorizeAction, getFilterCategories, getBadgeColor } from "../utils/activityCategories";
 import { ActivityBarChart, computeStreak } from "./ActivityBarChart";
 import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
 import { getLocalDateString, getLocalDateMinusDays } from "../utils/dateUtils";
@@ -111,11 +110,13 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
       const cat = categorizeAction(a.action);
       counts.set(cat, (counts.get(cat) || 0) + 1);
     }
-    return ACTION_CATEGORIES.filter((c) => counts.has(c.label)).map((c) => ({
-      label: c.label,
-      color: c.color,
-      count: counts.get(c.label)!,
-    }));
+    return getFilterCategories()
+      .filter((c) => counts.has(c.label))
+      .map((c) => ({
+        label: c.label,
+        color: c.color,
+        count: counts.get(c.label)!,
+      }));
   }, [activities]);
 
   const uniqueActors = useMemo(() => {
@@ -151,7 +152,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
       dayMap.set(cat, (dayMap.get(cat) || 0) + 1);
     }
 
-    const colorMap = new Map(ACTION_CATEGORIES.map((c) => [c.label, c.color]));
+    const colorMap = new Map(getFilterCategories().map((c) => [c.label, c.color]));
 
     const days: {
       date: string;
@@ -450,18 +451,16 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                 </Badge>
                               )}
                               {!reviewBadge &&
-                                (() => {
-                                  const summary = getActionSummary(collapsed.actions);
-                                  return (
-                                    <Badge
-                                      bg=""
-                                      className={getActivityBadgeClass(summary.badgeAction)}
-                                      style={{ fontSize: "0.7rem", fontWeight: 600 }}
-                                    >
-                                      {summary.text}
-                                    </Badge>
-                                  );
-                                })()}
+                                getActionSummaries(collapsed.actions).map((s) => (
+                                  <Badge
+                                    key={s.text}
+                                    bg=""
+                                    className={getActivityBadgeClass(s.badgeAction)}
+                                    style={{ fontSize: "0.7rem", fontWeight: 600 }}
+                                  >
+                                    {s.text}
+                                  </Badge>
+                                ))}
                               {prState && prState !== "open" && (
                                 <span
                                   style={{

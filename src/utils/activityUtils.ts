@@ -1,4 +1,5 @@
 import { ActivityItem } from "../services/activity";
+import { getActionBadgeClass, getActionPriority } from "./activityCategories";
 
 export interface CollapsedActivity {
   entityKey: string;
@@ -10,20 +11,7 @@ export interface CollapsedActivity {
 }
 
 export function getActivityBadgeClass(item: ActivityItem): string {
-  if (item.type === "github") {
-    if (item.action.includes("Committed")) return "badge-status-green-light";
-    if (item.action.includes("Approved")) return "badge-status-purple-light";
-    if (item.action.includes("Created PR")) return "badge-status-green-dark";
-    if (item.action.includes("Merged")) return "badge-status-purple-dark";
-    if (item.action.includes("Comment")) return "badge-status-blue";
-    if (item.action.includes("Changes Requested")) return "badge-status-yellow";
-    return "badge-status-neutral";
-  }
-
-  if (item.action.includes("Created")) return "badge-status-green-dark";
-  if (item.action.includes("Comment")) return "badge-status-blue";
-  if (item.action.includes("status")) return "badge-status-purple";
-  return "badge-status-neutral";
+  return getActionBadgeClass(item.action);
 }
 
 export function getReviewState(items: ActivityItem[]): string | undefined {
@@ -127,36 +115,17 @@ export function getReviewBadgeLabel(reviewState?: string): string | null {
   return null;
 }
 
-export function getActionSummary(actions: ActivityItem[]): {
+export function getActionSummaries(actions: ActivityItem[]): {
   text: string;
   badgeAction: ActivityItem;
-} {
-  const actionTypes = new Set(actions.map((a) => a.action));
-  const types = Array.from(actionTypes);
-
-  const creationAction = actions.find((a) => a.action === "Created PR" || a.action === "Created");
-  if (creationAction) return { text: creationAction.action, badgeAction: creationAction };
-
-  let text: string;
-  if (types.length === 1) text = types[0];
-  else if (types.length === 2) text = types.join(" & ");
-  else text = `${types[0]} & ${types.length - 1} more`;
-
-  return { text, badgeAction: actions[0] };
-}
-
-export function getBadgeColor(badgeClass: string): string {
-  const colorMap: Record<string, string> = {
-    "badge-status-green-light": "#1a7f37",
-    "badge-status-green-dark": "#116329",
-    "badge-status-blue": "#0969da",
-    "badge-status-blue-dark": "#0550ae",
-    "badge-status-purple-light": "#8250df",
-    "badge-status-purple-dark": "#6639ba",
-    "badge-status-yellow": "#9a6700",
-    "badge-status-red": "#cf222e",
-    "badge-status-red-dark": "#a40e26",
-    "badge-status-neutral": "#656d76",
-  };
-  return colorMap[badgeClass] || "#d1d9e0";
+}[] {
+  const seen = new Set<string>();
+  const result: { text: string; badgeAction: ActivityItem }[] = [];
+  for (const action of actions) {
+    if (!seen.has(action.action)) {
+      seen.add(action.action);
+      result.push({ text: action.action, badgeAction: action });
+    }
+  }
+  return result.sort((a, b) => getActionPriority(a.text) - getActionPriority(b.text));
 }

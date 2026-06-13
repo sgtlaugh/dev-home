@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { ActivityItem } from "../services/activity";
 import { ActivityTimeline } from "./ActivityTimeline";
 import { ACTIVITY_LOOKBACK_DAYS } from "../utils/constants";
-import { categorizeAction, ACTION_CATEGORIES } from "../utils/activityCategories";
+import { categorizeAction } from "../utils/activityCategories";
 
 interface ActivityProps {
   activities: ActivityItem[];

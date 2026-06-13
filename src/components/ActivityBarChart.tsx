@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { ACTION_CATEGORIES } from "../utils/activityCategories";
+import { getFilterCategories } from "../utils/activityCategories";
 import { getLocalDateString } from "../utils/dateUtils";
 import { Tooltip } from "./Tooltip";
 
@@ -65,7 +65,7 @@ export function computeStreak(days: { count: number; date: string }[]): number {
 }
 
 const DARK_COLORS: Record<string, string> = Object.fromEntries(
-  ACTION_CATEGORIES.map((c) => [c.color, c.darkColor]),
+  getFilterCategories().map((c) => [c.color, c.darkColor]),
 );
 
 export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({ dailyCounts, activities }) => {
