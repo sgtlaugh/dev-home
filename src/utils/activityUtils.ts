@@ -11,7 +11,7 @@ export interface CollapsedActivity {
 
 export function getActivityBadgeClass(item: ActivityItem): string {
   if (item.type === "github") {
-    if (item.action.includes("Committed")) return "badge-status-green-dark";
+    if (item.action.includes("Committed")) return "badge-status-green-light";
     if (item.action.includes("Approved")) return "badge-status-purple-light";
     if (item.action.includes("Created PR")) return "badge-status-green-dark";
     if (item.action.includes("Merged")) return "badge-status-purple-dark";
