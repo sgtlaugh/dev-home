@@ -17,8 +17,6 @@ import { ActivityItem } from "../services/activity";
 import { Timestamp } from "./Timestamp";
 import {
   getActivityBadgeClass,
-  getReviewBadgeClass,
-  getReviewBadgeLabel,
   getActionSummaries,
   groupActivitiesByDate,
   CollapsedActivity,
@@ -345,7 +343,6 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 {visibleItems.map((collapsed) => {
                   const latestAction = collapsed.actions[0];
                   const entityActionCount = collapsed.actions.length;
-                  const reviewBadge = getReviewBadgeLabel(collapsed.reviewState);
                   const isExpanded = expandedEntities.has(collapsed.entityKey);
                   const hasCommentPreview = collapsed.actions.some((a) => a.metadata?.commentBody);
                   const showExpand = entityActionCount > 1 || hasCommentPreview;
@@ -441,26 +438,16 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                               </div>
                             )}
                             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                              {reviewBadge && (
+                              {getActionSummaries(collapsed.actions).map((s) => (
                                 <Badge
+                                  key={s.text}
                                   bg=""
-                                  className={getReviewBadgeClass(collapsed.reviewState)}
+                                  className={getActivityBadgeClass(s.badgeAction)}
                                   style={{ fontSize: "0.7rem", fontWeight: 600 }}
                                 >
-                                  {reviewBadge}
+                                  {s.text}
                                 </Badge>
-                              )}
-                              {!reviewBadge &&
-                                getActionSummaries(collapsed.actions).map((s) => (
-                                  <Badge
-                                    key={s.text}
-                                    bg=""
-                                    className={getActivityBadgeClass(s.badgeAction)}
-                                    style={{ fontSize: "0.7rem", fontWeight: 600 }}
-                                  >
-                                    {s.text}
-                                  </Badge>
-                                ))}
+                              ))}
                               {prState && prState !== "open" && (
                                 <span
                                   style={{
