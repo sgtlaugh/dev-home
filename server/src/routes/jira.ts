@@ -265,7 +265,7 @@ router.get("/mentions", async (_req: Request, res: Response) => {
       })
   });
 
-  allComments.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+  allComments.sort((a: any, b: any) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
 
   const result = { comments: allComments };
   apiCache.set(cacheKey, result);
