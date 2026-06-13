@@ -449,15 +449,19 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                   {reviewBadge}
                                 </Badge>
                               )}
-                              {!reviewBadge && (
-                                <Badge
-                                  bg=""
-                                  className={getActivityBadgeClass(latestAction)}
-                                  style={{ fontSize: "0.7rem", fontWeight: 600 }}
-                                >
-                                  {getActionSummary(collapsed.actions)}
-                                </Badge>
-                              )}
+                              {!reviewBadge &&
+                                (() => {
+                                  const summary = getActionSummary(collapsed.actions);
+                                  return (
+                                    <Badge
+                                      bg=""
+                                      className={getActivityBadgeClass(summary.badgeAction)}
+                                      style={{ fontSize: "0.7rem", fontWeight: 600 }}
+                                    >
+                                      {summary.text}
+                                    </Badge>
+                                  );
+                                })()}
                               {prState && prState !== "open" && (
                                 <span
                                   style={{

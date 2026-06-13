@@ -127,12 +127,22 @@ export function getReviewBadgeLabel(reviewState?: string): string | null {
   return null;
 }
 
-export function getActionSummary(actions: ActivityItem[]): string {
+export function getActionSummary(actions: ActivityItem[]): {
+  text: string;
+  badgeAction: ActivityItem;
+} {
   const actionTypes = new Set(actions.map((a) => a.action));
   const types = Array.from(actionTypes);
-  if (types.length === 1) return types[0];
-  if (types.length === 2) return types.join(" & ");
-  return `${types[0]} & ${types.length - 1} more`;
+
+  const creationAction = actions.find((a) => a.action === "Created PR" || a.action === "Created");
+  if (creationAction) return { text: creationAction.action, badgeAction: creationAction };
+
+  let text: string;
+  if (types.length === 1) text = types[0];
+  else if (types.length === 2) text = types.join(" & ");
+  else text = `${types[0]} & ${types.length - 1} more`;
+
+  return { text, badgeAction: actions[0] };
 }
 
 export function getBadgeColor(badgeClass: string): string {
