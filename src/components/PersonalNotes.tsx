@@ -94,8 +94,12 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
     );
   }
 
-  const newNotes = searched.filter((n) => n.resolved === 0);
-  const resolvedNotes = searched.filter((n) => n.resolved === 1);
+  const newNotes = searched
+    .filter((n) => n.resolved === 0)
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const resolvedNotes = searched
+    .filter((n) => n.resolved === 1)
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   const toggleFilter = (key: keyof NoteFilters) => {
     setFilters((prev) => ({ ...prev, [key]: !prev[key] }));

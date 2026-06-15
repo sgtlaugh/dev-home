@@ -357,7 +357,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
     .sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime())
     .slice(0, 5);
   const topNotes = [...notes]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     .slice(0, 5);
 
   // JIRA mentions, sort by date, take 5
