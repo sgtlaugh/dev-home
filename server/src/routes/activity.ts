@@ -373,6 +373,8 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
 
     // Collect unique PR references that need title lookup (events API returns abbreviated PR objects without title)
     const prRefs = new Map<string, { owner: string; repo: string; number: number }>();
+    // Collect review IDs that need comment body lookup (Events API omits review comment bodies)
+    const reviewRefs: { repo: string; prNumber: number; reviewId: number; eventId: string }[] = [];
     for (const event of recentEvents) {
       const repo = event.repo?.name || "";
       const [owner, repoName] = repo.split("/");
@@ -382,6 +384,9 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
         if (!prRefs.has(key)) {
           prRefs.set(key, { owner, repo: repoName, number: pr.number });
         }
+      }
+      if (event.type === "PullRequestReviewEvent" && event.payload?.review?.state === "commented" && !event.payload?.review?.body) {
+        reviewRefs.push({ repo, prNumber: pr?.number, reviewId: event.payload.review.id, eventId: event.id });
       }
     }
 
@@ -402,6 +407,23 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
       } catch (err) {
         logError("Activity/GitHub PR titles", err, { prCount: prRefs.size });
       }
+    }
+
+    // Batch fetch review comment bodies via REST
+    const reviewBodies = new Map<string, string>();
+    if (reviewRefs.length > 0) {
+      const fetches = reviewRefs.map(async (ref) => {
+        try {
+          const { data: comments } = await github.get(`/repos/${ref.repo}/pulls/${ref.prNumber}/reviews/${ref.reviewId}/comments`, { params: { per_page: 1 } });
+          if (comments?.[0]?.body) {
+            reviewBodies.set(ref.eventId, comments[0].body);
+          }
+        } catch {
+          // Non-critical, skip silently
+        }
+      });
+      await Promise.all(fetches);
+      logger.info("Activity", `Fetched ${reviewBodies.size}/${reviewRefs.length} review comment bodies`);
     }
 
     // Helper to resolve PR title
@@ -445,30 +467,27 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
           const pr = event.payload?.pull_request;
           if (!pr) break;
 
-          // Only show approval/changes_requested, skip generic "reviewed" (always paired with a comment)
-          if (review?.state === "approved") {
-            activities.push({
-              id: `github-review-${event.id}`,
-              type: "github",
-              action: "Approved PR",
-              title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
-              url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
-              timestamp: event.created_at,
-              entityKey: `${repo}#${pr.number}`,
-              metadata: { state: review?.state, actor: userActor },
-            });
-          } else if (review?.state === "changes_requested") {
-            activities.push({
-              id: `github-review-${event.id}`,
-              type: "github",
-              action: "Changes Requested",
-              title: `${repo}#${pr.number}: ${getPRTitle(repo, pr)}`,
-              url: pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
-              timestamp: event.created_at,
-              entityKey: `${repo}#${pr.number}`,
-              metadata: { state: review?.state, actor: userActor },
-            });
-          }
+          const reviewState = review?.state;
+          let reviewAction = "";
+          if (reviewState === "approved") reviewAction = "Approved PR";
+          else if (reviewState === "changes_requested") reviewAction = "Changes Requested";
+          else if (reviewState === "commented") reviewAction = "Commented on PR";
+          if (!reviewAction) break;
+
+          const entityKey = `${repo}#${pr.number}`;
+          const reviewBody = review?.body || reviewBodies.get(event.id) || "";
+          const reviewTrimmed = reviewBody.slice(0, COMMENT_PREVIEW_LENGTH);
+          const reviewPreview = reviewTrimmed + (reviewBody.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
+          activities.push({
+            id: `github-review-${event.id}`,
+            type: "github",
+            action: reviewAction,
+            title: `${entityKey}: ${getPRTitle(repo, pr)}`,
+            url: review?.html_url || pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
+            timestamp: event.created_at,
+            entityKey,
+            metadata: { state: reviewState, actor: userActor, ...(reviewPreview && { commentBody: reviewPreview }) },
+          });
           break;
         }
         case "IssueCommentEvent": {

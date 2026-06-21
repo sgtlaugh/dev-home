@@ -184,6 +184,9 @@ const MIGRATIONS: Migration[] = [
       ALTER TABLE user_contribution_cache ADD COLUMN review_count INTEGER NOT NULL DEFAULT 0;
     `);
   },
+
+  // 10-12 – clear activity cache (review comment support)
+  ...[10, 11, 12].map(() => (d: any) => { d.exec(`DELETE FROM activity_cache;`); }),
 ];
 
 function runMigrations(d: Database.Database): void {

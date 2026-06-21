@@ -70,3 +70,4 @@ export function purgeOldActivities(before: string): number {
   const result = db.prepare("DELETE FROM activity_cache WHERE timestamp < ?").run(before);
   return result.changes;
 }
+
