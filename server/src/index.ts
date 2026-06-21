@@ -117,6 +117,12 @@ export function scheduleStartupPrefetch(): void {
       logger.warn("Prefetch", `Contributions prefetch failed: ${err.message}`);
     }
     try {
+      const { syncPRs } = await import("./services/prSync");
+      await syncPRs();
+    } catch (err: any) {
+      logger.warn("Prefetch", `PR sync failed: ${err.message}`);
+    }
+    try {
       const { prefetchActivity } = await import("./routes/activity");
       await prefetchActivity();
     } catch (err: any) {
