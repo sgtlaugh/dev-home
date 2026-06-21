@@ -20,8 +20,8 @@ interface DonutSegment {
 
 function Donut({
   segments,
-  size = 80,
-  strokeWidth = 12,
+  size = 100,
+  strokeWidth = 14,
 }: {
   segments: DonutSegment[];
   size?: number;
