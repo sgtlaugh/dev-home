@@ -5,49 +5,14 @@ import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import { ACTIVITY_LOOKBACK_DAYS, COMMENT_PREVIEW_LENGTH } from "../../utils/constants";
 import { monthsAgo, mapGraphQLPr, isBot } from "./helpers";
-import { SEARCH_PRS_QUERY, SEARCH_TEAM_ACTIVITY_QUERY } from "./queries";
+import { SEARCH_TEAM_ACTIVITY_QUERY } from "./queries";
+import { getOpenInvolvedPRs } from "../../services/prStore";
 
 const router = Router();
 
-/**
- * GET /api/github/reviews
- * Fetch open PRs where the configured user's review is requested.
- */
 router.get("/reviews", async (_req: Request, res: Response) => {
-  const cacheKey = "github:reviews";
-  const cached = apiCache.get(cacheKey);
-  if (cached) return res.json(cached);
-
-  const config = getConfig();
-  const q = `involves:${config.githubUsername} -author:${config.githubUsername} type:pr state:open updated:>=${monthsAgo()}`;
-
-  let result;
-  try {
-    result = await graphql<{ search: { nodes: any[] } }>(SEARCH_PRS_QUERY, {
-      query: q,
-      first: 50,
-    }, "reviews/requested");
-  } catch (error) {
-    logger.error("GET /reviews", `GraphQL error: ${error}`);
-    return res.status(500).json({ error: "Failed to fetch reviews" });
-  }
-
-  if (!result?.search) {
-    logger.warn("GET /reviews", "Missing search in response");
-    return res.status(500).json({ error: "Invalid response from GitHub API" });
-  }
-
-  const reviews = (result.search.nodes || [])
-    .map(mapGraphQLPr)
-    .filter((pr: any) => pr.state === "open")
-    .sort(
-      (a: any, b: any) =>
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-    );
-
-  const responseData = { reviews };
-  apiCache.set(cacheKey, responseData);
-  res.json(responseData);
+  const reviews = getOpenInvolvedPRs();
+  res.json({ reviews });
 });
 
 /**
