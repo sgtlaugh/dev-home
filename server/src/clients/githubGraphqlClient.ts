@@ -4,7 +4,7 @@ import { logger } from "../utils/logger";
 
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 3000;
-const RETRYABLE_STATUS_CODES = new Set([502, 503]);
+const RETRYABLE_STATUS_CODES = new Set([502, 503, 504]);
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 
