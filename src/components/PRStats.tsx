@@ -12,6 +12,140 @@ interface PRStatsProps {
   onToggleFilter: (key: StateFilter) => void;
 }
 
+interface DonutSegment {
+  label: string;
+  value: number;
+  color: string;
+}
+
+function Donut({
+  segments,
+  size = 80,
+  strokeWidth = 12,
+}: {
+  segments: DonutSegment[];
+  size?: number;
+  strokeWidth?: number;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circ = 2 * Math.PI * radius;
+  const total = segments.reduce((sum, s) => sum + s.value, 0);
+
+  let accumulated = 0;
+  const arcs = segments.map((seg) => {
+    const pct = total > 0 ? seg.value / total : 0;
+    const dashArray = `${circ * pct} ${circ * (1 - pct)}`;
+    const dashOffset = -circ * accumulated;
+    accumulated += pct;
+    return { ...seg, dashArray, dashOffset };
+  });
+
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        {total === 0 ? (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#d1d9e0"
+            strokeWidth={strokeWidth}
+          />
+        ) : (
+          arcs.map((arc) => (
+            <circle
+              key={arc.label}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={arc.color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={arc.dashArray}
+              strokeDashoffset={arc.dashOffset}
+              style={{ transition: "stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease" }}
+            />
+          ))
+        )}
+      </svg>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: total > 99999 ? "0.7rem" : total > 9999 ? "0.8rem" : "1rem",
+            fontWeight: 700,
+            lineHeight: 1.2,
+            color: "#24292f",
+          }}
+        >
+          {total.toLocaleString()}
+        </div>
+        <div style={{ fontSize: "0.55rem", color: "#656d76", fontWeight: 500 }}>Total</div>
+      </div>
+    </div>
+  );
+}
+
+function Legend({
+  segments,
+  onClick,
+  activeLabel,
+}: {
+  segments: DonutSegment[];
+  onClick?: (label: string) => void;
+  activeLabel?: string;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      {segments.map((seg) => {
+        const isActive = activeLabel === seg.label;
+        return (
+          <div
+            key={seg.label}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.45rem",
+              cursor: onClick ? "pointer" : undefined,
+              opacity: activeLabel && !isActive ? 0.5 : 1,
+              transition: "opacity 0.2s",
+            }}
+            onClick={() => onClick?.(seg.label)}
+          >
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor: seg.color,
+                flexShrink: 0,
+                boxShadow: isActive ? `0 0 6px ${seg.color}66` : undefined,
+              }}
+            />
+            <span
+              style={{ fontSize: "0.75rem", color: "#656d76", minWidth: 52, textAlign: "left" }}
+            >
+              {seg.label}
+            </span>
+            <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#24292f" }}>
+              {seg.value.toLocaleString()}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export const PRStats: React.FC<PRStatsProps> = ({
   counts,
   commitCount,
@@ -22,201 +156,138 @@ export const PRStats: React.FC<PRStatsProps> = ({
   onToggleFilter,
 }) => {
   const totalLines = totalAdditions + totalDeletions;
-  const addRatio = totalLines > 0 ? (totalAdditions / totalLines) * 100 : 0;
-  const noData = counts.all === 0 && totalLines === 0;
+  const addPct = totalLines > 0 ? (totalAdditions / totalLines) * 100 : 0;
+  const delPct = totalLines > 0 ? (totalDeletions / totalLines) * 100 : 0;
+
+  const contribSegments: DonutSegment[] = [
+    { label: "PRs", value: counts.all, color: "#0969da" },
+    { label: "Reviews", value: reviewCount, color: "#8250df" },
+    { label: "Commits", value: commitCount, color: "#1a7f37" },
+  ];
+
+  const stateSegments: DonutSegment[] = [
+    { label: "Merged", value: counts.merged, color: "#5a32a3" },
+    { label: "Open", value: counts.open, color: "#0969da" },
+    { label: "Closed", value: counts.closed, color: "#bf5540" },
+  ];
+
+  const filterMap: Record<string, StateFilter> = {
+    Merged: "merged",
+    Open: "open",
+    Closed: "closed",
+  };
+
+  const activeLabel =
+    stateFilter !== "all"
+      ? stateSegments.find((s) => filterMap[s.label] === stateFilter)?.label
+      : undefined;
 
   return (
-    <>
-      {/* Hero Stat Card */}
-      <div
-        className="stat-card clickable"
-        style={{
-          background: "#f6f8fa",
-          border: "1px solid #d1d9e0",
-          color: "#1f2328",
-          padding: "0.75rem 1.25rem",
-          borderRadius: "12px",
-          marginBottom: "0.75rem",
-          cursor: "pointer",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-        onClick={() => onToggleFilter("all")}
-      >
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2, color: "#6639a6" }}>
-            {counts.all}
-          </div>
-          <div style={{ fontSize: "0.75rem", color: "#656d76" }}>Pull Requests</div>
-        </div>
-        <div
-          style={{
-            width: "1px",
-            height: "32px",
-            backgroundColor: "#d1d9e0",
-          }}
-        />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2, color: "#0969da" }}>
-            {reviewCount}
-          </div>
-          <div style={{ fontSize: "0.75rem", color: "#656d76" }}>Reviews</div>
-        </div>
-        <div
-          style={{
-            width: "1px",
-            height: "32px",
-            backgroundColor: "#d1d9e0",
-          }}
-        />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2, color: "#1a7f37" }}>
-            {commitCount}
-          </div>
-          <div style={{ fontSize: "0.75rem", color: "#656d76" }}>Commits</div>
-        </div>
+    <div
+      className="stat-card"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "0.75rem 1.25rem",
+        marginBottom: "0.75rem",
+        gap: "1.25rem",
+      }}
+    >
+      {/* Contribution Pie */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+        <Donut segments={contribSegments} />
+        <Legend segments={contribSegments} />
       </div>
 
-      {/* PR Breakdown */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: "0.5rem",
-          marginBottom: "0.75rem",
-        }}
-      >
-        <div
-          className="stat-card clickable"
-          style={{
-            backgroundColor: "rgba(130, 80, 223, 0.05)",
-            textAlign: "center",
-            cursor: "pointer",
-            ...(stateFilter === "merged"
-              ? { borderColor: "#8250df", boxShadow: "0 0 12px #8250df33" }
-              : {}),
-          }}
-          onClick={() => onToggleFilter("merged")}
-        >
-          <div style={{ color: "#8250df", fontWeight: 600, fontSize: "1.35rem" }}>
-            {counts.merged}
-          </div>
-          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>Merged</div>
-        </div>
+      <div style={{ width: 1, height: 56, backgroundColor: "#d1d9e0", flexShrink: 0 }} />
 
-        <div
-          className="stat-card clickable"
-          style={{
-            backgroundColor: "rgba(9, 105, 218, 0.05)",
-            textAlign: "center",
-            cursor: "pointer",
-            ...(stateFilter === "open"
-              ? { borderColor: "#0969da", boxShadow: "0 0 12px #0969da33" }
-              : {}),
-          }}
-          onClick={() => onToggleFilter("open")}
-        >
-          <div style={{ color: "#0969da", fontWeight: 600, fontSize: "1.35rem" }}>
-            {counts.open}
-          </div>
-          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>Open</div>
-        </div>
-
-        <div
-          className="stat-card clickable"
-          style={{
-            backgroundColor: "rgba(207, 34, 46, 0.05)",
-            textAlign: "center",
-            cursor: "pointer",
-            ...(stateFilter === "closed"
-              ? { borderColor: "#cf222e", boxShadow: "0 0 12px #cf222e33" }
-              : {}),
-          }}
-          onClick={() => onToggleFilter("closed")}
-        >
-          <div style={{ color: "#cf222e", fontWeight: 600, fontSize: "1.35rem" }}>
-            {counts.closed}
-          </div>
-          <div style={{ fontSize: "0.75rem", color: "#656d76", marginTop: "0.3rem" }}>Closed</div>
-        </div>
+      {/* PR State Pie */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+        <Donut segments={stateSegments} />
+        <Legend
+          segments={stateSegments}
+          onClick={(label) => onToggleFilter(filterMap[label] || "all")}
+          activeLabel={activeLabel}
+        />
       </div>
+
+      <div style={{ width: 1, height: 56, backgroundColor: "#d1d9e0", flexShrink: 0 }} />
 
       {/* Code Metrics */}
-      <div className="stat-card" style={{ padding: "0.75rem 1rem 0.4rem", marginBottom: "1rem" }}>
-        <div
-          style={{ marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}
-        >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.6rem",
+          flex: 1,
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span
+            style={{
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              color: "#1a7f37",
+              minWidth: 70,
+              textAlign: "right",
+            }}
+          >
+            +{totalAdditions.toLocaleString()}
+          </span>
           <div
             style={{
               flex: 1,
-              height: "14px",
-              background: "#f5f5f5",
-              borderRadius: "4px",
+              height: 8,
+              backgroundColor: "#f0f0f0",
+              borderRadius: 4,
               overflow: "hidden",
-              display: "flex",
             }}
           >
-            {noData ? (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  backgroundColor: "#d1d9e0",
-                  borderRadius: "4px",
-                }}
-              />
-            ) : (
-              <>
-                <div
-                  style={{
-                    width: `${addRatio}%`,
-                    backgroundColor: "#1a7f37",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "0.55rem",
-                    color: "white",
-                    fontWeight: 600,
-                    transition: "width 0.4s ease",
-                  }}
-                >
-                  {addRatio > 20 && `${Math.round(addRatio)}%`}
-                </div>
-                <div
-                  style={{
-                    width: `${100 - addRatio}%`,
-                    backgroundColor: "#cf222e",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "0.55rem",
-                    color: "white",
-                    fontWeight: 600,
-                    transition: "width 0.4s ease",
-                  }}
-                >
-                  {100 - addRatio > 20 && `${Math.round(100 - addRatio)}%`}
-                </div>
-              </>
-            )}
+            <div
+              style={{
+                height: "100%",
+                width: `${addPct}%`,
+                backgroundColor: "#1a7f37",
+                borderRadius: 4,
+                transition: "width 0.4s ease",
+              }}
+            />
           </div>
         </div>
-        <div style={{ display: "flex", gap: "1.5rem", justifyContent: "center" }}>
-          <div>
-            <span style={{ color: "#1a7f37", fontWeight: 600, fontSize: "0.8rem" }}>
-              +{totalAdditions.toLocaleString()}
-            </span>{" "}
-            <span style={{ fontSize: "0.65rem", color: "#656d76" }}>added</span>
-          </div>
-          <div>
-            <span style={{ color: "#cf222e", fontWeight: 600, fontSize: "0.8rem" }}>
-              -{totalDeletions.toLocaleString()}
-            </span>{" "}
-            <span style={{ fontSize: "0.65rem", color: "#656d76" }}>removed</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span
+            style={{
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              color: "#cf222e",
+              minWidth: 70,
+              textAlign: "right",
+            }}
+          >
+            -{totalDeletions.toLocaleString()}
+          </span>
+          <div
+            style={{
+              flex: 1,
+              height: 8,
+              backgroundColor: "#f0f0f0",
+              borderRadius: 4,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${delPct}%`,
+                backgroundColor: "#cf222e",
+                borderRadius: 4,
+                transition: "width 0.4s ease",
+              }}
+            />
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
