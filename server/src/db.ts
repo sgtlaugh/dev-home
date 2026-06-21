@@ -85,13 +85,12 @@ const MIGRATIONS: Migration[] = [
     `);
   },
 
-  // 4 – user_contribution_cache for monthly commit counts and PR data
+  // 4 – user_contribution_cache for monthly commit counts
   (d) => {
     d.exec(`
       CREATE TABLE IF NOT EXISTS user_contribution_cache (
         year_month TEXT PRIMARY KEY,
         commit_count INTEGER NOT NULL DEFAULT 0,
-        prs_json TEXT,
         fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
     `);
@@ -161,6 +160,21 @@ const MIGRATIONS: Migration[] = [
         watermark TEXT NOT NULL,
         last_synced_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
+    `);
+  },
+
+  // 8 – drop prs_json from user_contribution_cache (PRs now in prs table)
+  (d) => {
+    d.exec(`
+      CREATE TABLE IF NOT EXISTS _ucc_tmp (
+        year_month TEXT PRIMARY KEY,
+        commit_count INTEGER NOT NULL DEFAULT 0,
+        fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT OR IGNORE INTO _ucc_tmp (year_month, commit_count, fetched_at)
+        SELECT year_month, commit_count, fetched_at FROM user_contribution_cache;
+      DROP TABLE user_contribution_cache;
+      ALTER TABLE _ucc_tmp RENAME TO user_contribution_cache;
     `);
   },
 ];

@@ -61,14 +61,14 @@ export function createServer() {
     const db = getDb();
     const contributions = db.prepare("SELECT COUNT(*) as cnt FROM org_contributions").get() as { cnt: number };
     const profiles = db.prepare("SELECT COUNT(*) as cnt FROM github_profiles").get() as { cnt: number };
-    const userContribs = db.prepare("SELECT COUNT(*) as cnt FROM user_contribution_cache").get() as { cnt: number };
-    const prMonths = db.prepare("SELECT COUNT(*) as cnt FROM user_contribution_cache WHERE prs_json IS NOT NULL").get() as { cnt: number };
     const commitMonths = db.prepare("SELECT COUNT(*) as cnt FROM user_contribution_cache WHERE commit_count IS NOT NULL").get() as { cnt: number };
+    const prsStored = db.prepare("SELECT COUNT(*) as cnt FROM prs").get() as { cnt: number };
     res.json({
       apiCache: apiCache.size(),
       contributions: contributions.cnt,
       profiles: profiles.cnt,
-      userContributions: { total: userContribs.cnt, prMonths: prMonths.cnt, commitMonths: commitMonths.cnt },
+      commitMonths: commitMonths.cnt,
+      prs: prsStored.cnt,
     });
   });
   app.post("/api/cache/purge", (_req: Request, res: Response) => {

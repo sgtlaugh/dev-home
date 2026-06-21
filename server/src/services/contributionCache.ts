@@ -178,30 +178,3 @@ export function getCachedCommitCounts(months: string[]): Map<string, number> {
   return new Map(rows.map((r) => [r.year_month, r.commit_count]));
 }
 
-export function savePRs(yearMonth: string, prs: any[]): void {
-  const db = getDb();
-  db.prepare(
-    `INSERT INTO user_contribution_cache (year_month, prs_json, fetched_at)
-     VALUES (?, ?, datetime('now'))
-     ON CONFLICT(year_month) DO UPDATE SET prs_json = ?, fetched_at = datetime('now')`,
-  ).run(yearMonth, JSON.stringify(prs), JSON.stringify(prs));
-}
-
-export function getCachedPRs(months: string[]): Map<string, any[]> {
-  if (months.length === 0) return new Map();
-  const db = getDb();
-  const placeholders = months.map(() => "?").join(",");
-  const rows = db
-    .prepare(`SELECT year_month, prs_json FROM user_contribution_cache WHERE year_month IN (${placeholders}) AND prs_json IS NOT NULL`)
-    .all(...months) as { year_month: string; prs_json: string }[];
-  const result = new Map<string, any[]>();
-  for (const row of rows) {
-    try {
-      result.set(row.year_month, JSON.parse(row.prs_json));
-    } catch { /* ignore corrupt data */ }
-  }
-  if (result.size > 0) {
-    logger.info("PRs", `Persistent cache hit: ${result.size} months from SQLite`);
-  }
-  return result;
-}
