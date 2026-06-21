@@ -5,6 +5,7 @@ type StateFilter = "all" | "open" | "merged" | "closed";
 interface PRStatsProps {
   counts: { all: number; merged: number; open: number; closed: number };
   commitCount: number;
+  reviewCount: number;
   totalAdditions: number;
   totalDeletions: number;
   stateFilter: StateFilter;
@@ -14,6 +15,7 @@ interface PRStatsProps {
 export const PRStats: React.FC<PRStatsProps> = ({
   counts,
   commitCount,
+  reviewCount,
   totalAdditions,
   totalDeletions,
   stateFilter,
@@ -42,7 +44,7 @@ export const PRStats: React.FC<PRStatsProps> = ({
         }}
         onClick={() => onToggleFilter("all")}
       >
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2, color: "#6639a6" }}>
             {counts.all}
           </div>
@@ -53,12 +55,22 @@ export const PRStats: React.FC<PRStatsProps> = ({
             width: "1px",
             height: "32px",
             backgroundColor: "#d1d9e0",
-            margin: "0 1.25rem",
           }}
         />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2, color: "#0969da" }}>
+            {reviewCount}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "#656d76" }}>Reviews</div>
+        </div>
         <div
-          style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}
-        >
+          style={{
+            width: "1px",
+            height: "32px",
+            backgroundColor: "#d1d9e0",
+          }}
+        />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.2, color: "#1a7f37" }}>
             {commitCount}
           </div>

@@ -95,14 +95,19 @@ export async function fetchPRsByDateRange(
   return [];
 }
 
-export async function fetchCommitCount(
+export interface ContributionStats {
+  commitCount: number;
+  reviewCount: number;
+}
+
+export async function fetchContributionStats(
   startDate: string,
   endDate: string,
   signal?: AbortSignal,
-): Promise<number> {
-  const cacheKey = `github:commits-count:${startDate}:${endDate}`;
-  const cached = apiCache.get<{ commitCount: number }>(cacheKey);
-  if (cached) return cached.commitCount;
+): Promise<ContributionStats> {
+  const cacheKey = `github:contrib-stats:${startDate}:${endDate}`;
+  const cached = apiCache.get<ContributionStats>(cacheKey);
+  if (cached) return cached;
 
   const { data } = await withRetry(
     () =>
@@ -114,9 +119,12 @@ export async function fetchCommitCount(
     1000,
     signal,
   );
-  const count = data.commitCount || 0;
-  apiCache.set(cacheKey, { commitCount: count });
-  return count;
+  const stats: ContributionStats = {
+    commitCount: data.commitCount || 0,
+    reviewCount: data.reviewCount || 0,
+  };
+  apiCache.set(cacheKey, stats);
+  return stats;
 }
 
 export async function fetchUserJoinDate(signal?: AbortSignal): Promise<string> {

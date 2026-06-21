@@ -3,7 +3,7 @@ import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import { IconGitPullRequest } from "@tabler/icons-react";
 import { GitHubPR } from "../types";
-import { fetchPRsByDateRange, fetchCommitCount, fetchUserJoinDate } from "../services/github";
+import { fetchPRsByDateRange, fetchContributionStats, fetchUserJoinDate } from "../services/github";
 import { EmptyState } from "./EmptyState";
 import { RepoBreakdown } from "./RepoBreakdown";
 import { ContributionHeatmap } from "./ContributionHeatmap";
@@ -34,6 +34,7 @@ export const Contributions: React.FC<ContributionsProps> = ({
   const [stateFilter, setStateFilter] = useState<StateFilter>("all");
   const [prs, setPrs] = useState<GitHubPR[]>([]);
   const [commitCount, setCommitCount] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [joinDate, setJoinDate] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export const Contributions: React.FC<ContributionsProps> = ({
         if (!signal.aborted) {
           setPrs([]);
           setCommitCount(0);
+          setReviewCount(0);
           setLoading(false);
         }
         return;
@@ -70,18 +72,20 @@ export const Contributions: React.FC<ContributionsProps> = ({
 
       setPrs([]);
       setCommitCount(0);
+      setReviewCount(0);
       setLoading(true);
       setError(null);
       onFetchComplete?.("Contributions", -1);
       const start = Date.now();
       try {
-        const [prsResult, commits] = await Promise.all([
+        const [prsResult, stats] = await Promise.all([
           fetchPRsByDateRange(startDate, endDate, signal),
-          fetchCommitCount(startDate, endDate, signal),
+          fetchContributionStats(startDate, endDate, signal),
         ]);
         if (signal.aborted) return;
         setPrs(prsResult);
-        setCommitCount(commits);
+        setCommitCount(stats.commitCount);
+        setReviewCount(stats.reviewCount);
         onCountChange?.(prsResult.length);
         onFetchComplete?.("Contributions", Date.now() - start);
       } catch (err) {
@@ -169,6 +173,7 @@ export const Contributions: React.FC<ContributionsProps> = ({
       <PRStats
         counts={counts}
         commitCount={commitCount}
+        reviewCount={reviewCount}
         totalAdditions={totalAdditions}
         totalDeletions={totalDeletions}
         stateFilter={stateFilter}
