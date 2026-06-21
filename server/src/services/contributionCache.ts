@@ -156,25 +156,30 @@ export function bustRecentCommitCounts(months: string[]): void {
   ).run(...months);
 }
 
-export function saveCommitCount(yearMonth: string, count: number): void {
-  const db = getDb();
-  db.prepare(
-    `INSERT INTO user_contribution_cache (year_month, commit_count, fetched_at)
-     VALUES (?, ?, datetime('now'))
-     ON CONFLICT(year_month) DO UPDATE SET commit_count = ?, fetched_at = datetime('now')`,
-  ).run(yearMonth, count, count);
+export interface MonthlyStats {
+  commits: number;
+  reviews: number;
 }
 
-export function getCachedCommitCounts(months: string[]): Map<string, number> {
+export function saveMonthlyStats(yearMonth: string, commitCount: number, reviewCount: number): void {
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO user_contribution_cache (year_month, commit_count, review_count, fetched_at)
+     VALUES (?, ?, ?, datetime('now'))
+     ON CONFLICT(year_month) DO UPDATE SET commit_count = ?, review_count = ?, fetched_at = datetime('now')`,
+  ).run(yearMonth, commitCount, reviewCount, commitCount, reviewCount);
+}
+
+export function getCachedMonthlyStats(months: string[]): Map<string, MonthlyStats> {
   if (months.length === 0) return new Map();
   const db = getDb();
   const placeholders = months.map(() => "?").join(",");
   const rows = db
-    .prepare(`SELECT year_month, commit_count FROM user_contribution_cache WHERE year_month IN (${placeholders}) AND commit_count IS NOT NULL`)
-    .all(...months) as { year_month: string; commit_count: number }[];
+    .prepare(`SELECT year_month, commit_count, review_count FROM user_contribution_cache WHERE year_month IN (${placeholders}) AND commit_count IS NOT NULL`)
+    .all(...months) as { year_month: string; commit_count: number; review_count: number }[];
   if (rows.length > 0) {
     logger.info("Commits", `Persistent cache hit: ${rows.length} months from SQLite`);
   }
-  return new Map(rows.map((r) => [r.year_month, r.commit_count]));
+  return new Map(rows.map((r) => [r.year_month, { commits: r.commit_count, reviews: r.review_count }]));
 }
 

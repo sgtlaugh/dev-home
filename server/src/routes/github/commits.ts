@@ -10,8 +10,8 @@ import {
   getMonthsBetween,
   getCurrentYearMonth,
   isFullMonth,
-  getCachedCommitCounts,
-  saveCommitCount,
+  getCachedMonthlyStats,
+  saveMonthlyStats,
 } from "../../services/contributionCache";
 
 const router = Router();
@@ -74,11 +74,15 @@ router.get("/commits-search", async (req: Request, res: Response) => {
   const fullPastMonths = allMonths.filter((m) => m < currentMonth && isFullMonth(startDate, endDate, m));
   const partialMonths = allMonths.filter((m) => !fullPastMonths.includes(m));
 
-  const dbCache = getCachedCommitCounts(fullPastMonths);
+  const dbCache = getCachedMonthlyStats(fullPastMonths);
   const missingMonths = fullPastMonths.filter((m) => !dbCache.has(m));
 
-  let cachedTotal = 0;
-  for (const count of dbCache.values()) cachedTotal += count;
+  let cachedCommitTotal = 0;
+  let cachedReviewTotal = 0;
+  for (const stats of dbCache.values()) {
+    cachedCommitTotal += stats.commits;
+    cachedReviewTotal += stats.reviews;
+  }
 
   logger.info(
     "Commits",
@@ -88,23 +92,27 @@ router.get("/commits-search", async (req: Request, res: Response) => {
   const github = createGitHubClient();
 
   try {
-    let contribCount = cachedTotal;
+    let contribCount = cachedCommitTotal;
+    let reviewCount = cachedReviewTotal;
 
     const MONTHS_PER_BATCH = 12;
     for (let b = 0; b < missingMonths.length; b += MONTHS_PER_BATCH) {
       const batch = missingMonths.slice(b, b + MONTHS_PER_BATCH);
       const aliases = batch.map((month, i) => {
         const range = monthToRange(month);
-        return `m${i}: contributionsCollection(from: "${range.from}", to: "${range.to}") { totalCommitContributions }`;
+        return `m${i}: contributionsCollection(from: "${range.from}", to: "${range.to}") { totalCommitContributions totalPullRequestReviewContributions }`;
       });
       const data = await graphql<{ viewer: Record<string, any> }>(
         `query { viewer { ${aliases.join("\n")} } }`,
         {}, `commits/months-${b / MONTHS_PER_BATCH + 1}-of-${Math.ceil(missingMonths.length / MONTHS_PER_BATCH)}`,
       );
       for (let i = 0; i < batch.length; i++) {
-        const count = data.viewer?.[`m${i}`]?.totalCommitContributions || 0;
-        saveCommitCount(batch[i], count);
-        contribCount += count;
+        const entry = data.viewer?.[`m${i}`];
+        const commits = entry?.totalCommitContributions || 0;
+        const reviews = entry?.totalPullRequestReviewContributions || 0;
+        saveMonthlyStats(batch[i], commits, reviews);
+        contribCount += commits;
+        reviewCount += reviews;
       }
     }
 
@@ -115,11 +123,12 @@ router.get("/commits-search", async (req: Request, res: Response) => {
       const lastDayOfMonth = new Date(y, m, 0).getDate();
       const last = month === allMonths[allMonths.length - 1] ? endDate : `${month}-${lastDayOfMonth.toString().padStart(2, "0")}`;
       try {
-        const data = await graphql<{ viewer: { c: { totalCommitContributions: number } } }>(
-          `query { viewer { c: contributionsCollection(from: "${first}T00:00:00Z", to: "${last}T23:59:59Z") { totalCommitContributions } } }`,
+        const data = await graphql<{ viewer: { c: { totalCommitContributions: number; totalPullRequestReviewContributions: number } } }>(
+          `query { viewer { c: contributionsCollection(from: "${first}T00:00:00Z", to: "${last}T23:59:59Z") { totalCommitContributions totalPullRequestReviewContributions } } }`,
           {}, `commits/partial-${month}`,
         );
         contribCount += data.viewer?.c?.totalCommitContributions || 0;
+        reviewCount += data.viewer?.c?.totalPullRequestReviewContributions || 0;
       } catch (err) {
         logger.error("Commits", `Failed to fetch partial ${month}: ${err}`);
       }
@@ -221,7 +230,7 @@ router.get("/commits-search", async (req: Request, res: Response) => {
     logger.info("Commits", `Total: ${totalCount} (contributions: ${contribCount}, forks: ${forkCount})`);
 
     const isPastRange = allMonths.every((m) => m < currentMonth);
-    const responseData = { commitCount: totalCount };
+    const responseData = { commitCount: totalCount, reviewCount };
     apiCache.set(cacheKey, responseData, isPastRange ? LONG_CACHE_TTL : undefined);
     res.json(responseData);
   } catch (err: unknown) {

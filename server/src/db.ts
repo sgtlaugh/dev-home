@@ -177,6 +177,13 @@ const MIGRATIONS: Migration[] = [
       ALTER TABLE _ucc_tmp RENAME TO user_contribution_cache;
     `);
   },
+
+  // 9 – add review_count to user_contribution_cache
+  (d) => {
+    d.exec(`
+      ALTER TABLE user_contribution_cache ADD COLUMN review_count INTEGER NOT NULL DEFAULT 0;
+    `);
+  },
 ];
 
 function runMigrations(d: Database.Database): void {

@@ -4,8 +4,8 @@ import { graphql } from "../clients/githubGraphqlClient";
 import { logger } from "../utils/logger";
 import {
   getMonthsBetween,
-  getCachedCommitCounts,
-  saveCommitCount,
+  getCachedMonthlyStats,
+  saveMonthlyStats,
   bustRecentCommitCounts,
 } from "./contributionCache";
 import { fetchUserJoinDate } from "../routes/github/helpers";
@@ -49,48 +49,52 @@ export async function prefetchContributions(): Promise<void> {
     return;
   }
 
-  const cachedCommitMonths = getCachedCommitCounts(allMonths);
-  const missingCommitMonths = allMonths.filter((m) => !cachedCommitMonths.has(m));
+  const cachedMonths = getCachedMonthlyStats(allMonths);
+  const missingMonths = allMonths.filter((m) => !cachedMonths.has(m));
 
-  if (missingCommitMonths.length === 0) {
+  if (missingMonths.length === 0) {
     logger.info("ContribPrefetch", `All ${allMonths.length} months cached, nothing to do`);
     return;
   }
 
   logger.info(
     "ContribPrefetch",
-    `${allMonths.length} months total, missing: ${missingCommitMonths.length} commit months`,
+    `${allMonths.length} months total, missing: ${missingMonths.length} months`,
   );
 
-  await prefetchCommits(missingCommitMonths);
+  await prefetchStats(missingMonths);
   logger.info("ContribPrefetch", "Done");
 }
 
-async function prefetchCommits(months: string[]): Promise<void> {
-  logger.info("ContribPrefetch", `Fetching commits for ${months.length} months`);
+async function prefetchStats(months: string[]): Promise<void> {
+  logger.info("ContribPrefetch", `Fetching stats for ${months.length} months`);
 
   for (let b = 0; b < months.length; b += MONTHS_PER_BATCH) {
     const batch = months.slice(b, b + MONTHS_PER_BATCH);
     const aliases = batch.map((month, i) => {
       const [y, m] = month.split("-").map(Number);
       const lastDay = new Date(y, m, 0).getDate();
-      return `m${i}: contributionsCollection(from: "${month}-01T00:00:00Z", to: "${month}-${lastDay.toString().padStart(2, "0")}T23:59:59Z") { totalCommitContributions }`;
+      return `m${i}: contributionsCollection(from: "${month}-01T00:00:00Z", to: "${month}-${lastDay.toString().padStart(2, "0")}T23:59:59Z") { totalCommitContributions totalPullRequestReviewContributions }`;
     });
 
     try {
       const data = await graphql<{ viewer: Record<string, any> }>(
         `query { viewer { ${aliases.join("\n")} } }`,
         {},
-        `contrib-prefetch/commits-${b / MONTHS_PER_BATCH + 1}-of-${Math.ceil(months.length / MONTHS_PER_BATCH)}`,
+        `contrib-prefetch/stats-${b / MONTHS_PER_BATCH + 1}-of-${Math.ceil(months.length / MONTHS_PER_BATCH)}`,
       );
       for (let i = 0; i < batch.length; i++) {
-        const count = data.viewer?.[`m${i}`]?.totalCommitContributions || 0;
-        saveCommitCount(batch[i], count);
+        const entry = data.viewer?.[`m${i}`];
+        saveMonthlyStats(
+          batch[i],
+          entry?.totalCommitContributions || 0,
+          entry?.totalPullRequestReviewContributions || 0,
+        );
       }
     } catch (err) {
-      logger.error("ContribPrefetch", `Commit batch failed: ${err}`);
+      logger.error("ContribPrefetch", `Stats batch failed: ${err}`);
     }
   }
 
-  logger.info("ContribPrefetch", `Cached commits for ${months.length} months`);
+  logger.info("ContribPrefetch", `Cached stats for ${months.length} months`);
 }
