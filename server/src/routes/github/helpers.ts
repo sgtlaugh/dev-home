@@ -267,9 +267,10 @@ export function extractOwnPRComments(prNodes: any[], username: string): any[] {
 
 /**
  * Fetch PRs for a single sub-range, narrowing dates if hitting GitHub's 1000-result cap.
+ * @param queryPrefix - GitHub search prefix, e.g. "author:user type:pr"
  */
 export async function fetchPRsForSubRange(
-  username: string,
+  queryPrefix: string,
   startDate: string,
   endDate: string,
 ): Promise<any[]> {
@@ -279,7 +280,7 @@ export async function fetchPRsForSubRange(
   let currentEnd = endDate;
 
   while (true) {
-    const q = `author:${username} type:pr created:${currentStart}..${currentEnd}`;
+    const q = `${queryPrefix} created:${currentStart}..${currentEnd}`;
     const rangeNodes: any[] = [];
     let cursor: string | null = null;
     let hasNextPage = true;

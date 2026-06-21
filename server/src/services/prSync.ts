@@ -5,13 +5,13 @@ import { logger } from "../utils/logger";
 import { SEARCH_PRS_QUERY } from "../routes/github/queries";
 import {
   buildYearRanges,
+  fetchPRsForSubRange,
   fetchUserJoinDate,
   mapGraphQLPr,
 } from "../routes/github/helpers";
 import { upsertPRs, getWatermark, setWatermark, Involvement } from "./prStore";
 
 const PARALLEL_BATCH = 4;
-const MAX_RESULTS = 1000;
 
 let syncRunning = false;
 
@@ -59,51 +59,6 @@ function buildSearchPrefix(username: string, involvement: Involvement): string {
   return `involves:${username} -author:${username} type:pr`;
 }
 
-async function fetchPRsWithQuery(
-  queryPrefix: string,
-  startDate: string,
-  endDate: string,
-): Promise<any[]> {
-  const allPrs: any[] = [];
-  let currentStart = startDate;
-  let currentEnd = endDate;
-
-  while (true) {
-    const q = `${queryPrefix} created:${currentStart}..${currentEnd}`;
-    const rangeNodes: any[] = [];
-    let cursor: string | null = null;
-    let hasNextPage = true;
-
-    while (hasNextPage) {
-      try {
-        const result = await graphql<{
-          search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
-        }>(SEARCH_PRS_QUERY, { query: q, first: 100, after: cursor }, "pr-sync/page");
-
-        if (!result?.search) break;
-        rangeNodes.push(...(result.search.nodes || []));
-        hasNextPage = result.search.pageInfo?.hasNextPage ?? false;
-        cursor = result.search.pageInfo?.endCursor ?? null;
-      } catch (error) {
-        logger.error("PRSync", `Failed to fetch ${currentStart}..${currentEnd}: ${error}`);
-        break;
-      }
-    }
-
-    allPrs.push(...rangeNodes);
-    if (rangeNodes.length < MAX_RESULTS) break;
-
-    const oldestDate = rangeNodes[rangeNodes.length - 1].createdAt?.split("T")[0];
-    if (!oldestDate || oldestDate === currentStart) break;
-
-    const prevDay = new Date(oldestDate);
-    prevDay.setDate(prevDay.getDate() - 1);
-    currentEnd = prevDay.toISOString().split("T")[0];
-  }
-
-  return allPrs;
-}
-
 async function fullSync(involvement: Involvement): Promise<void> {
   const config = getConfig();
   const github = createGitHubClient();
@@ -124,7 +79,7 @@ async function fullSync(involvement: Involvement): Promise<void> {
   for (let i = 0; i < yearRanges.length; i += PARALLEL_BATCH) {
     const batch = yearRanges.slice(i, i + PARALLEL_BATCH);
     const results = await Promise.all(
-      batch.map((range) => fetchPRsWithQuery(queryPrefix, range.start, range.end)),
+      batch.map((range) => fetchPRsForSubRange(queryPrefix, range.start, range.end)),
     );
 
     for (const nodes of results) {

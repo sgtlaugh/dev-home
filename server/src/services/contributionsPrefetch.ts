@@ -127,7 +127,7 @@ async function prefetchPRs(username: string, months: string[]): Promise<void> {
         const yearCached = apiCache.get<any[]>(yearCacheKey);
         if (yearCached) return yearCached;
 
-        const nodes = await fetchPRsForSubRange(username, range.start, range.end);
+        const nodes = await fetchPRsForSubRange(`author:${username} type:pr`, range.start, range.end);
         apiCache.set(yearCacheKey, nodes, LONG_CACHE_TTL);
         return nodes;
       }),

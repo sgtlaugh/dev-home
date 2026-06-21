@@ -135,7 +135,7 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
         const yearCached = apiCache.get<any[]>(yearCacheKey);
         if (yearCached) return yearCached;
 
-        const nodes = await fetchPRsForSubRange(config.githubUsername, range.start, range.end);
+        const nodes = await fetchPRsForSubRange(`author:${config.githubUsername} type:pr`, range.start, range.end);
         apiCache.set(yearCacheKey, nodes, rangeYear < currentYear ? LONG_CACHE_TTL : undefined);
         return nodes;
       }));
