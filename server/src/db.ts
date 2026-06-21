@@ -39,7 +39,7 @@ export function getDbPath(): string {
 type Migration = (d: Database.Database) => void;
 
 const MIGRATIONS: Migration[] = [
-  // 1 – notes table (consolidated from original migrations 1, 3, 4)
+  // 1 – full schema (squashed from migrations 1-10)
   (d) => {
     d.exec(`
       CREATE TABLE IF NOT EXISTS notes (
@@ -52,12 +52,7 @@ const MIGRATIONS: Migration[] = [
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         title TEXT NOT NULL DEFAULT ''
       );
-    `);
-  },
 
-  // 2 – org_contributions table for leaderboard cache
-  (d) => {
-    d.exec(`
       CREATE TABLE IF NOT EXISTS org_contributions (
         org TEXT NOT NULL,
         login TEXT NOT NULL,
@@ -70,35 +65,21 @@ const MIGRATIONS: Migration[] = [
       );
       CREATE INDEX IF NOT EXISTS idx_org_contributions_org ON org_contributions(org);
       CREATE INDEX IF NOT EXISTS idx_org_contributions_month ON org_contributions(org, year_month);
-    `);
-  },
 
-  // 3 – github_profiles table for caching user avatars/names
-  (d) => {
-    d.exec(`
       CREATE TABLE IF NOT EXISTS github_profiles (
         login TEXT PRIMARY KEY,
         name TEXT,
         avatar_url TEXT NOT NULL,
         fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
-    `);
-  },
 
-  // 4 – user_contribution_cache for monthly commit counts
-  (d) => {
-    d.exec(`
       CREATE TABLE IF NOT EXISTS user_contribution_cache (
         year_month TEXT PRIMARY KEY,
         commit_count INTEGER NOT NULL DEFAULT 0,
+        review_count INTEGER NOT NULL DEFAULT 0,
         fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
-    `);
-  },
 
-  // 5 – activity_cache for persistent activity storage
-  (d) => {
-    d.exec(`
       CREATE TABLE IF NOT EXISTS activity_cache (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
@@ -110,20 +91,7 @@ const MIGRATIONS: Migration[] = [
         metadata_json TEXT
       );
       CREATE INDEX IF NOT EXISTS idx_activity_cache_timestamp ON activity_cache(timestamp);
-    `);
-  },
 
-  // 6 – drop legacy tables from pre-consolidation migrations
-  (d) => {
-    d.exec(`
-      DROP TABLE IF EXISTS kanban_items;
-      DROP TABLE IF EXISTS user_commit_cache;
-    `);
-  },
-
-  // 7 – persistent PR storage and sync state tracking
-  (d) => {
-    d.exec(`
       CREATE TABLE IF NOT EXISTS prs (
         id INTEGER NOT NULL,
         involvement TEXT NOT NULL DEFAULT 'author',
@@ -160,33 +128,11 @@ const MIGRATIONS: Migration[] = [
         watermark TEXT NOT NULL,
         last_synced_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
+
+      DROP TABLE IF EXISTS kanban_items;
+      DROP TABLE IF EXISTS user_commit_cache;
     `);
   },
-
-  // 8 – drop prs_json from user_contribution_cache (PRs now in prs table)
-  (d) => {
-    d.exec(`
-      CREATE TABLE IF NOT EXISTS _ucc_tmp (
-        year_month TEXT PRIMARY KEY,
-        commit_count INTEGER NOT NULL DEFAULT 0,
-        fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
-      );
-      INSERT OR IGNORE INTO _ucc_tmp (year_month, commit_count, fetched_at)
-        SELECT year_month, commit_count, fetched_at FROM user_contribution_cache;
-      DROP TABLE user_contribution_cache;
-      ALTER TABLE _ucc_tmp RENAME TO user_contribution_cache;
-    `);
-  },
-
-  // 9 – add review_count to user_contribution_cache
-  (d) => {
-    d.exec(`
-      ALTER TABLE user_contribution_cache ADD COLUMN review_count INTEGER NOT NULL DEFAULT 0;
-    `);
-  },
-
-  // 10-12 – clear activity cache (review comment support)
-  ...[10, 11, 12].map(() => (d: any) => { d.exec(`DELETE FROM activity_cache;`); }),
 ];
 
 function runMigrations(d: Database.Database): void {
