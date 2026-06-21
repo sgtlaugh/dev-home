@@ -121,6 +121,48 @@ const MIGRATIONS: Migration[] = [
       DROP TABLE IF EXISTS user_commit_cache;
     `);
   },
+
+  // 7 – persistent PR storage and sync state tracking
+  (d) => {
+    d.exec(`
+      CREATE TABLE IF NOT EXISTS prs (
+        id INTEGER NOT NULL,
+        involvement TEXT NOT NULL DEFAULT 'author',
+        number INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        html_url TEXT NOT NULL,
+        state TEXT NOT NULL,
+        draft INTEGER NOT NULL DEFAULT 0,
+        merged INTEGER NOT NULL DEFAULT 0,
+        merged_at TEXT,
+        closed_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        user_login TEXT NOT NULL,
+        user_avatar_url TEXT NOT NULL DEFAULT '',
+        head_ref TEXT NOT NULL DEFAULT '',
+        base_ref TEXT NOT NULL DEFAULT '',
+        repository_url TEXT NOT NULL DEFAULT '',
+        repo_full_name TEXT NOT NULL DEFAULT '',
+        checks_status TEXT,
+        review_status TEXT,
+        additions INTEGER NOT NULL DEFAULT 0,
+        deletions INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (id, involvement)
+      );
+      CREATE INDEX IF NOT EXISTS idx_prs_state ON prs(state);
+      CREATE INDEX IF NOT EXISTS idx_prs_created_at ON prs(created_at);
+      CREATE INDEX IF NOT EXISTS idx_prs_updated_at ON prs(updated_at);
+      CREATE INDEX IF NOT EXISTS idx_prs_user_login ON prs(user_login);
+      CREATE INDEX IF NOT EXISTS idx_prs_repo ON prs(repo_full_name);
+
+      CREATE TABLE IF NOT EXISTS sync_state (
+        data_type TEXT PRIMARY KEY,
+        watermark TEXT NOT NULL,
+        last_synced_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+  },
 ];
 
 function runMigrations(d: Database.Database): void {
