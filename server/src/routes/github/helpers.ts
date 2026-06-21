@@ -351,17 +351,6 @@ export function buildYearRanges(
 }
 
 /**
- * Build yearly chunks with ISO timestamps and aliases for contributionsCollection.
- */
-export function buildYearChunks(startDate: string, endDate: string) {
-  return buildYearRanges(startDate, endDate).map((r, i) => ({
-    from: `${r.start}T00:00:00Z`,
-    to: `${r.end}T23:59:59Z`,
-    alias: `c${i}`,
-  }));
-}
-
-/**
  * Fetch all user repos with parallel pagination (cached).
  */
 export async function fetchUserRepos(
