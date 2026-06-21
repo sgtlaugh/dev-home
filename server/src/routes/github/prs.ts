@@ -7,9 +7,12 @@ import {
   monthsAgo,
   mapGraphQLPr,
   extractOwnPRComments,
+  fetchPRsForSubRange,
+  gateStartDate,
 } from "./helpers";
 import { SEARCH_PRS_QUERY } from "./queries";
-import { getAuthoredPRsByDateRange } from "../../services/prStore";
+import { createGitHubClient } from "../../clients/githubApiClient";
+import { getAuthoredPRsByDateRange, getWatermark } from "../../services/prStore";
 
 const router = Router();
 
@@ -60,8 +63,20 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Dates must be in YYYY-MM-DD format" });
   }
 
-  const prs = getAuthoredPRsByDateRange(startDate, endDate);
-  logger.info("PRs", `${prs.length} PRs for ${startDate}..${endDate} (from DB)`);
+  const watermark = getWatermark("prs_author");
+  if (watermark) {
+    const prs = getAuthoredPRsByDateRange(startDate, endDate);
+    logger.info("PRs", `${prs.length} PRs for ${startDate}..${endDate} (from DB)`);
+    return res.json({ prs });
+  }
+
+  const config = getConfig();
+  const github = createGitHubClient();
+  const gatedStart = await gateStartDate(github, config.githubUsername, startDate);
+  const queryPrefix = `author:${config.githubUsername} type:pr`;
+  const nodes = await fetchPRsForSubRange(queryPrefix, gatedStart, endDate);
+  const prs = nodes.map(mapGraphQLPr);
+  logger.info("PRs", `${prs.length} PRs for ${startDate}..${endDate} (from API, sync pending)`);
   res.json({ prs });
 });
 

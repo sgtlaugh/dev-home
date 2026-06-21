@@ -5,13 +5,25 @@ import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import { ACTIVITY_LOOKBACK_DAYS, COMMENT_PREVIEW_LENGTH } from "../../utils/constants";
 import { monthsAgo, mapGraphQLPr, isBot } from "./helpers";
-import { SEARCH_TEAM_ACTIVITY_QUERY } from "./queries";
-import { getOpenInvolvedPRs } from "../../services/prStore";
+import { SEARCH_PRS_QUERY, SEARCH_TEAM_ACTIVITY_QUERY } from "./queries";
+import { getOpenInvolvedPRs, getWatermark } from "../../services/prStore";
 
 const router = Router();
 
 router.get("/reviews", async (_req: Request, res: Response) => {
-  const reviews = getOpenInvolvedPRs();
+  const watermark = getWatermark("prs_involved");
+  if (watermark) {
+    const reviews = getOpenInvolvedPRs();
+    return res.json({ reviews });
+  }
+
+  const config = getConfig();
+  const q = `involves:${config.githubUsername} -author:${config.githubUsername} type:pr state:open`;
+  const result = await graphql<{ search: { nodes: any[] } }>(SEARCH_PRS_QUERY, {
+    query: q,
+    first: 100,
+  }, "reviews/fallback");
+  const reviews = (result?.search?.nodes || []).map(mapGraphQLPr);
   res.json({ reviews });
 });
 
