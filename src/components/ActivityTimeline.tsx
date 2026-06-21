@@ -543,17 +543,15 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                 <Timestamp timestamp={action.timestamp} />
                               </div>
                               {action.metadata?.commentBody && (
-                                <Tooltip text="View on GitHub">
-                                  <a
-                                    href={action.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="activity-comment-preview"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {action.metadata.commentBody}
-                                  </a>
-                                </Tooltip>
+                                <a
+                                  href={action.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="activity-comment-preview"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {action.metadata.commentBody}
+                                </a>
                               )}
                             </div>
                           ))}
