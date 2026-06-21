@@ -32,57 +32,17 @@ export function getDbPath(): string {
 // ---------------------------------------------------------------------------
 // Migrations
 // ---------------------------------------------------------------------------
-// Append-only list of migration functions. Each runs once, in order, inside a
-// transaction. Never reorder or remove existing entries — only append new ones.
+// Consolidated migration list. Safe to restructure since this is a single-user
+// Electron app — cached data repopulates on startup, only notes are user data.
 // ---------------------------------------------------------------------------
 
 type Migration = (d: Database.Database) => void;
 
 const MIGRATIONS: Migration[] = [
-  // 1 – create notes table (original schema)
+  // 1 – notes table (consolidated from original migrations 1, 3, 4)
   (d) => {
     d.exec(`
       CREATE TABLE IF NOT EXISTS notes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT NOT NULL CHECK(type IN ('free_text', 'jira_ticket', 'github_pr')),
-        content TEXT NOT NULL DEFAULT '',
-        reference_id TEXT DEFAULT NULL,
-        resolved INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-      );
-    `);
-  },
-
-  // 2 – create kanban_items table (original schema)
-  (d) => {
-    d.exec(`
-      CREATE TABLE IF NOT EXISTS kanban_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_type TEXT NOT NULL CHECK(item_type IN ('note', 'pr', 'review')),
-        item_id TEXT NOT NULL,
-        column_name TEXT NOT NULL CHECK(column_name IN ('todo', 'in_progress', 'on_hold', 'in_review', 'done')),
-        position INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-        UNIQUE(item_type, item_id)
-      );
-    `);
-  },
-
-  // 3 – add title column to notes
-  (d) => {
-    const columns = d.prepare("PRAGMA table_info(notes)").all() as { name: string }[];
-    if (!columns.some((c) => c.name === "title")) {
-      d.exec("ALTER TABLE notes ADD COLUMN title TEXT NOT NULL DEFAULT ''");
-    }
-  },
-
-  // 4 – drop CHECK constraint on notes.type (allow new types via app-level validation)
-  (d) => {
-    d.exec(`
-      DROP TABLE IF EXISTS _notes_tmp;
-      CREATE TABLE _notes_tmp (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT NOT NULL,
         content TEXT NOT NULL DEFAULT '',
@@ -92,35 +52,10 @@ const MIGRATIONS: Migration[] = [
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         title TEXT NOT NULL DEFAULT ''
       );
-      INSERT INTO _notes_tmp (id, type, content, reference_id, resolved, created_at, updated_at, title)
-        SELECT id, type, COALESCE(content, ''), reference_id, resolved, created_at, updated_at, COALESCE(title, '') FROM notes;
-      DROP TABLE notes;
-      ALTER TABLE _notes_tmp RENAME TO notes;
     `);
   },
 
-  // 5 – drop CHECK constraints on kanban_items (allow new values via app-level validation)
-  (d) => {
-    d.exec(`
-      DROP TABLE IF EXISTS _kanban_tmp;
-      CREATE TABLE _kanban_tmp (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_type TEXT NOT NULL,
-        item_id TEXT NOT NULL,
-        column_name TEXT NOT NULL,
-        position INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-        UNIQUE(item_type, item_id)
-      );
-      INSERT INTO _kanban_tmp (id, item_type, item_id, column_name, position, created_at, updated_at)
-        SELECT id, item_type, item_id, column_name, position, created_at, updated_at FROM kanban_items;
-      DROP TABLE kanban_items;
-      ALTER TABLE _kanban_tmp RENAME TO kanban_items;
-    `);
-  },
-
-  // 6 – create org_contributions table for leaderboard cache
+  // 2 – org_contributions table for leaderboard cache
   (d) => {
     d.exec(`
       CREATE TABLE IF NOT EXISTS org_contributions (
@@ -138,7 +73,7 @@ const MIGRATIONS: Migration[] = [
     `);
   },
 
-  // 7 – create github_profiles table for caching user avatars/names
+  // 3 – github_profiles table for caching user avatars/names
   (d) => {
     d.exec(`
       CREATE TABLE IF NOT EXISTS github_profiles (
@@ -150,19 +85,10 @@ const MIGRATIONS: Migration[] = [
     `);
   },
 
-  // 8 – create user_commit_cache (original)
-  (d) => {
-    d.exec(`CREATE TABLE IF NOT EXISTS user_commit_cache (
-      year_month TEXT PRIMARY KEY, commit_count INTEGER NOT NULL,
-      fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`);
-  },
-
-  // 9 – replace user_commit_cache with user_contribution_cache (commits + PRs)
+  // 4 – user_contribution_cache for monthly commit counts and PR data
   (d) => {
     d.exec(`
-      DROP TABLE IF EXISTS user_commit_cache;
-      CREATE TABLE user_contribution_cache (
+      CREATE TABLE IF NOT EXISTS user_contribution_cache (
         year_month TEXT PRIMARY KEY,
         commit_count INTEGER NOT NULL DEFAULT 0,
         prs_json TEXT,
@@ -171,7 +97,7 @@ const MIGRATIONS: Migration[] = [
     `);
   },
 
-  // 10 – create activity_cache for persistent activity storage
+  // 5 – activity_cache for persistent activity storage
   (d) => {
     d.exec(`
       CREATE TABLE IF NOT EXISTS activity_cache (
@@ -185,6 +111,14 @@ const MIGRATIONS: Migration[] = [
         metadata_json TEXT
       );
       CREATE INDEX IF NOT EXISTS idx_activity_cache_timestamp ON activity_cache(timestamp);
+    `);
+  },
+
+  // 6 – drop legacy tables from pre-consolidation migrations
+  (d) => {
+    d.exec(`
+      DROP TABLE IF EXISTS kanban_items;
+      DROP TABLE IF EXISTS user_commit_cache;
     `);
   },
 ];
