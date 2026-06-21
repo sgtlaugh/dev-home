@@ -48,6 +48,9 @@ export async function fetchReviewRequests(): Promise<GitHubReviewRequest[]> {
   return data.reviews;
 }
 
+const SYNC_RETRY_DELAY_MS = 3000;
+const SYNC_MAX_RETRIES = 30;
+
 export async function fetchPRsByDateRange(
   startDate: string,
   endDate: string,
@@ -57,19 +60,39 @@ export async function fetchPRsByDateRange(
   const cached = apiCache.get<GitHubPR[]>(cacheKey);
   if (cached) return cached;
 
-  const { data } = await withRetry(
-    () =>
-      apiClient.get("/github/prs-by-date-range", {
-        params: { startDate, endDate },
-        signal,
-      }),
-    3,
-    1000,
-    signal,
-  );
-  const prs = data.prs || [];
-  apiCache.set(cacheKey, prs);
-  return prs;
+  for (let attempt = 0; attempt < SYNC_MAX_RETRIES; attempt++) {
+    const { data } = await withRetry(
+      () =>
+        apiClient.get("/github/prs-by-date-range", {
+          params: { startDate, endDate },
+          signal,
+        }),
+      3,
+      1000,
+      signal,
+    );
+
+    if (!data.syncPending) {
+      const prs = data.prs || [];
+      apiCache.set(cacheKey, prs);
+      return prs;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      if (signal?.aborted) return reject(new DOMException("Aborted", "AbortError"));
+      const timer = setTimeout(resolve, SYNC_RETRY_DELAY_MS);
+      signal?.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(new DOMException("Aborted", "AbortError"));
+        },
+        { once: true },
+      );
+    });
+  }
+
+  return [];
 }
 
 export async function fetchCommitCount(

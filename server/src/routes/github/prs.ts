@@ -7,11 +7,8 @@ import {
   monthsAgo,
   mapGraphQLPr,
   extractOwnPRComments,
-  fetchPRsForSubRange,
-  gateStartDate,
 } from "./helpers";
 import { SEARCH_PRS_QUERY } from "./queries";
-import { createGitHubClient } from "../../clients/githubApiClient";
 import { getAuthoredPRsByDateRange, getWatermark } from "../../services/prStore";
 
 const router = Router();
@@ -64,19 +61,13 @@ router.get("/prs-by-date-range", async (req: Request, res: Response) => {
   }
 
   const watermark = getWatermark("prs_author");
-  if (watermark) {
-    const prs = getAuthoredPRsByDateRange(startDate, endDate);
-    logger.info("PRs", `${prs.length} PRs for ${startDate}..${endDate} (from DB)`);
-    return res.json({ prs });
+  if (!watermark) {
+    logger.info("PRs", `Sync pending, returning syncPending for ${startDate}..${endDate}`);
+    return res.json({ prs: [], syncPending: true });
   }
 
-  const config = getConfig();
-  const github = createGitHubClient();
-  const gatedStart = await gateStartDate(github, config.githubUsername, startDate);
-  const queryPrefix = `author:${config.githubUsername} type:pr`;
-  const nodes = await fetchPRsForSubRange(queryPrefix, gatedStart, endDate);
-  const prs = nodes.map(mapGraphQLPr);
-  logger.info("PRs", `${prs.length} PRs for ${startDate}..${endDate} (from API, sync pending)`);
+  const prs = getAuthoredPRsByDateRange(startDate, endDate);
+  logger.info("PRs", `${prs.length} PRs for ${startDate}..${endDate} (from DB)`);
   res.json({ prs });
 });
 
