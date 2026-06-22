@@ -48,6 +48,113 @@ import { getRandomQuote } from "./constants/quotes";
 import { Tooltip } from "./components/Tooltip";
 import { useSystemStats } from "./hooks/useSystemStats";
 
+function RateLimitRing({
+  rateLimit,
+}: {
+  rateLimit: { remaining: number; limit: number; resetAt: string } | null;
+}) {
+  const widgetRef = useRef<HTMLSpanElement>(null);
+  const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
+  const [hovered, setHovered] = useState(false);
+
+  const size = 12;
+  const stroke = 2;
+  const r = (size - stroke) / 2;
+  const pct = rateLimit ? rateLimit.remaining / rateLimit.limit : 0;
+  const color = !rateLimit
+    ? "var(--bs-border-color)"
+    : pct > 0.5
+      ? "#3fb950"
+      : pct > 0.2
+        ? "#d29922"
+        : "#f85149";
+  const circ = 2 * Math.PI * r;
+  const offset = rateLimit ? circ * (1 - pct) : circ;
+  const resetTime = rateLimit ? new Date(rateLimit.resetAt) : null;
+  const minsUntilReset = resetTime
+    ? Math.max(0, Math.round((resetTime.getTime() - Date.now()) / 60000))
+    : 0;
+  const statusLabel = !rateLimit
+    ? "Unknown"
+    : pct > 0.5
+      ? "Healthy"
+      : pct > 0.2
+        ? "Moderate"
+        : "Critical";
+
+  const handleMouseEnter = () => {
+    if (widgetRef.current) {
+      const rect = widgetRef.current.getBoundingClientRect();
+      setPopoverStyle({
+        position: "fixed",
+        top: rect.top + rect.height / 2 - 60,
+        left: rect.right + 8,
+      });
+    }
+    setHovered(true);
+  };
+
+  return (
+    <span
+      ref={widgetRef}
+      className="rate-limit-widget"
+      onClick={(e) => e.stopPropagation()}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <svg width={size} height={size} className="rate-limit-ring">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="#e1e4e8"
+          strokeWidth={stroke}
+        />
+        {rateLimit && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth={stroke}
+            strokeDasharray={circ}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          />
+        )}
+      </svg>
+      {hovered && (
+        <div className="rate-limit-popover popover-fixed" style={popoverStyle}>
+          <div className="rlp-header">
+            <IconBrandGithub size={14} />
+            <span>GitHub API</span>
+            <span className="rlp-status" style={{ color }}>
+              {statusLabel}
+            </span>
+          </div>
+          <div className="rlp-bar-track">
+            <div
+              className="rlp-bar-fill"
+              style={{ width: `${pct * 100}%`, backgroundColor: color }}
+            />
+          </div>
+          <div className="rlp-details">
+            <span>
+              {rateLimit
+                ? `${rateLimit.remaining.toLocaleString()} / ${rateLimit.limit.toLocaleString()}`
+                : "—"}
+            </span>
+            <span>{rateLimit ? `Resets in ${minsUntilReset}m` : ""}</span>
+          </div>
+        </div>
+      )}
+    </span>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState(
     () => localStorage.getItem("settings:startupTab") || "summary",
@@ -289,6 +396,7 @@ export default function App() {
             >
               <IconBrandGithub size={22} />
               <span className="sidebar-top-label">GitHub</span>
+              <RateLimitRing rateLimit={rateLimit} />
               <span className="sidebar-chevron">
                 <IconChevronDown size={10} />
               </span>
@@ -585,83 +693,6 @@ export default function App() {
                     <IconRefresh size={16} />
                   </button>
                 </Tooltip>
-                {(() => {
-                  const size = 14;
-                  const stroke = 2.5;
-                  const r = (size - stroke) / 2;
-                  const pct = rateLimit ? rateLimit.remaining / rateLimit.limit : 0;
-                  const color = !rateLimit
-                    ? "var(--bs-border-color)"
-                    : pct > 0.5
-                      ? "#3fb950"
-                      : pct > 0.2
-                        ? "#d29922"
-                        : "#f85149";
-                  const circ = 2 * Math.PI * r;
-                  const offset = rateLimit ? circ * (1 - pct) : circ;
-                  const resetTime = rateLimit ? new Date(rateLimit.resetAt) : null;
-                  const minsUntilReset = resetTime
-                    ? Math.max(0, Math.round((resetTime.getTime() - Date.now()) / 60000))
-                    : 0;
-                  const statusLabel = !rateLimit
-                    ? "Unknown"
-                    : pct > 0.5
-                      ? "Healthy"
-                      : pct > 0.2
-                        ? "Moderate"
-                        : "Critical";
-                  return (
-                    <span className="rate-limit-widget">
-                      <svg width={size} height={size} className="rate-limit-ring">
-                        <circle
-                          cx={size / 2}
-                          cy={size / 2}
-                          r={r}
-                          fill="none"
-                          stroke="#e1e4e8"
-                          strokeWidth={stroke}
-                        />
-                        {rateLimit && (
-                          <circle
-                            cx={size / 2}
-                            cy={size / 2}
-                            r={r}
-                            fill="none"
-                            stroke={color}
-                            strokeWidth={stroke}
-                            strokeDasharray={circ}
-                            strokeDashoffset={offset}
-                            strokeLinecap="round"
-                            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                          />
-                        )}
-                      </svg>
-                      <div className="rate-limit-popover">
-                        <div className="rlp-header">
-                          <IconBrandGithub size={14} />
-                          <span>GitHub API</span>
-                          <span className="rlp-status" style={{ color }}>
-                            {statusLabel}
-                          </span>
-                        </div>
-                        <div className="rlp-bar-track">
-                          <div
-                            className="rlp-bar-fill"
-                            style={{ width: `${pct * 100}%`, backgroundColor: color }}
-                          />
-                        </div>
-                        <div className="rlp-details">
-                          <span>
-                            {rateLimit
-                              ? `${rateLimit.remaining.toLocaleString()} / ${rateLimit.limit.toLocaleString()}`
-                              : "—"}
-                          </span>
-                          <span>{rateLimit ? `Resets in ${minsUntilReset}m` : ""}</span>
-                        </div>
-                      </div>
-                    </span>
-                  );
-                })()}
               </div>
             </div>
 
