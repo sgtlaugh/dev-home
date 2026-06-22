@@ -236,7 +236,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const handleClearCache = async () => {
     try {
-      await apiClient.post("/cache/purge");
+      const categories = cacheCategories.map((c) => c.key);
+      await Promise.all(categories.map((k) => apiClient.delete(`/cache/${k}`)));
       fetchCacheStats();
       setToast("Cache cleared");
       setTimeout(() => setToast(null), 3000);
