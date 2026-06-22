@@ -420,44 +420,6 @@ export default function App() {
             </button>
 
             <div style={{ flex: 1 }} />
-
-            {/* Cache clear */}
-            <Tooltip
-              text={
-                lastRefreshTime
-                  ? `Last refresh: ${Math.round((Date.now() - lastRefreshTime) / 60000)}m ago (Alt+R)`
-                  : "Clear cache and refresh all data (Alt+R)"
-              }
-            >
-              <button
-                ref={refreshBtnRef}
-                className={`sidebar-top-item sidebar-refresh-btn${refreshing ? " spinning" : ""}`}
-                onClick={async () => {
-                  if (refreshing) return;
-                  setRefreshing(true);
-                  try {
-                    apiCache.clear();
-                    localStorage.clear();
-                    await apiClient.post("/cache/purge");
-                    await Promise.all([
-                      refresh(),
-                      refreshNotes(),
-                      refreshActivity(),
-                      refreshTeamActivity(),
-                    ]);
-                  } catch {
-                    setToast("Refresh failed — check connection");
-                    setTimeout(() => setToast(null), 3000);
-                  } finally {
-                    setRefreshing(false);
-                  }
-                }}
-                disabled={refreshing}
-              >
-                <IconRefresh size={22} />
-                <span className="sidebar-top-label">Refresh</span>
-              </button>
-            </Tooltip>
           </nav>
 
           {/* Main content panel */}
@@ -588,6 +550,41 @@ export default function App() {
                     </span>
                   )
                 )}
+                <Tooltip
+                  text={
+                    lastRefreshTime
+                      ? `Last refresh: ${Math.round((Date.now() - lastRefreshTime) / 60000)}m ago (Alt+R)`
+                      : "Clear cache and refresh all data (Alt+R)"
+                  }
+                >
+                  <button
+                    ref={refreshBtnRef}
+                    className={`header-refresh-btn${refreshing ? " spinning" : ""}`}
+                    onClick={async () => {
+                      if (refreshing) return;
+                      setRefreshing(true);
+                      try {
+                        apiCache.clear();
+                        localStorage.clear();
+                        await apiClient.post("/cache/purge");
+                        await Promise.all([
+                          refresh(),
+                          refreshNotes(),
+                          refreshActivity(),
+                          refreshTeamActivity(),
+                        ]);
+                      } catch {
+                        setToast("Refresh failed — check connection");
+                        setTimeout(() => setToast(null), 3000);
+                      } finally {
+                        setRefreshing(false);
+                      }
+                    }}
+                    disabled={refreshing}
+                  >
+                    <IconRefresh size={16} />
+                  </button>
+                </Tooltip>
                 {(() => {
                   const size = 14;
                   const stroke = 2.5;

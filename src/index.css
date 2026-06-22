@@ -332,24 +332,9 @@ a:hover {
   animation: spin 800ms linear infinite;
 }
 
-.sidebar-refresh-btn {
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-  padding-top: 10px !important;
-  margin-top: 4px;
-}
-
-.sidebar-refresh-btn.spinning svg:first-child {
-  animation: spin 800ms linear infinite;
-}
-
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-.sidebar-refresh-time {
-  font-size: 0.625rem;
-  white-space: nowrap;
 }
 
 .rate-limit-indicator {
@@ -688,7 +673,32 @@ a:hover {
 
 .content-header-actions {
   display: flex;
+  align-items: center;
   gap: 4px;
+}
+
+.header-refresh-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #0969da;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.header-refresh-btn:hover {
+  color: #0550ae;
+}
+
+.header-refresh-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.header-refresh-btn.spinning svg {
+  animation: spin 800ms linear infinite;
 }
 
 /* --- Tab Content Area --- */
