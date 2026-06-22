@@ -129,7 +129,12 @@ export function scheduleStartupPrefetch(): void {
       return;
     }
     try {
-      // Pre-warm contributions cache (PRs + commits) first
+      const { prefetchActivity } = await import("./routes/activity");
+      await prefetchActivity();
+    } catch (err: any) {
+      logger.warn("Prefetch", `Activity prefetch failed: ${err.message}`);
+    }
+    try {
       const { prefetchContributions } = await import("./services/contributionsPrefetch");
       await prefetchContributions();
     } catch (err: any) {
@@ -140,12 +145,6 @@ export function scheduleStartupPrefetch(): void {
       await syncPRs();
     } catch (err: any) {
       logger.warn("Prefetch", `PR sync failed: ${err.message}`);
-    }
-    try {
-      const { prefetchActivity } = await import("./routes/activity");
-      await prefetchActivity();
-    } catch (err: any) {
-      logger.warn("Prefetch", `Activity prefetch failed: ${err.message}`);
     }
     try {
       const github = createGitHubClient();
