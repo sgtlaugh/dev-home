@@ -246,20 +246,17 @@ a:hover {
 .titlebar-left {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 20px;
+  padding: 0 14px;
   -webkit-app-region: drag;
 }
 
-.titlebar-icon {
-  width: 18px;
-  height: 18px;
-}
-
-.titlebar-title {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+.titlebar-shebang {
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #3b9eff;
+  opacity: 0.7;
+  letter-spacing: -1px;
 }
 
 .titlebar-drag {
