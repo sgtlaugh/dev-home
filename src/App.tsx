@@ -48,32 +48,11 @@ import { getRandomQuote } from "./constants/quotes";
 import { Tooltip } from "./components/Tooltip";
 import { useSystemStats } from "./hooks/useSystemStats";
 
-function RateLimitRing({
-  rateLimit,
-}: {
-  rateLimit: { remaining: number; limit: number; resetAt: string } | null;
-}) {
-  const widgetRef = useRef<HTMLSpanElement>(null);
-  const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
-  const [hovered, setHovered] = useState(false);
-
-  const size = 12;
-  const stroke = 2;
-  const r = (size - stroke) / 2;
+function useRateLimitColor(
+  rateLimit: { remaining: number; limit: number; resetAt: string } | null,
+) {
   const pct = rateLimit ? rateLimit.remaining / rateLimit.limit : 0;
-  const color = !rateLimit
-    ? "var(--bs-border-color)"
-    : pct > 0.5
-      ? "#3fb950"
-      : pct > 0.2
-        ? "#d29922"
-        : "#f85149";
-  const circ = 2 * Math.PI * r;
-  const offset = rateLimit ? circ * (1 - pct) : circ;
-  const resetTime = rateLimit ? new Date(rateLimit.resetAt) : null;
-  const minsUntilReset = resetTime
-    ? Math.max(0, Math.round((resetTime.getTime() - Date.now()) / 60000))
-    : 0;
+  const color = !rateLimit ? undefined : pct > 0.5 ? "#3fb950" : pct > 0.2 ? "#d29922" : "#f85149";
   const statusLabel = !rateLimit
     ? "Unknown"
     : pct > 0.5
@@ -81,78 +60,11 @@ function RateLimitRing({
       : pct > 0.2
         ? "Moderate"
         : "Critical";
-
-  const handleMouseEnter = () => {
-    if (widgetRef.current) {
-      const rect = widgetRef.current.getBoundingClientRect();
-      setPopoverStyle({
-        position: "fixed",
-        top: rect.top + rect.height / 2 - 60,
-        left: rect.right + 8,
-      });
-    }
-    setHovered(true);
-  };
-
-  return (
-    <span
-      ref={widgetRef}
-      className="rate-limit-widget"
-      onClick={(e) => e.stopPropagation()}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <svg width={size} height={size} className="rate-limit-ring">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="#e1e4e8"
-          strokeWidth={stroke}
-        />
-        {rateLimit && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke={color}
-            strokeWidth={stroke}
-            strokeDasharray={circ}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          />
-        )}
-      </svg>
-      {hovered && (
-        <div className="rate-limit-popover popover-fixed" style={popoverStyle}>
-          <div className="rlp-header">
-            <IconBrandGithub size={14} />
-            <span>GitHub API</span>
-            <span className="rlp-status" style={{ color }}>
-              {statusLabel}
-            </span>
-          </div>
-          <div className="rlp-bar-track">
-            <div
-              className="rlp-bar-fill"
-              style={{ width: `${pct * 100}%`, backgroundColor: color }}
-            />
-          </div>
-          <div className="rlp-details">
-            <span>
-              {rateLimit
-                ? `${rateLimit.remaining.toLocaleString()} / ${rateLimit.limit.toLocaleString()}`
-                : "—"}
-            </span>
-            <span>{rateLimit ? `Resets in ${minsUntilReset}m` : ""}</span>
-          </div>
-        </div>
-      )}
-    </span>
-  );
+  const resetTime = rateLimit ? new Date(rateLimit.resetAt) : null;
+  const minsUntilReset = resetTime
+    ? Math.max(0, Math.round((resetTime.getTime() - Date.now()) / 60000))
+    : 0;
+  return { pct, color, statusLabel, minsUntilReset };
 }
 
 export default function App() {
@@ -390,17 +302,57 @@ export default function App() {
             <div className="sidebar-divider" />
 
             {/* GitHub section */}
-            <button
-              className={`sidebar-top-item${githubExpanded ? " expanded" : ""}${githubTabs.includes(effectiveTab) ? " section-active" : ""}`}
-              onClick={() => setGithubExpanded(!githubExpanded)}
-            >
-              <IconBrandGithub size={22} />
-              <span className="sidebar-top-label">GitHub</span>
-              <RateLimitRing rateLimit={rateLimit} />
-              <span className="sidebar-chevron">
-                <IconChevronDown size={10} />
-              </span>
-            </button>
+            {(() => {
+              const rl = useRateLimitColor(rateLimit);
+              const btnRef = useRef<HTMLButtonElement>(null);
+              const [rlHovered, setRlHovered] = useState(false);
+              const [popoverPos, setPopoverPos] = useState<React.CSSProperties>({});
+              const handleEnter = () => {
+                if (btnRef.current) {
+                  const rect = btnRef.current.getBoundingClientRect();
+                  setPopoverPos({ position: "fixed", top: rect.top, left: rect.right + 8 });
+                }
+                setRlHovered(true);
+              };
+              return (
+                <button
+                  ref={btnRef}
+                  className={`sidebar-top-item${githubExpanded ? " expanded" : ""}${githubTabs.includes(effectiveTab) ? " section-active" : ""}`}
+                  onClick={() => setGithubExpanded(!githubExpanded)}
+                  onMouseEnter={handleEnter}
+                  onMouseLeave={() => setRlHovered(false)}
+                >
+                  <IconBrandGithub size={22} style={rl.color ? { color: rl.color } : undefined} />
+                  <span className="sidebar-top-label">GitHub</span>
+                  <span className="sidebar-chevron">
+                    <IconChevronDown size={10} />
+                  </span>
+                  {rlHovered && rateLimit && (
+                    <div className="rate-limit-popover popover-fixed" style={popoverPos}>
+                      <div className="rlp-header">
+                        <IconBrandGithub size={14} />
+                        <span>GitHub API</span>
+                        <span className="rlp-status" style={{ color: rl.color }}>
+                          {rl.statusLabel}
+                        </span>
+                      </div>
+                      <div className="rlp-bar-track">
+                        <div
+                          className="rlp-bar-fill"
+                          style={{ width: `${rl.pct * 100}%`, backgroundColor: rl.color }}
+                        />
+                      </div>
+                      <div className="rlp-details">
+                        <span>
+                          {`${rateLimit.remaining.toLocaleString()} / ${rateLimit.limit.toLocaleString()}`}
+                        </span>
+                        <span>{`Resets in ${rl.minsUntilReset}m`}</span>
+                      </div>
+                    </div>
+                  )}
+                </button>
+              );
+            })()}
 
             {githubExpanded && (
               <div className="sidebar-sub-items">
