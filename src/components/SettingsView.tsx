@@ -532,7 +532,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     {prefetch.complete
                       ? "Complete"
                       : prefetch.running
-                        ? `${prefetch.org || "..."} — ${prefetch.percentage}%`
+                        ? `${prefetch.org || "..."} ${prefetch.percentage}%`
                         : "Idle"}
                   </span>
                 </div>
