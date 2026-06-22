@@ -88,10 +88,6 @@ export function createServer() {
   });
 
   app.post("/api/cache/purge", (_req: Request, res: Response) => {
-    const db = getDb();
-    for (const tables of Object.values(CACHE_CATEGORIES)) {
-      for (const table of tables) db.exec(`DELETE FROM ${table}`);
-    }
     apiCache.clear();
     resetJiraCache();
     res.json({ status: "cache cleared" });
