@@ -523,7 +523,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     Org caching
                   </span>
                   <span
-                    style={{ fontSize: "0.8rem", color: prefetch.complete ? "#1a7f37" : "#656d76" }}
+                    style={{
+                      fontSize: "0.8rem",
+                      color: prefetch.complete ? "#1a7f37" : "#656d76",
+                      marginRight: 8,
+                    }}
                   >
                     {prefetch.complete
                       ? "Complete"
@@ -531,7 +535,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         ? `${prefetch.org || "..."} — ${prefetch.percentage}%`
                         : "Idle"}
                   </span>
-                  <span style={{ width: 15 }} />
                 </div>
                 {prefetch.running && (
                   <div className="settings-cache-bar" style={{ marginLeft: 22 }}>
