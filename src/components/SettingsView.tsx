@@ -17,6 +17,7 @@ import {
 } from "@tabler/icons-react";
 import { AppSettings, apiClient } from "../services/config";
 import { useUserOrgs, usePrefetchStatus } from "../hooks/useOrgLeaderboard";
+import { Tooltip } from "./Tooltip";
 
 declare const __APP_VERSION__: string;
 
@@ -42,9 +43,11 @@ const STARTUP_TABS = [
 ];
 
 interface CacheStats {
-  apiCache: number;
-  contributions: number;
+  activity: number;
+  prs: number;
+  orgLeaderboard: number;
   profiles: number;
+  contributions: number;
 }
 
 const ACCENTS = {
@@ -256,9 +259,43 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const githubConnected = backendOnline && configured && !!githubUsername;
   const jiraConnected = backendOnline && configured && !!jiraBaseUrl;
-  const cacheTotal = cacheStats
-    ? cacheStats.apiCache + cacheStats.contributions + cacheStats.profiles
-    : 0;
+  const cacheCategories: {
+    key: keyof CacheStats;
+    label: string;
+    tooltip: string;
+    color: string;
+  }[] = [
+    {
+      key: "activity",
+      label: "Activity history",
+      tooltip: "30-day activity feed",
+      color: "#e3795c",
+    },
+    { key: "prs", label: "Pull requests", tooltip: "All-time PR data", color: "#0969da" },
+    {
+      key: "orgLeaderboard",
+      label: "Org leaderboard",
+      tooltip: "Member stats by month",
+      color: "#1a7f37",
+    },
+    { key: "profiles", label: "Profiles", tooltip: "Avatars and names", color: "#8250df" },
+    {
+      key: "contributions",
+      label: "Contribution stats",
+      tooltip: "Monthly commit/review counts",
+      color: "#bf8700",
+    },
+  ];
+
+  const handleClearCategory = async (category: string) => {
+    try {
+      await apiClient.delete(`/cache/${category}`);
+      fetchCacheStats();
+    } catch {
+      setToast("Failed to clear cache");
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
 
   return (
     <div>
@@ -444,66 +481,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             title="Cache"
             accent={ACCENTS.cache}
             headerAction={
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={handleClearCache}
-                className="d-flex align-items-center gap-1"
-                style={{ fontSize: "0.7rem", padding: "2px 8px" }}
-              >
-                <IconTrash size={12} />
-                Clear
-              </Button>
+              <button className="settings-cache-clear-all-btn" onClick={handleClearCache}>
+                Clear all
+                <IconTrash size={11} />
+              </button>
             }
           >
             {cacheStats && (
               <div style={{ fontSize: "0.8rem" }}>
-                {cacheTotal > 0 && (
-                  <div className="settings-cache-bar mb-2">
-                    <div
-                      className="settings-cache-segment"
-                      style={{
-                        width: `${(cacheStats.apiCache / cacheTotal) * 100}%`,
-                        backgroundColor: "#8250df",
-                      }}
-                    />
-                    <div
-                      className="settings-cache-segment"
-                      style={{
-                        width: `${(cacheStats.contributions / cacheTotal) * 100}%`,
-                        backgroundColor: "#1a7f37",
-                      }}
-                    />
-                    <div
-                      className="settings-cache-segment"
-                      style={{
-                        width: `${(cacheStats.profiles / cacheTotal) * 100}%`,
-                        backgroundColor: "#0969da",
-                      }}
-                    />
+                {cacheCategories.map(({ key, label, tooltip, color }) => (
+                  <div key={key} className="settings-cache-row">
+                    <span className="settings-cache-dot" style={{ backgroundColor: color }} />
+                    <Tooltip text={tooltip}>
+                      <span className="text-secondary-custom" style={{ cursor: "help", flex: 1 }}>
+                        {label}
+                      </span>
+                    </Tooltip>
+                    <span>{cacheStats[key].toLocaleString()}</span>
+                    <button
+                      className="settings-cache-clear-btn"
+                      onClick={() => handleClearCategory(key)}
+                      title={`Clear ${label.toLowerCase()}`}
+                    >
+                      <IconTrash size={11} />
+                    </button>
                   </div>
-                )}
-                <div className="settings-cache-row">
-                  <span className="d-flex align-items-center gap-1">
-                    <span className="settings-cache-dot" style={{ backgroundColor: "#8250df" }} />
-                    <span className="text-secondary-custom">API cache</span>
-                  </span>
-                  <span>{cacheStats.apiCache}</span>
-                </div>
-                <div className="settings-cache-row">
-                  <span className="d-flex align-items-center gap-1">
-                    <span className="settings-cache-dot" style={{ backgroundColor: "#1a7f37" }} />
-                    <span className="text-secondary-custom">Contributions</span>
-                  </span>
-                  <span>{cacheStats.contributions.toLocaleString()}</span>
-                </div>
-                <div className="settings-cache-row">
-                  <span className="d-flex align-items-center gap-1">
-                    <span className="settings-cache-dot" style={{ backgroundColor: "#0969da" }} />
-                    <span className="text-secondary-custom">Profiles</span>
-                  </span>
-                  <span>{cacheStats.profiles}</span>
-                </div>
+                ))}
               </div>
             )}
 
