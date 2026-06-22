@@ -11,7 +11,6 @@ import jiraRoutes, { resetJiraCache } from "./routes/jira";
 import notesRoutes from "./routes/notes";
 import systemRoutes from "./routes/system";
 import { fetchOrgMembers } from "./routes/github/leaderboard";
-import { clearProfiles } from "./services/contributionCache";
 import { startPrefetch } from "./services/contributionPrefetch";
 import { errorHandler } from "./utils/errors";
 import { apiCache } from "./utils/cache";
@@ -57,23 +56,43 @@ export function createServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  const CACHE_CATEGORIES: Record<string, string[]> = {
+    activity: ["activity_cache"],
+    prs: ["prs", "sync_state"],
+    orgLeaderboard: ["org_contributions"],
+    profiles: ["github_profiles"],
+    contributions: ["user_contribution_cache"],
+  };
+
+  const countTable = (db: ReturnType<typeof getDb>, table: string) =>
+    (db.prepare(`SELECT COUNT(*) as cnt FROM ${table}`).get() as { cnt: number }).cnt;
+
   app.get("/api/cache/stats", (_req: Request, res: Response) => {
     const db = getDb();
-    const contributions = db.prepare("SELECT COUNT(*) as cnt FROM org_contributions").get() as { cnt: number };
-    const profiles = db.prepare("SELECT COUNT(*) as cnt FROM github_profiles").get() as { cnt: number };
-    const commitMonths = db.prepare("SELECT COUNT(*) as cnt FROM user_contribution_cache WHERE commit_count IS NOT NULL").get() as { cnt: number };
-    const prsStored = db.prepare("SELECT COUNT(*) as cnt FROM prs").get() as { cnt: number };
     res.json({
-      apiCache: apiCache.size(),
-      contributions: contributions.cnt,
-      profiles: profiles.cnt,
-      commitMonths: commitMonths.cnt,
-      prs: prsStored.cnt,
+      activity: countTable(db, "activity_cache"),
+      prs: countTable(db, "prs"),
+      orgLeaderboard: countTable(db, "org_contributions"),
+      profiles: countTable(db, "github_profiles"),
+      contributions: countTable(db, "user_contribution_cache"),
     });
   });
-  app.post("/api/cache/purge", (_req: Request, res: Response) => {
+
+  app.delete("/api/cache/:category", (req: Request, res: Response) => {
+    const tables = CACHE_CATEGORIES[req.params.category];
+    if (!tables) return res.status(404).json({ error: "Unknown category" });
+    const db = getDb();
+    for (const table of tables) db.exec(`DELETE FROM ${table}`);
     apiCache.clear();
-    clearProfiles();
+    res.json({ status: `${req.params.category} cleared` });
+  });
+
+  app.post("/api/cache/purge", (_req: Request, res: Response) => {
+    const db = getDb();
+    for (const tables of Object.values(CACHE_CATEGORIES)) {
+      for (const table of tables) db.exec(`DELETE FROM ${table}`);
+    }
+    apiCache.clear();
     resetJiraCache();
     res.json({ status: "cache cleared" });
   });
