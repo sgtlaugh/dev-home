@@ -514,13 +514,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
             {prefetch && (
               <div
-                className="mt-3 pt-2"
+                className="mt-2 pt-2"
                 style={{ borderTop: "1px solid #d1d9e0", fontSize: "0.8rem" }}
               >
-                <div className="d-flex justify-content-between align-items-center mb-1">
-                  <span className="text-secondary-custom">Org caching</span>
+                <div className="settings-cache-row">
+                  <span className="settings-cache-dot" style={{ backgroundColor: "#0969da" }} />
+                  <span className="text-secondary-custom" style={{ flex: 1 }}>
+                    Org caching
+                  </span>
                   <span
-                    style={{ fontSize: "0.7rem", color: prefetch.complete ? "#1a7f37" : "#656d76" }}
+                    style={{ fontSize: "0.8rem", color: prefetch.complete ? "#1a7f37" : "#656d76" }}
                   >
                     {prefetch.complete
                       ? "Complete"
@@ -528,9 +531,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         ? `${prefetch.org || "..."} — ${prefetch.percentage}%`
                         : "Idle"}
                   </span>
+                  <span style={{ width: 15 }} />
                 </div>
                 {prefetch.running && (
-                  <div className="settings-cache-bar">
+                  <div className="settings-cache-bar" style={{ marginLeft: 22 }}>
                     <div
                       className="settings-cache-segment"
                       style={{
