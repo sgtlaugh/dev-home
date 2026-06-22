@@ -492,11 +492,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 {cacheCategories.map(({ key, label, tooltip, color }) => (
                   <div key={key} className="settings-cache-row">
                     <span className="settings-cache-dot" style={{ backgroundColor: color }} />
-                    <Tooltip text={tooltip}>
-                      <span className="text-secondary-custom" style={{ cursor: "help", flex: 1 }}>
-                        {label}
-                      </span>
-                    </Tooltip>
+                    <span style={{ flex: 1 }}>
+                      <Tooltip text={tooltip}>
+                        <span className="text-secondary-custom" style={{ cursor: "help" }}>
+                          {label}
+                        </span>
+                      </Tooltip>
+                    </span>
                     <span>{cacheStats[key].toLocaleString()}</span>
                     <button
                       className="settings-cache-clear-btn"
