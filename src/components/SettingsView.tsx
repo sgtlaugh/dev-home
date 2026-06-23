@@ -560,7 +560,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </Row>
 
       {/* Save */}
-      <div className="d-flex justify-content-end mb-3 mt-2">
+      <div className="d-flex justify-content-center mb-3 mt-4">
         <Button
           variant="primary"
           size="sm"
@@ -585,34 +585,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       {/* About */}
-      <div className="settings-about">
-        <div className="settings-about-brand">
-          <img src="/devhome-logo.svg" alt="Dev Home" width={24} height={24} />
-          <div>
-            <div className="settings-about-name">
-              Dev Home <span className="settings-about-version">v{__APP_VERSION__}</span>
-            </div>
-            <div className="settings-about-tagline">Your developer dashboard</div>
-          </div>
-        </div>
-        <div className="settings-about-links">
-          <a
-            href="https://github.com/sgtlaugh/dev-home"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="View on GitHub"
-          >
-            <IconBrandGithub size={14} />
-          </a>
-          <a
-            href="https://github.com/sgtlaugh/dev-home/issues/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Report issue"
-          >
-            <IconBug size={14} />
-          </a>
-        </div>
+      <div className="settings-footer">
+        <img
+          src="/devhome-logo.svg"
+          alt=""
+          width={18}
+          height={18}
+          className="settings-footer-logo"
+        />
+        <span className="settings-footer-name">Dev Home</span>
+        <span className="settings-about-version">v{__APP_VERSION__}</span>
+        <span className="settings-footer-sep">·</span>
+        <a href="https://github.com/sgtlaugh/dev-home" target="_blank" rel="noopener noreferrer">
+          <IconBrandGithub size={13} /> GitHub
+        </a>
+        <span className="settings-footer-sep">·</span>
+        <a
+          href="https://github.com/sgtlaugh/dev-home/issues/new"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <IconBug size={13} /> Report Issue
+        </a>
       </div>
     </div>
   );
