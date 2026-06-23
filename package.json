@@ -39,6 +39,11 @@
     "asarUnpack": [
       "node_modules/better-sqlite3/**"
     ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    },
     "mac": {
       "target": [
         {
