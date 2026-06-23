@@ -44,13 +44,23 @@ export function createServer() {
   // JSON body parser
   app.use(express.json());
 
-  // Routes
-  app.use("/api/activity", activityRoutes);
-  app.use("/api/jira", jiraRoutes);
-  app.use("/api/github", githubRoutes);
+  // Routes that don't need API tokens
   app.use("/api/config", configRoutes);
   app.use("/api/notes", notesRoutes);
   app.use("/api/system", systemRoutes);
+
+  // Guard: reject API calls when tokens aren't configured
+  app.use("/api", (req, _res, next) => {
+    if (!isConfigured()) {
+      return _res.status(503).json({ error: "Not configured" });
+    }
+    next();
+  });
+
+  // Routes that need API tokens
+  app.use("/api/activity", activityRoutes);
+  app.use("/api/jira", jiraRoutes);
+  app.use("/api/github", githubRoutes);
   // Health check
   app.get("/api/health", (_req: Request, res: Response) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });

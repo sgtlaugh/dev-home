@@ -206,11 +206,15 @@ export default function App() {
   };
   const [settingsForm, setSettingsForm] = useState<AppSettings>(EMPTY_SETTINGS);
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const savedSettingsRef = useRef<AppSettings>(EMPTY_SETTINGS);
 
   useEffect(() => {
     loadSettingsFromStore()
       .then((s) => {
-        if (s) setSettingsForm(s);
+        if (s) {
+          setSettingsForm(s);
+          savedSettingsRef.current = s;
+        }
       })
       .catch(() => {});
   }, []);
@@ -222,6 +226,7 @@ export default function App() {
       localStorage.clear();
       await apiClient.post("/cache/purge");
       await saveSettings(settingsForm);
+      savedSettingsRef.current = { ...settingsForm };
       setToast("Settings saved");
       setTimeout(() => setToast(null), 3000);
     } catch (err) {
@@ -483,6 +488,15 @@ export default function App() {
 
           {/* Main content panel */}
           <main className="main-content">
+            {/* Config banner */}
+            {!configured && !configLoading && effectiveTab !== "settings" && (
+              <Alert variant="warning" className="small">
+                GitHub and JIRA tokens are not configured.{" "}
+                <Alert.Link onClick={() => setActiveTab("settings")}>Go to Settings</Alert.Link> to
+                set them up.
+              </Alert>
+            )}
+
             {/* Error alert */}
             {error && (
               <Alert variant="danger" className="small" dismissible>
@@ -659,6 +673,9 @@ export default function App() {
                   setFormState={setSettingsForm}
                   setToast={setToast}
                   saving={settingsSaving}
+                  isDirty={
+                    JSON.stringify(settingsForm) !== JSON.stringify(savedSettingsRef.current)
+                  }
                   onSave={handleSaveSettings}
                 />
               </div>

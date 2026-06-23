@@ -32,6 +32,7 @@ interface SettingsViewProps {
   setFormState: React.Dispatch<React.SetStateAction<AppSettings>>;
   setToast: (msg: string | null) => void;
   saving: boolean;
+  isDirty: boolean;
   onSave: () => void;
 }
 
@@ -188,6 +189,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   setFormState,
   setToast,
   saving,
+  isDirty,
   onSave,
 }) => {
   const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
@@ -565,7 +567,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           variant="primary"
           size="sm"
           onClick={onSave}
-          disabled={saving}
+          disabled={saving || !isDirty}
           className="d-flex align-items-center gap-2"
           style={{ padding: "6px 24px" }}
         >
