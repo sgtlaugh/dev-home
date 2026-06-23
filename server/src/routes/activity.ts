@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { getConfig } from "../config";
+import { getConfig, isGithubConfigured, isJiraConfigured } from "../config";
 import { createJiraClient } from "../clients/jiraApiClient";
 import { createGitHubClient } from "../clients/githubApiClient";
 import { graphql } from "../clients/githubGraphqlClient";
@@ -270,6 +270,7 @@ async function fetchJiraTransitions(jira: any, config: any, userAccountId: strin
 }
 
 async function fetchJiraActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS): Promise<ActivityItem[]> {
+  if (!isJiraConfigured()) return [];
   const config = getConfig();
   const jira = createJiraClient();
 
@@ -294,6 +295,7 @@ async function fetchJiraActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS):
 }
 
 async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS): Promise<ActivityItem[]> {
+  if (!isGithubConfigured()) return [];
   const config = getConfig();
   const github = createGitHubClient();
   const activities: ActivityItem[] = [];

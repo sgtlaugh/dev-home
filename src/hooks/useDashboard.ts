@@ -3,8 +3,10 @@ import { JiraIssue, JiraComment, GitHubPR, GitHubReviewRequest } from "../types"
 import { fetchAssignedIssues, fetchRecentMentions } from "../services/jira";
 import { fetchDashboard } from "../services/github";
 import { apiCache } from "../utils/cache";
+import axios from "axios";
 
 const POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const isNotConfigured = (err: unknown) => axios.isAxiosError(err) && err.response?.status === 503;
 
 interface UseDashboardReturn {
   jiraIssues: JiraIssue[];
@@ -86,7 +88,7 @@ export function useDashboard(
       .catch((err) => {
         if (controller.signal.aborted) return;
         setJiraIssuesLoading(false);
-        settle(err?.message || String(err));
+        settle(isNotConfigured(err) ? undefined : err?.message || String(err));
       });
 
     fetchRecentMentions()
@@ -99,7 +101,7 @@ export function useDashboard(
       .catch((err) => {
         if (controller.signal.aborted) return;
         setJiraCommentsLoading(false);
-        settle(err?.message || String(err));
+        settle(isNotConfigured(err) ? undefined : err?.message || String(err));
       });
 
     fetchDashboard()
@@ -115,7 +117,7 @@ export function useDashboard(
         if (controller.signal.aborted) return;
         setOpenPRsLoading(false);
         setReviewRequestsLoading(false);
-        settle(err?.message || String(err));
+        settle(isNotConfigured(err) ? undefined : err?.message || String(err));
       });
   }, [active]);
 

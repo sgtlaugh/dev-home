@@ -2895,6 +2895,24 @@ a.note-row-title:hover {
   }
 }
 
+/* --- Config Banner --- */
+.config-banner {
+  text-align: center;
+  font-size: 0.7rem;
+  color: #8b949e;
+  padding: 4px 0;
+  margin-bottom: 4px;
+}
+
+.config-banner a {
+  color: #58a6ff;
+  text-decoration: none;
+}
+
+.config-banner a:hover {
+  text-decoration: underline;
+}
+
 /* --- Custom Tooltip --- */
 .js-tooltip {
   position: fixed;

@@ -494,15 +494,23 @@ export default function App() {
             {!configLoading &&
               effectiveTab !== "settings" &&
               (!githubConfigured || !jiraConfigured) && (
-                <Alert variant="warning" className="small">
+                <div className="config-banner">
                   {!githubConfigured && !jiraConfigured
-                    ? "GitHub and JIRA tokens are not configured."
+                    ? "GitHub and JIRA not configured"
                     : !githubConfigured
-                      ? "GitHub token is not configured."
-                      : "JIRA tokens are not configured."}{" "}
-                  <Alert.Link onClick={() => setActiveTab("settings")}>Go to Settings</Alert.Link>{" "}
-                  to set them up.
-                </Alert>
+                      ? "GitHub not configured"
+                      : "JIRA not configured"}
+                  {" · "}
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setActiveTab("settings");
+                    }}
+                  >
+                    Settings
+                  </a>
+                </div>
               )}
 
             {/* Error alert */}
