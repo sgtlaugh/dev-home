@@ -6,6 +6,9 @@
 
 <p align="center">
   A personal developer dashboard that brings JIRA, GitHub, and your notes into one place.
+  <br></br>
+  Yes, there's a chess puzzle.<br/>
+  No, it won't count as a commit.
 </p>
 
 <p align="center">
@@ -26,6 +29,7 @@
 - Team Activity
 - Contribution Stats
 - Leaderboard
+- JIRA Notifications
 - Rich Notes
 
 ## Quick Start
@@ -37,7 +41,14 @@ cd server && yarn install && cd ..     # install server deps
 yarn dev                               # launch the app
 ```
 
-Requires [Node.js](https://nodejs.org/) 22 and [Yarn](https://yarnpkg.com/). JIRA and GitHub credentials are configured from the in-app settings page.
+Requires [Node.js](https://nodejs.org/) 22 and [Yarn](https://yarnpkg.com/).
+
+## Configuration
+
+Go to **Settings** in the app and add:
+
+- **GitHub** - [Personal access token](https://github.com/settings/tokens) with `repo`, `read:org`, and `read:user` scopes
+- **JIRA** - Base URL (e.g. `https://yourcompany.atlassian.net`), email, and [API token](https://id.atlassian.com/manage-profile/security/api-tokens)
 
 ## Build and Packaging
 
