@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { getConfig } from "../config";
 import { createJiraClient } from "../clients/jiraApiClient";
 import { apiCache } from "../utils/cache";
+import axios from "axios";
 import { logger } from "../utils/logger";
 
 const router = Router();
@@ -289,7 +290,6 @@ router.get("/avatar", async (req: Request, res: Response) => {
   }
 
   try {
-    const axios = (await import("axios")).default;
     let fetchUrl = url;
 
     // Gravatar redirects to fallback URL for users without accounts.
