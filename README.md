@@ -56,7 +56,11 @@ Go to **Settings** in the app and add the following:
 
   </details>
 
-## Build and Packaging
+## Download
+
+Grab the latest release for your platform from [Releases](https://github.com/sgtlaugh/dev-home/releases).
+
+## Build from Source
 
 ```bash
 yarn build        # compile frontend + backend
