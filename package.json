@@ -6,10 +6,10 @@
   "repository": "https://github.com/siddiqus/dev-home",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "VITE_CJS_IGNORE_WARNING=1 vite",
+    "build": "tsc && VITE_CJS_IGNORE_WARNING=1 vite build",
     "build:server": "cd server && yarn build",
-    "preview": "vite preview",
+    "preview": "VITE_CJS_IGNORE_WARNING=1 vite preview",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "lint:server": "cd server && npx eslint src/",
