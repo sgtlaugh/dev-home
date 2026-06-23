@@ -19,7 +19,7 @@
 ---
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/1d8ab321-e33c-4934-962c-a91ef37af9f6" width="800" alt="Dev Home Screenshot" />
+  <img src="https://github.com/user-attachments/assets/b8a0b3c4-cead-45f2-a301-1c6ca434fe44" width="800" alt="Dev Home Screenshot" />
 </p>
 
 ## Features
