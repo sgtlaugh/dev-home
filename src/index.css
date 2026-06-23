@@ -18,6 +18,7 @@ body,
   height: 100%;
   width: 100%;
   overflow: hidden;
+  border: 1px solid #1f2328;
 }
 
 body {
