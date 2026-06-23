@@ -21,13 +21,12 @@
 
 ## Features
 
-- **Summary Dashboard** - Open PRs, Review Requests, JIRA Tasks, And Notifications at a glance.
+- **Summary Dashboard** - Open PRs, Review Requests, JIRA Tasks, and Notifications at a glance.
 - **Activity Timeline** - Last 30 days of JIRA and GitHub activity with filtering.
 - **Team Activity** - See what your teammates are up to across PRs you are involved in.
-- **Contribution stats** - GitHub contribution graph and stats within a date range.
+- **Contribution Stats** - GitHub contribution graph and stats within a date range.
 - **Leaderboard** - Organization leaderboard and ranking.
 - **Rich Notes** - Markdown-powered notes with a built-in editor.
-
 
 ## Quick Start
 
@@ -38,7 +37,7 @@ cd server && yarn install && cd ..     # install server deps
 yarn dev                               # launch the app
 ```
 
-JIRA and GitHub credentials are configured from the in-app settings page.
+Requires [Node.js](https://nodejs.org/) 22 and [Yarn](https://yarnpkg.com/). JIRA and GitHub credentials are configured from the in-app settings page.
 
 ## Build and Packaging
 
@@ -52,13 +51,7 @@ Output goes to `release/`.
 
 ## Screenshots
 
-<!-- Add more screenshots here - Activity tab, Notes, Settings, etc.
-     Drag-drop images when editing on GitHub to auto-upload. -->
-
-| Github Activity | Leaderboard | Contributions |
+| GitHub Activity | Leaderboard | Contributions |
 |---------|----------|-------|
-| ![Github Activity](https://github.com/user-attachments/assets/fa5f67f9-2c08-4106-b450-d5ae5e24f6e3) | ![Leaderboard](https://github.com/user-attachments/assets/f74e635d-73e0-4f53-9388-b01ceb3eda79) | ![Contributions](https://github.com/user-attachments/assets/a23dde91-3c0a-4cea-835f-3d340eef41ca) |
+| ![GitHub Activity](https://github.com/user-attachments/assets/fa5f67f9-2c08-4106-b450-d5ae5e24f6e3) | ![Leaderboard](https://github.com/user-attachments/assets/f74e635d-73e0-4f53-9388-b01ceb3eda79) | ![Contributions](https://github.com/user-attachments/assets/a23dde91-3c0a-4cea-835f-3d340eef41ca) |
 
-## License
-
-MIT
