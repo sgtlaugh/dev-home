@@ -11,7 +11,7 @@ import jiraRoutes, { resetJiraCache } from "./routes/jira";
 import notesRoutes from "./routes/notes";
 import systemRoutes from "./routes/system";
 import { fetchOrgMembers } from "./routes/github/leaderboard";
-import { startPrefetch } from "./services/contributionPrefetch";
+import { startPrefetch, prefetchContributions } from "./services/contributionPrefetch";
 import { errorHandler } from "./utils/errors";
 import { apiCache } from "./utils/cache";
 import { logger } from "./utils/logger";
@@ -130,7 +130,6 @@ export function scheduleStartupPrefetch(): void {
       logger.warn("Prefetch", `Activity prefetch failed: ${err.message}`);
     }
     try {
-      const { prefetchContributions } = await import("./services/contributionsPrefetch");
       await prefetchContributions();
     } catch (err: any) {
       logger.warn("Prefetch", `Contributions prefetch failed: ${err.message}`);
