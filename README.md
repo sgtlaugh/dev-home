@@ -7,8 +7,9 @@
 <p align="center">
   A personal developer dashboard that brings JIRA, GitHub, and your notes into one place.
   <br/><br/>
-  Yes, there's a chess puzzle.<br/>
-  No, it won't count as a commit.
+  Dashboard · Activity · Contributions · Leaderboard · Notes · Notifications
+  <br/><br/>
+  <sub>Yes, there's a chess puzzle. No, it won't count as a commit.</sub>
 </p>
 
 <p align="center">
@@ -21,16 +22,6 @@
 <p align="center">
   <img src="https://github.com/user-attachments/assets/b8a0b3c4-cead-45f2-a301-1c6ca434fe44" width="800" alt="Dev Home Screenshot" />
 </p>
-
-## Features
-
-- Summary Dashboard
-- Activity Timeline
-- Team Activity
-- Contribution Stats
-- Leaderboard
-- JIRA Notifications
-- Rich Notes
 
 ## Quick Start
 
