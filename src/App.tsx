@@ -205,6 +205,8 @@ export default function App() {
     jiraApiToken: "",
     githubToken: "",
     githubUsername: "",
+    startupTab: "summary",
+    defaultOrg: "",
   };
   const [settingsForm, setSettingsForm] = useState<AppSettings>(EMPTY_SETTINGS);
   const [settingsSaving, setSettingsSaving] = useState(false);
@@ -214,8 +216,13 @@ export default function App() {
     loadSettingsFromStore()
       .then((s) => {
         if (s) {
-          setSettingsForm(s);
-          savedSettingsRef.current = s;
+          const merged = {
+            ...s,
+            startupTab: s.startupTab || localStorage.getItem("settings:startupTab") || "summary",
+            defaultOrg: s.defaultOrg || localStorage.getItem("leaderboard:defaultOrg") || "",
+          };
+          setSettingsForm(merged);
+          savedSettingsRef.current = merged;
         }
       })
       .catch(() => {});
@@ -226,6 +233,8 @@ export default function App() {
     try {
       apiCache.clear();
       localStorage.clear();
+      localStorage.setItem("settings:startupTab", settingsForm.startupTab || "summary");
+      localStorage.setItem("leaderboard:defaultOrg", settingsForm.defaultOrg || "");
       await apiClient.post("/cache/purge");
       await saveSettings(settingsForm);
       savedSettingsRef.current = { ...settingsForm };

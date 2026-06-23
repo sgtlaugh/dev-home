@@ -6,6 +6,8 @@ export interface AppSettings {
   jiraApiToken: string;
   githubToken: string;
   githubUsername: string;
+  startupTab: string;
+  defaultOrg: string;
 }
 
 declare global {

@@ -205,12 +205,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
   const { orgs } = useUserOrgs(configured);
   const prefetch = usePrefetchStatus(configured);
-  const [defaultOrg, setDefaultOrg] = useState(
-    () => localStorage.getItem("leaderboard:defaultOrg") || "",
-  );
-  const [startupTab, setStartupTab] = useState(
-    () => localStorage.getItem("settings:startupTab") || "summary",
-  );
+  const defaultOrg = formState.defaultOrg || "";
+  const startupTab = formState.startupTab || "summary";
   const [githubEmail, setGithubEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -261,13 +257,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const handleOrgChange = (val: string) => {
-    setDefaultOrg(val);
-    localStorage.setItem("leaderboard:defaultOrg", val);
+    setFormState((prev) => ({ ...prev, defaultOrg: val }));
   };
 
   const handleStartupTabChange = (val: string) => {
-    setStartupTab(val);
-    localStorage.setItem("settings:startupTab", val);
+    setFormState((prev) => ({ ...prev, startupTab: val }));
   };
 
   const labelStyle: React.CSSProperties = { fontSize: "0.8125rem" };
