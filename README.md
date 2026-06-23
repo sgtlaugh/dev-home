@@ -6,7 +6,7 @@
 
 <p align="center">
   A personal developer dashboard that brings JIRA, GitHub, and your notes into one place.
-  <br></br>
+  <br/><br/>
   Yes, there's a chess puzzle.<br/>
   No, it won't count as a commit.
 </p>
@@ -69,11 +69,9 @@ Go to **Settings** in the app and add the following:
 
 ```bash
 yarn build        # compile frontend + backend
-yarn dist         # build + package for current platform
+yarn dist         # build + package for current platform (output in release/)
 yarn dist:mac     # build + package as macOS DMG (arm64)
 ```
-
-Output goes to `release/`.
 
 ## Screenshots
 
