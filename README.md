@@ -68,6 +68,18 @@ yarn dist         # build + package for current platform (output in release/)
 yarn dist:mac     # build + package as macOS DMG (arm64)
 ```
 
+<details>
+<summary><strong>Good to Know</strong></summary>
+<br/>
+
+| | |
+|---|---|
+| **Rate limits** | GitHub allows `5000` API requests/hour. The app caches aggressively, but Leaderboard prefetch for orgs (`~300` members) can take a few hours on first run. |
+| **Caching** | Responses are cached in SQLite with TTL. Refresh or clear cache from Settings to force fresh data. |
+| **Partial config** | GitHub-only or JIRA-only setups work fine. Unconfigured features show empty states. |
+
+</details>
+
 ## Screenshots
 
 | GitHub Activity | Leaderboard | Contributions |
