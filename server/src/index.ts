@@ -49,19 +49,6 @@ export function createServer() {
   app.use("/api/notes", notesRoutes);
   app.use("/api/system", systemRoutes);
 
-  // Guard: reject API calls when tokens aren't configured
-  app.use("/api", (req, _res, next) => {
-    if (!isConfigured()) {
-      return _res.status(503).json({ error: "Not configured" });
-    }
-    next();
-  });
-
-  // Routes that need API tokens
-  app.use("/api/activity", activityRoutes);
-  app.use("/api/jira", jiraRoutes);
-  app.use("/api/github", githubRoutes);
-  // Health check
   app.get("/api/health", (_req: Request, res: Response) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
@@ -102,6 +89,19 @@ export function createServer() {
     resetJiraCache();
     res.json({ status: "cache cleared" });
   });
+
+  // Guard: reject API calls when tokens aren't configured
+  app.use("/api", (req, _res, next) => {
+    if (!isConfigured()) {
+      return _res.status(503).json({ error: "Not configured" });
+    }
+    next();
+  });
+
+  // Routes that need API tokens
+  app.use("/api/activity", activityRoutes);
+  app.use("/api/jira", jiraRoutes);
+  app.use("/api/github", githubRoutes);
 
   // Error handling middleware — catches thrown errors from async routes
   app.use(errorHandler);
