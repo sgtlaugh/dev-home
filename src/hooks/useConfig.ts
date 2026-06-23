@@ -11,6 +11,8 @@ import {
 
 interface UseConfigReturn {
   configured: boolean;
+  githubConfigured: boolean;
+  jiraConfigured: boolean;
   loading: boolean;
   backendOnline: boolean;
   jiraBaseUrl: string;
@@ -21,6 +23,8 @@ interface UseConfigReturn {
 
 export function useConfig(): UseConfigReturn {
   const [configured, setConfigured] = useState<boolean>(false);
+  const [githubConfigured, setGithubConfigured] = useState<boolean>(false);
+  const [jiraConfigured, setJiraConfigured] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [backendOnline, setBackendOnline] = useState<boolean>(false);
   const [jiraBaseUrl, setJiraBaseUrl] = useState<string>("");
@@ -35,14 +39,7 @@ export function useConfig(): UseConfigReturn {
 
       // First try to load settings from electron-store
       const storedSettings = await loadSettingsFromStore();
-      if (
-        storedSettings &&
-        storedSettings.jiraBaseUrl &&
-        storedSettings.jiraEmail &&
-        storedSettings.jiraApiToken &&
-        storedSettings.githubToken &&
-        storedSettings.githubUsername
-      ) {
+      if (storedSettings) {
         // All fields are non-empty, POST them to the backend
         try {
           await saveSettingsToBackend(storedSettings);
@@ -58,6 +55,8 @@ export function useConfig(): UseConfigReturn {
       if (healthy) {
         const config = await fetchBackendConfig();
         setConfigured(config.configured);
+        setGithubConfigured(config.githubConfigured);
+        setJiraConfigured(config.jiraConfigured);
         setJiraBaseUrl(config.jiraBaseUrl);
         setGithubUsername(config.githubUsername);
       }
@@ -87,6 +86,8 @@ export function useConfig(): UseConfigReturn {
 
   return {
     configured,
+    githubConfigured,
+    jiraConfigured,
     loading,
     backendOnline,
     jiraBaseUrl,

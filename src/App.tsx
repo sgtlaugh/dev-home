@@ -75,6 +75,8 @@ export default function App() {
   const [currentMonthPRsCount, setCurrentMonthPRsCount] = useState(0);
   const {
     configured,
+    githubConfigured,
+    jiraConfigured,
     loading: configLoading,
     backendOnline,
     jiraBaseUrl,
@@ -489,13 +491,19 @@ export default function App() {
           {/* Main content panel */}
           <main className="main-content">
             {/* Config banner */}
-            {!configured && !configLoading && effectiveTab !== "settings" && (
-              <Alert variant="warning" className="small">
-                GitHub and JIRA tokens are not configured.{" "}
-                <Alert.Link onClick={() => setActiveTab("settings")}>Go to Settings</Alert.Link> to
-                set them up.
-              </Alert>
-            )}
+            {!configLoading &&
+              effectiveTab !== "settings" &&
+              (!githubConfigured || !jiraConfigured) && (
+                <Alert variant="warning" className="small">
+                  {!githubConfigured && !jiraConfigured
+                    ? "GitHub and JIRA tokens are not configured."
+                    : !githubConfigured
+                      ? "GitHub token is not configured."
+                      : "JIRA tokens are not configured."}{" "}
+                  <Alert.Link onClick={() => setActiveTab("settings")}>Go to Settings</Alert.Link>{" "}
+                  to set them up.
+                </Alert>
+              )}
 
             {/* Error alert */}
             {error && (

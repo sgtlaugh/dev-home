@@ -60,12 +60,22 @@ export function getConfig(): ServerConfig {
  * Returns true if the server is configured, either via runtime config
  * or via environment variables.
  */
-export function isConfigured(): boolean {
+export function isGithubConfigured(): boolean {
   if (runtimeConfig) {
-    return true;
+    return !!(runtimeConfig.githubToken && runtimeConfig.githubUsername);
   }
+  return !!(process.env.GITHUB_TOKEN && process.env.GITHUB_USERNAME);
+}
 
-  return REQUIRED_ENV_VARS.every((varName) => !!process.env[varName]);
+export function isJiraConfigured(): boolean {
+  if (runtimeConfig) {
+    return !!(runtimeConfig.jiraBaseUrl && runtimeConfig.jiraEmail && runtimeConfig.jiraApiToken);
+  }
+  return !!(process.env.JIRA_BASE_URL && process.env.JIRA_EMAIL && process.env.JIRA_API_TOKEN);
+}
+
+export function isConfigured(): boolean {
+  return isGithubConfigured() || isJiraConfigured();
 }
 
 /**

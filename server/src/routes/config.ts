@@ -1,5 +1,11 @@
 import { Router, Request, Response } from "express";
-import { isConfigured, setRuntimeConfig, getConfig } from "../config";
+import {
+  isConfigured,
+  isGithubConfigured,
+  isJiraConfigured,
+  setRuntimeConfig,
+  getConfig,
+} from "../config";
 
 const router = Router();
 
@@ -21,6 +27,8 @@ router.get("/", (_req: Request, res: Response) => {
 
   res.json({
     configured: isConfigured(),
+    githubConfigured: isGithubConfigured(),
+    jiraConfigured: isJiraConfigured(),
     jiraBaseUrl: jiraBaseUrl.replace(/\/+$/, ""),
     githubUsername,
   });
@@ -41,26 +49,12 @@ router.post("/", (req: Request, res: Response) => {
     githubUsername,
   };
 
-  const invalid: string[] = [];
-  for (const [key, value] of Object.entries(fields)) {
-    if (typeof value !== "string" || value.trim().length === 0) {
-      invalid.push(key);
-    }
-  }
-
-  if (invalid.length > 0) {
-    res.status(400).json({
-      error: `Missing or invalid fields: ${invalid.join(", ")}`,
-    });
-    return;
-  }
-
   setRuntimeConfig({
-    jiraBaseUrl: (jiraBaseUrl as string).replace(/\/+$/, ""),
-    jiraEmail: jiraEmail as string,
-    jiraApiToken: jiraApiToken as string,
-    githubToken: githubToken as string,
-    githubUsername: githubUsername as string,
+    jiraBaseUrl: ((jiraBaseUrl as string) || "").replace(/\/+$/, ""),
+    jiraEmail: (jiraEmail as string) || "",
+    jiraApiToken: (jiraApiToken as string) || "",
+    githubToken: (githubToken as string) || "",
+    githubUsername: (githubUsername as string) || "",
   });
 
   res.json({ success: true });
@@ -87,6 +81,8 @@ router.get("/settings", (_req: Request, res: Response) => {
 
   res.json({
     configured: isConfigured(),
+    githubConfigured: isGithubConfigured(),
+    jiraConfigured: isJiraConfigured(),
     jiraBaseUrl,
     jiraEmail,
     githubUsername,

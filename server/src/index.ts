@@ -1,7 +1,7 @@
 import cors from "cors";
 import express, { Request, Response } from "express";
 import "express-async-errors";
-import { validateEnv, isConfigured } from "./config";
+import { validateEnv, isGithubConfigured, isJiraConfigured } from "./config";
 import { createGitHubClient } from "./clients/githubApiClient";
 import { closeDb, getDb } from "./db";
 import activityRoutes, { prefetchActivity } from "./routes/activity";
@@ -90,18 +90,19 @@ export function createServer() {
     res.json({ status: "cache cleared" });
   });
 
-  // Guard: reject API calls when tokens aren't configured
-  app.use("/api", (req, _res, next) => {
-    if (!isConfigured()) {
-      return _res.status(503).json({ error: "Not configured" });
-    }
+  // Routes guarded by service-specific token checks
+  const githubGuard = (_req: Request, res: Response, next: () => void) => {
+    if (!isGithubConfigured()) return res.status(503).json({ error: "GitHub not configured" });
     next();
-  });
+  };
+  const jiraGuard = (_req: Request, res: Response, next: () => void) => {
+    if (!isJiraConfigured()) return res.status(503).json({ error: "JIRA not configured" });
+    next();
+  };
 
-  // Routes that need API tokens
   app.use("/api/activity", activityRoutes);
-  app.use("/api/jira", jiraRoutes);
-  app.use("/api/github", githubRoutes);
+  app.use("/api/jira", jiraGuard, jiraRoutes);
+  app.use("/api/github", githubGuard, githubRoutes);
 
   // Error handling middleware — catches thrown errors from async routes
   app.use(errorHandler);
@@ -130,7 +131,7 @@ export function startServer() {
 
 export function scheduleStartupPrefetch(): void {
   setTimeout(async () => {
-    if (!isConfigured()) {
+    if (!isGithubConfigured()) {
       logger.info("Prefetch", "Not configured yet, skipping startup prefetch");
       return;
     }

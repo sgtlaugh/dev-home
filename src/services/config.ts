@@ -60,12 +60,16 @@ export async function checkBackendHealth(): Promise<boolean> {
 
 export async function fetchBackendConfig(): Promise<{
   configured: boolean;
+  githubConfigured: boolean;
+  jiraConfigured: boolean;
   jiraBaseUrl: string;
   githubUsername: string;
 }> {
   const { data } = await apiClient.get("/config");
   return {
     configured: data.configured,
+    githubConfigured: data.githubConfigured,
+    jiraConfigured: data.jiraConfigured,
     jiraBaseUrl: data.jiraBaseUrl,
     githubUsername: data.githubUsername,
   };
