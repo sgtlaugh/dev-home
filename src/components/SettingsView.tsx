@@ -14,6 +14,8 @@ import {
   IconAdjustments,
   IconDatabase,
   IconBug,
+  IconCircleCheck,
+  IconCircleMinus,
 } from "@tabler/icons-react";
 import { AppSettings, apiClient } from "../services/config";
 import { useUserOrgs, usePrefetchStatus } from "../hooks/useOrgLeaderboard";
@@ -523,19 +525,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <span className="text-secondary-custom" style={{ flex: 1 }}>
                     Org caching
                   </span>
-                  <span
-                    style={{
-                      fontSize: "0.8rem",
-                      color: prefetch.complete ? "#1a7f37" : "#656d76",
-                      marginRight: 8,
-                    }}
-                  >
-                    {prefetch.complete
-                      ? "Complete"
-                      : prefetch.running
-                        ? `${prefetch.org || "..."} ${prefetch.percentage}%`
-                        : "Idle"}
-                  </span>
+                  {prefetch.running ? (
+                    <span style={{ fontSize: "0.8rem", color: "#656d76" }}>
+                      {prefetch.org || "..."} {prefetch.percentage}%
+                    </span>
+                  ) : (
+                    <Tooltip text={prefetch.complete ? "Complete" : "Idle"}>
+                      <span style={{ marginRight: 24 }}>
+                        {prefetch.complete ? (
+                          <IconCircleCheck size={14} stroke={1.8} color="#1a7f37" />
+                        ) : (
+                          <IconCircleMinus size={14} stroke={1.8} color="#656d76" />
+                        )}
+                      </span>
+                    </Tooltip>
+                  )}
                 </div>
                 {prefetch.running && (
                   <div className="settings-cache-bar" style={{ marginLeft: 22 }}>
