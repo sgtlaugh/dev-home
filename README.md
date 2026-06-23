@@ -47,15 +47,23 @@ Requires [Node.js](https://nodejs.org/) 22 and [Yarn](https://yarnpkg.com/).
 
 Go to **Settings** in the app and add the following:
 
-### GitHub
-[Personal access token](https://github.com/settings/tokens) with `repo`, `read:org`, and `read:user` scopes
+- <details>
+  <summary><strong>GitHub</strong> - Personal access token with <code>repo</code>, <code>read:org</code>, and <code>read:user</code> scopes.</summary>
 
-  <img width="1393" height="1266" alt="token" src="https://github.com/user-attachments/assets/ebb57a59-2d32-4c14-8345-78285c9c5b37" />
+  Generate one [here](https://github.com/settings/tokens).
 
-### JIRA
-Base URL (e.g. `https://yourcompany.atlassian.net`), email, and API token that can be generated from [here](https://id.atlassian.com/manage-profile/security/api-tokens).
+  <img width="700" alt="GitHub token setup" src="https://github.com/user-attachments/assets/ebb57a59-2d32-4c14-8345-78285c9c5b37" />
 
-<img width="1439" height="350" alt="token2" src="https://github.com/user-attachments/assets/9f56b072-da67-4eda-a433-7627b9574f7f" />
+  </details>
+
+- <details>
+  <summary><strong>JIRA</strong> - Base URL, email, and API token.</summary>
+
+  Base URL is your Atlassian domain (e.g. `https://yourcompany.atlassian.net`). Generate an API token [here](https://id.atlassian.com/manage-profile/security/api-tokens).
+
+  <img width="700" alt="JIRA token setup" src="https://github.com/user-attachments/assets/9f56b072-da67-4eda-a433-7627b9574f7f" />
+
+  </details>
 
 ## Build and Packaging
 
