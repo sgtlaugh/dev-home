@@ -33,8 +33,7 @@ import { SettingsView } from "./components/SettingsView";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FindInPage } from "./components/FindInPage";
 import { Contributions } from "./components/Contributions";
-import { Activity } from "./components/Activity";
-import { JiraActivity } from "./components/JiraActivity";
+import { ActivityTimeline } from "./components/ActivityTimeline";
 import { JiraVelocity } from "./components/JiraVelocity";
 import { TeamActivity } from "./components/TeamActivity";
 import { OrgLeaderboard } from "./components/OrgLeaderboard";
@@ -44,6 +43,7 @@ import { useTeamActivity } from "./hooks/useTeamActivity";
 import { useGitHubRateLimit } from "./hooks/useGitHubRateLimit";
 import { usePrefetchStatus } from "./hooks/useOrgLeaderboard";
 import { apiCache } from "./utils/cache";
+import { ACTIVITY_LOOKBACK_DAYS } from "./utils/constants";
 import { getRandomQuote } from "./constants/quotes";
 import { Tooltip } from "./components/Tooltip";
 import { useSystemStats } from "./hooks/useSystemStats";
@@ -747,11 +747,19 @@ export default function App() {
                     />
                   )}
                   {effectiveTab === "activity" && (
-                    <Activity activities={activities} loading={activityLoading} />
+                    <ActivityTimeline
+                      activities={activities.filter((a) => a.type === "github")}
+                      loading={activityLoading}
+                      emptyMessage={`No GitHub activity in the last ${ACTIVITY_LOOKBACK_DAYS} days`}
+                    />
                   )}
                   {effectiveTab === "peers" && <TeamActivity active={effectiveTab === "peers"} />}
                   {effectiveTab === "jira-activity" && (
-                    <JiraActivity activities={activities} loading={activityLoading} />
+                    <ActivityTimeline
+                      activities={activities.filter((a) => a.type === "jira")}
+                      loading={activityLoading}
+                      emptyMessage={`No JIRA activity in the last ${ACTIVITY_LOOKBACK_DAYS} days`}
+                    />
                   )}
                 </div>
               </>
