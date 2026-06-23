@@ -4,11 +4,34 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 env:
-  GH_TOKEN: ${{ secrets.GH_TOKEN }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
+  release-linux:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: yarn install
+      - run: cd server && yarn install
+      - run: yarn dist
+
+      - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*.AppImage
+
   release-mac:
     runs-on: macos-latest
     permissions:
@@ -19,12 +42,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - run: yarn install
+      - run: cd server && yarn install
       - run: yarn dist:mac
 
       - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: release/*.dmg
@@ -39,12 +64,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - run: yarn install
+      - run: cd server && yarn install
       - run: yarn dist:win
 
       - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: release/*.exe
