@@ -1,5 +1,4 @@
-export function getLocalDateString(timestamp?: string): string {
-  const date = timestamp ? new Date(timestamp) : new Date();
+export function formatLocalDate(date: Date): string {
   return (
     date.getFullYear() +
     "-" +
@@ -9,14 +8,8 @@ export function getLocalDateString(timestamp?: string): string {
   );
 }
 
-export function formatLocalDate(date: Date): string {
-  return (
-    date.getFullYear() +
-    "-" +
-    String(date.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(date.getDate()).padStart(2, "0")
-  );
+export function getLocalDateString(timestamp?: string): string {
+  return formatLocalDate(timestamp ? new Date(timestamp) : new Date());
 }
 
 export function formatLocalDateTime(date: Date): string {
