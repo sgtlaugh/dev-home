@@ -6,7 +6,7 @@ export const kosalPieces: Record<string, (args: { squareWidth: number }) => Reac
       key,
       ({ squareWidth }: { squareWidth: number }) => (
         <img
-          src={`/pieces/kosal/${key}.svg`}
+          src={`pieces/kosal/${key}.svg`}
           width={squareWidth}
           height={squareWidth}
           style={{ display: "block" }}

@@ -587,7 +587,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* About */}
       <div className="settings-footer">
         <img
-          src="/devhome-logo.svg"
+          src="devhome-logo.svg"
           alt=""
           width={18}
           height={18}
