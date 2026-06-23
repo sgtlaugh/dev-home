@@ -4,7 +4,7 @@ import "express-async-errors";
 import { validateEnv, isConfigured } from "./config";
 import { createGitHubClient } from "./clients/githubApiClient";
 import { closeDb, getDb } from "./db";
-import activityRoutes from "./routes/activity";
+import activityRoutes, { prefetchActivity } from "./routes/activity";
 import configRoutes from "./routes/config";
 import githubRoutes from "./routes/github";
 import jiraRoutes, { resetJiraCache } from "./routes/jira";
@@ -125,7 +125,6 @@ export function scheduleStartupPrefetch(): void {
       return;
     }
     try {
-      const { prefetchActivity } = await import("./routes/activity");
       await prefetchActivity();
     } catch (err: any) {
       logger.warn("Prefetch", `Activity prefetch failed: ${err.message}`);

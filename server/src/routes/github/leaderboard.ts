@@ -155,10 +155,14 @@ async function fetchBatchFromApi(
           return users.map((_, j) => data[`u${j}`]).filter(Boolean).map((u) => parseUserData(u, chunks));
         } catch (err: any) {
           const status = err?.response?.status;
-          if (status === 403 && users.length > 1) {
-            logger.warn("Leaderboard", `${subTag} got 403, pausing ${FALLBACK_403_PAUSE_MS}ms then falling back to parallel single-user`);
-            await new Promise((r) => setTimeout(r, FALLBACK_403_PAUSE_MS));
-            return await fallbackToSingles(users, subTag);
+          if (status === 403) {
+            if (users.length > 1) {
+              logger.warn("Leaderboard", `${subTag} got 403, pausing ${FALLBACK_403_PAUSE_MS}ms then falling back to parallel single-user`);
+              await new Promise((r) => setTimeout(r, FALLBACK_403_PAUSE_MS));
+              return await fallbackToSingles(users, subTag);
+            }
+            logger.warn("Leaderboard", `${subTag} skipped (403)`);
+            return users.map((login) => ({ login, commits: 0, prs: 0, reviews: 0 }));
           }
           if (err?.message?.includes("Resource limits") && users.length > 5) {
             logger.warn("Leaderboard", `${subTag} resource limit, splitting batch (${users.length} → ${Math.floor(users.length / 2)})`);
@@ -194,7 +198,7 @@ async function fetchBatchFromApi(
             } catch (e: any) {
               if (e?.response?.status === 403) {
                 logger.warn("Leaderboard", `${baseTag}-${login} skipped (403)`);
-                return null;
+                return { login, commits: 0, prs: 0, reviews: 0 };
               }
               logger.error("Leaderboard", `${baseTag}-${login} failed: ${e}`);
               return null;
