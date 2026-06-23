@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
@@ -192,6 +192,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   isDirty,
   onSave,
 }) => {
+  const [saved, setSaved] = useState(false);
+  const prevSaving = useRef(saving);
+  useEffect(() => {
+    if (prevSaving.current && !saving && isDirty === false) {
+      setSaved(true);
+      const t = setTimeout(() => setSaved(false), 2000);
+      return () => clearTimeout(t);
+    }
+    prevSaving.current = saving;
+  }, [saving, isDirty]);
   const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
   const { orgs } = useUserOrgs(configured);
   const prefetch = usePrefetchStatus(configured);
@@ -564,10 +574,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* Save */}
       <div className="d-flex justify-content-center mb-3 mt-4">
         <Button
-          variant="primary"
+          variant={saved ? "success" : "primary"}
           size="sm"
           onClick={onSave}
-          disabled={saving || !isDirty}
+          disabled={saving || !isDirty || saved}
           className="d-flex align-items-center gap-2"
           style={{ padding: "6px 24px" }}
         >
@@ -579,6 +589,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 style={{ width: 12, height: 12, borderWidth: "1.5px" }}
               />
               Saving...
+            </>
+          ) : saved ? (
+            <>
+              <IconCheck size={14} />
+              Saved
             </>
           ) : (
             "Save Settings"
