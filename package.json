@@ -3,6 +3,7 @@
   "version": "2.2.2",
   "private": true,
   "description": "Developer Home Dashboard - JIRA & GitHub integration",
+  "author": "sgtlaugh",
   "repository": "https://github.com/sgtlaugh/dev-home",
   "main": "dist-electron/main.js",
   "scripts": {
