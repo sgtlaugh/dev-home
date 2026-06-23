@@ -45,10 +45,17 @@ Requires [Node.js](https://nodejs.org/) 22 and [Yarn](https://yarnpkg.com/).
 
 ## Configuration
 
-Go to **Settings** in the app and add:
+Go to **Settings** in the app and add the following:
 
-- **GitHub** - [Personal access token](https://github.com/settings/tokens) with `repo`, `read:org`, and `read:user` scopes
-- **JIRA** - Base URL (e.g. `https://yourcompany.atlassian.net`), email, and [API token](https://id.atlassian.com/manage-profile/security/api-tokens)
+### GitHub
+[Personal access token](https://github.com/settings/tokens) with `repo`, `read:org`, and `read:user` scopes
+
+  <img width="1393" height="1266" alt="token" src="https://github.com/user-attachments/assets/ebb57a59-2d32-4c14-8345-78285c9c5b37" />
+
+### JIRA
+Base URL (e.g. `https://yourcompany.atlassian.net`), email, and API token that can be generated from [here](https://id.atlassian.com/manage-profile/security/api-tokens).
+
+<img width="1439" height="350" alt="token2" src="https://github.com/user-attachments/assets/9f56b072-da67-4eda-a433-7627b9574f7f" />
 
 ## Build and Packaging
 
