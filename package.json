@@ -39,6 +39,7 @@
     "asarUnpack": [
       "node_modules/better-sqlite3/**"
     ],
+    "artifactName": "DevHome-${version}-${arch}.${ext}",
     "linux": {
       "target": [
         "AppImage"
