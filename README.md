@@ -4,51 +4,36 @@ A developer dashboard built with Electron, React, and Express that integrates wi
 
 ## Prerequisites
 
-- Node.js (v18+)
+- Node.js 22 (see `.nvmrc`)
 - Yarn
 - A JIRA account with an API token
 - A GitHub personal access token
 
 ## Setup
 
-Install dependencies:
-
 ```bash
-yarn install
+nvm use            # switch to Node 22
+yarn install       # installs deps + rebuilds native modules (better-sqlite3)
 cd server && yarn install && cd ..
 ```
 
 JIRA and GitHub credentials can be configured from the in-app settings.
 
-## Development
-
-Run the frontend and backend concurrently:
+## Running Locally
 
 ```bash
 yarn dev
 ```
 
-Or run them separately:
+Launches Electron app with Vite hot-reload. This is the primary way to run Dev Home - no separate build step needed for local use.
+
+## Build and Packaging
 
 ```bash
-yarn dev:app      # Frontend only (Vite)
-yarn dev:server   # Backend only (Express with hot-reload)
-```
-
-## Build
-
-```bash
-yarn build        # Build frontend + backend
-```
-
-## Packaging
-
-Package the app into a distributable Electron application. All packaging commands run the icon generation and full build automatically before packaging.
-
-```bash
-yarn pack         # Build and create an unpacked app directory (in release/)
-yarn dist         # Build and package for the current platform
-yarn dist:mac     # Build and package as a macOS DMG (arm64)
+yarn build        # compile frontend + backend (no Electron packaging)
+yarn pack         # build + create unpacked app directory (in release/)
+yarn dist         # build + package for current platform
+yarn dist:mac     # build + package as macOS DMG (arm64)
 ```
 
 The packaged output is written to the `release/` directory.
