@@ -21,12 +21,12 @@
 
 ## Features
 
-- **Summary Dashboard** - Open PRs, Review Requests, JIRA Tasks, and Notifications at a glance.
-- **Activity Timeline** - Last 30 days of JIRA and GitHub activity with filtering.
-- **Team Activity** - See what your teammates are up to across PRs you are involved in.
-- **Contribution Stats** - GitHub contribution graph and stats within a date range.
-- **Leaderboard** - Organization leaderboard and ranking.
-- **Rich Notes** - Markdown-powered notes with a built-in editor.
+- Summary Dashboard
+- Activity Timeline
+- Team Activity
+- Contribution Stats
+- Leaderboard
+- Rich Notes
 
 ## Quick Start
 
