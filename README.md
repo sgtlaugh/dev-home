@@ -9,29 +9,25 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/electron-36-47848f?logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/react-18-61dafb?logo=react" alt="React" />
-  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="Platform" />
+  <img src="https://img.shields.io/badge/electron-36-0969da?logo=electron&logoColor=white" alt="Electron" />
+  <img src="https://img.shields.io/badge/react-18-1a7f37?logo=react&logoColor=white" alt="React" />
 </p>
 
 ---
 
-<!-- Replace the placeholder URL below with an actual screenshot.
-     Easiest way: edit this file on GitHub, drag-drop a screenshot into the editor,
-     and GitHub will generate a permanent URL for you. -->
-
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/placeholder" width="800" alt="Dev Home Screenshot" />
+  <img src="https://github.com/user-attachments/assets/1d8ab321-e33c-4934-962c-a91ef37af9f6" width="800" alt="Dev Home Screenshot" />
 </p>
 
 ## Features
 
-- **Summary dashboard** - open PRs, review requests, JIRA tasks, and notifications at a glance
-- **Activity timeline** - last 30 days of JIRA and GitHub activity with filtering
-- **Team activity** - see what your teammates are up to across PRs
-- **Rich notes** - markdown-powered notes with a built-in editor
-- **Contribution stats** - GitHub contribution graph and monthly stats
-- **Dark and light themes** - automatic or manual toggle
+- **Summary Dashboard** - Open PRs, Review Requests, JIRA Tasks, And Notifications at a glance.
+- **Activity Timeline** - Last 30 days of JIRA and GitHub activity with filtering.
+- **Team Activity** - See what your teammates are up to across PRs you are involved in.
+- **Contribution stats** - GitHub contribution graph and stats within a date range.
+- **Leaderboard** - Organization leaderboard and ranking.
+- **Rich Notes** - Markdown-powered notes with a built-in editor.
+
 
 ## Quick Start
 
@@ -59,9 +55,9 @@ Output goes to `release/`.
 <!-- Add more screenshots here - Activity tab, Notes, Settings, etc.
      Drag-drop images when editing on GitHub to auto-upload. -->
 
-| Summary | Activity | Notes |
+| Github Activity | Leaderboard | Contributions |
 |---------|----------|-------|
-| ![Summary](https://github.com/user-attachments/assets/placeholder) | ![Activity](https://github.com/user-attachments/assets/placeholder) | ![Notes](https://github.com/user-attachments/assets/placeholder) |
+| ![Github Activity](https://github.com/user-attachments/assets/fa5f67f9-2c08-4106-b450-d5ae5e24f6e3) | ![Leaderboard](https://github.com/user-attachments/assets/f74e635d-73e0-4f53-9388-b01ceb3eda79) | ![Contributions](https://github.com/user-attachments/assets/a23dde91-3c0a-4cea-835f-3d340eef41ca) |
 
 ## License
 
