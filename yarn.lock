@@ -1890,10 +1890,10 @@
   dependencies:
     undici-types "~7.18.0"
 
-"@types/node@^20.9.0":
-  version "20.19.39"
-  resolved "https://registry.npmjs.org/@types/node/-/node-20.19.39.tgz"
-  integrity sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw==
+"@types/node@^22.7.7":
+  version "22.20.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.20.0.tgz#431f5007396bc1a1a47b9c7df60f3e5e0b5b7304"
+  integrity sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g==
   dependencies:
     undici-types "~6.21.0"
 
@@ -3361,13 +3361,13 @@ electron-to-chromium@^1.5.328:
   resolved "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.331.tgz"
   integrity sha512-IbxXrsTlD3hRodkLnbxAPP4OuJYdWCeM3IOdT+CpcMoIwIoDfCmRpEtSPfwBXxVkg9xmBeY7Lz2Eo2TDn/HC3Q==
 
-electron@^33.0.0:
-  version "33.4.11"
-  resolved "https://registry.npmjs.org/electron/-/electron-33.4.11.tgz"
-  integrity sha512-xmdAs5QWRkInC7TpXGNvzo/7exojubk+72jn1oJL7keNeIlw7xNglf8TGtJtkR4rWC5FJq0oXiIXPS9BcK2Irg==
+electron@^36.0.0:
+  version "36.9.5"
+  resolved "https://registry.yarnpkg.com/electron/-/electron-36.9.5.tgz#78e117e8cf97d53687f8d5a412e8bf9336229320"
+  integrity sha512-1UCss2IqxqujSzg/2jkRjuiT3G+EEXgd6UKB5kUekwQW1LJ6d4QCr8YItfC3Rr9VIGRDJ29eOERmnRNO1Eh+NA==
   dependencies:
     "@electron/get" "^2.0.0"
-    "@types/node" "^20.9.0"
+    "@types/node" "^22.7.7"
     extract-zip "^2.0.1"
 
 emoji-regex@^10.3.0:
