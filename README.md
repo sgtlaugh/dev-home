@@ -60,6 +60,18 @@ Go to **Settings** in the app and add the following:
 
 Grab the latest release for your platform from [Releases](https://github.com/sgtlaugh/dev-home/releases).
 
+## Development
+
+```bash
+yarn test                              # run frontend tests
+cd server && yarn test                 # run server tests
+yarn test:all                          # run all tests
+yarn lint:all                          # run lint + prettier (frontend + server)
+yarn fix:all                           # auto-fix lint issues
+```
+
+CI runs lint and tests on every push and PR to `master`.
+
 ## Build from Source
 
 ```bash
