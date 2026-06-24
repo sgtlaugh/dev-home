@@ -55,6 +55,8 @@ Go to **Settings** in the app and add the following:
   <img width="700" alt="JIRA token setup" src="https://github.com/user-attachments/assets/9f56b072-da67-4eda-a433-7627b9574f7f" />
 
   </details>
+> [!NOTE]
+> You will need to add at least one of Github or JIRA credentials in order to use the app. If you only add one, no data will be shown for the other.
 
 ## Download
 
