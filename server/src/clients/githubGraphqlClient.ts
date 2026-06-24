@@ -25,7 +25,7 @@ export function getLastRateLimit(): RateLimitStatus | null {
   return lastRateLimit;
 }
 
-function injectRateLimit(query: string): string {
+export function injectRateLimit(query: string): string {
   if (query.includes("rateLimit")) return query;
   return query.replace(/(\bquery\b[^{]*\{)/, "$1\n    rateLimit { limit remaining resetAt }");
 }

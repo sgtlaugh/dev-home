@@ -7,6 +7,7 @@ import {
   getCompletionTime,
   VELOCITY_DATE_REGEX,
 } from "../utils/jiraHelpers";
+import { isAllowedAvatarDomain } from "../utils/avatarDomain";
 import axios from "axios";
 import { logger } from "../utils/logger";
 
@@ -179,21 +180,6 @@ router.get("/avatar", async (req: Request, res: Response) => {
   const idx = raw.indexOf(prefix);
   const url = idx >= 0 ? raw.slice(idx + prefix.length) : "";
   if (!url) return res.status(400).send("Missing url param");
-
-  const isAllowedAvatarDomain = (u: string): boolean => {
-    try {
-      const host = new URL(u).hostname;
-      return (
-        host.endsWith(".atlassian.net") ||
-        host.endsWith(".atlassian.com") ||
-        host.endsWith(".gravatar.com") ||
-        host.endsWith(".wp.com") ||
-        host === "gravatar.com"
-      );
-    } catch {
-      return false;
-    }
-  };
 
   if (!isAllowedAvatarDomain(url)) {
     return res.status(403).send("Avatar domain not allowed");
