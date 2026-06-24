@@ -214,7 +214,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [githubEmail, setGithubEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!formState.githubToken) return;
+    if (!formState.githubToken || formState.githubToken.length < 40) return;
     fetch("https://api.github.com/user/emails", {
       headers: { Authorization: `Bearer ${formState.githubToken}` },
     })
