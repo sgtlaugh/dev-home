@@ -220,7 +220,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         const primary = emails.find((e: { primary: boolean }) => e.primary);
         setGithubEmail(primary?.email || emails[0]?.email || null);
       })
-      .catch(() => {});
+      .catch(() => setGithubEmail(null));
   }, [formState.githubToken]);
 
   useEffect(() => {
