@@ -20,6 +20,8 @@ export function usePrefetchStatus(active: boolean) {
     if (!active) return;
 
     let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     const poll = async () => {
       try {
         const { data } = await apiClient.get<PrefetchStatus>("/github/prefetch-status");
@@ -29,11 +31,31 @@ export function usePrefetchStatus(active: boolean) {
       }
     };
 
-    poll();
-    const interval = setInterval(poll, 5000);
+    const start = () => {
+      stop();
+      poll();
+      interval = setInterval(poll, 5000);
+    };
+
+    const stop = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) stop();
+      else start();
+    };
+
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [active]);
 
