@@ -217,6 +217,7 @@ export async function startPrefetch(org: string, members: string[]): Promise<voi
 
           saveContributions(org, entries);
           saveProfiles(profiles);
+          retries403 = 0;
         } catch (err: any) {
           const status = err?.response?.status;
           if (status === 403) {
