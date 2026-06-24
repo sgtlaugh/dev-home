@@ -175,9 +175,8 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
                     fill={s.color}
                     opacity={isZero ? 0.2 : isPeak && si === 0 ? 1 : 0.85}
                     onMouseEnter={(e) => {
-                      const lines = series.map((ss) => {
-                        const rv = [...ss.data].reverse();
-                        return `${ss.label}: ${rv[i]?.value || 0}`;
+                      const lines = series.map((ss, ssi) => {
+                        return `${ss.label}: ${reversedBySeries[ssi][i]?.value || 0}`;
                       });
                       setTooltip({
                         x: e.clientX,
