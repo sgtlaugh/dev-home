@@ -118,8 +118,10 @@ export function ContributionHeatmap({
       month,
       prDates,
     );
-    const selectedStartDate = new Date(selectedStart);
-    const selectedEndDate = new Date(selectedEnd);
+    const [sy, sm, sd] = selectedStart.split("-").map(Number);
+    const selectedStartDate = new Date(sy, sm - 1, sd);
+    const [ey, em, ed] = selectedEnd.split("-").map(Number);
+    const selectedEndDate = new Date(ey, em - 1, ed);
 
     const aligned = new Date(displayStartDate);
     aligned.setDate(aligned.getDate() - aligned.getDay());
