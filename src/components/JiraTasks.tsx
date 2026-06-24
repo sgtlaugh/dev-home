@@ -53,8 +53,10 @@ interface JiraTasksProps {
 }
 
 export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading, baseUrl }) => {
-  const allIssues = [...rawIssues].sort(
-    (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime(),
+  const allIssues = useMemo(
+    () =>
+      [...rawIssues].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()),
+    [rawIssues],
   );
   const jiraBase = baseUrl?.replace(/\/+$/, "") || "";
   const [activeStatus, setActiveStatus] = useState<string | null>(null);
