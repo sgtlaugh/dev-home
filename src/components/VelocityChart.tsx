@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { getYTicks } from "../utils/chartUtils";
 
 interface WeekData {
   weekRange: string;
@@ -264,22 +265,4 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
 function shortLabel(weekRange: string): string {
   const parts = weekRange.split(" - ");
   return parts[0] || weekRange;
-}
-
-function getYTicks(max: number): number[] {
-  const steps = [1, 2, 5, 10, 20, 50, 100, 200, 500];
-  const targetTicks = 4;
-  let step = 1;
-  for (const s of steps) {
-    if (max / s <= targetTicks) {
-      step = s;
-      break;
-    }
-  }
-  const ticks: number[] = [];
-  for (let v = 0; v <= max; v += step) {
-    ticks.push(v);
-  }
-  if (ticks[ticks.length - 1] < max) ticks.push(ticks[ticks.length - 1] + step);
-  return ticks;
 }

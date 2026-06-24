@@ -49,11 +49,11 @@ function getMonthLabels(days: DailyCount[]): { label: string; index: number }[] 
   return labels;
 }
 
-export function computeStreak(days: { count: number; date: string }[]): number {
-  const today = getLocalDateString();
+export function computeStreak(days: { count: number; date: string }[], today?: string): number {
+  const todayStr = today ?? getLocalDateString();
   const lastIdx = days.length - 1;
   let startIdx = lastIdx;
-  if (days[lastIdx]?.date === today && days[lastIdx]?.count === 0) {
+  if (days[lastIdx]?.date === todayStr && days[lastIdx]?.count === 0) {
     startIdx = lastIdx - 1;
   }
   let current = 0;
