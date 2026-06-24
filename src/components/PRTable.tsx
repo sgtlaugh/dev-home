@@ -173,16 +173,20 @@ export const PRTable: React.FC<PRTableProps> = ({ prs, loading, variant }) => {
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
   );
   const grouped = new Map<string, GitHubPR[]>();
-  const now = Date.now();
+  const now = new Date();
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayDate = new Date(todayDate);
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
   for (const pr of sorted) {
-    const hoursAgo = (now - new Date(pr.updated_at).getTime()) / (1000 * 60 * 60);
+    const prDate = new Date(pr.updated_at);
+    const prDateOnly = new Date(prDate.getFullYear(), prDate.getMonth(), prDate.getDate());
     let dateKey: string;
-    if (hoursAgo < 24) {
+    if (prDateOnly.getTime() === todayDate.getTime()) {
       dateKey = "Today";
-    } else if (hoursAgo < 48) {
+    } else if (prDateOnly.getTime() === yesterdayDate.getTime()) {
       dateKey = "Yesterday";
     } else {
-      dateKey = new Date(pr.updated_at).toLocaleDateString("en-US", {
+      dateKey = prDate.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
