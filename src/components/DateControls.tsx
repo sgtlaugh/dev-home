@@ -52,22 +52,18 @@ export function DateControls({
   const [customEnd, setCustomEnd] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const handleCustomDateChange = useCallback(
-    (start: string, end: string) => {
-      setCustomStart(start);
-      setCustomEnd(end);
-      setMode("custom");
-      onDateChange(start, end);
-      onModeInfo?.({ mode: "custom", year, month });
-    },
-    [onDateChange, onModeInfo, year, month],
-  );
+  const handleCustomDateChange = useCallback((start: string, end: string) => {
+    setCustomStart(start);
+    setCustomEnd(end);
+    setMode("custom");
+  }, []);
 
   // Emit date range on mode/month/year change (and on mount)
   useEffect(() => {
     if (mode === "custom") {
       if (customStart && customEnd) {
         onDateChange(customStart, customEnd);
+        onModeInfo?.({ mode: "custom", year, month });
       }
       return;
     }
