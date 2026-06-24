@@ -74,7 +74,7 @@ router.patch("/:id", (req: Request, res: Response) => {
 
   if (resolved !== undefined) {
     setClauses.push("resolved = ?");
-    params.push(resolved ? 1 : 0);
+    params.push(resolved === true || resolved === 1 ? 1 : 0);
   }
 
   if (title !== undefined) {
