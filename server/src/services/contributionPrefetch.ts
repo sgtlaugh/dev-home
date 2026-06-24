@@ -41,24 +41,34 @@ export function registerLeaderboardCheck(fn: () => boolean): void {
   isLeaderboardActiveFn = fn;
 }
 
-function buildMonthQuery(logins: string[], yearMonth: string, orgId: string): string {
+function buildMonthQuery(
+  logins: string[],
+  yearMonth: string,
+): { query: string; variables: Record<string, string> } {
   const [y, m] = yearMonth.split("-").map(Number);
   const lastDay = new Date(y, m, 0).getDate();
   const from = `${yearMonth}-01T00:00:00Z`;
   const to = `${yearMonth}-${lastDay.toString().padStart(2, "0")}T23:59:59Z`;
 
-  const users = logins.map(
-    (login, i) =>
-      `u${i}: user(login: "${login}") {
+  const variables: Record<string, string> = { from, to };
+  const varDefs = ["$from: DateTime!", "$to: DateTime!", "$orgId: ID!"];
+
+  const users = logins.map((login, i) => {
+    const varName = `$l${i}`;
+    varDefs.push(`${varName}: String!`);
+    variables[`l${i}`] = login;
+    return `u${i}: user(login: ${varName}) {
         login name avatarUrl
-        c: contributionsCollection(from: "${from}", to: "${to}", organizationID: "${orgId}") {
+        c: contributionsCollection(from: $from, to: $to, organizationID: $orgId) {
           totalCommitContributions
           totalPullRequestContributions
           totalPullRequestReviewContributions
         }
-      }`,
-  );
-  return `query { ${users.join("\n")} }`;
+      }`;
+  });
+
+  const query = `query(${varDefs.join(", ")}) { ${users.join("\n")} }`;
+  return { query, variables };
 }
 
 function formatEta(seconds: number): string {
@@ -99,10 +109,7 @@ export function isPrefetchRunning(): boolean {
   return prefetchRunning;
 }
 
-export async function startPrefetch(
-  org: string,
-  members: string[],
-): Promise<void> {
+export async function startPrefetch(org: string, members: string[]): Promise<void> {
   if (prefetchRunning) {
     logger.info("Prefetch", "Already running, skipping");
     return;
@@ -114,7 +121,16 @@ export async function startPrefetch(
   try {
     await waitForLeaderboard();
 
-    const data = await graphql<{ organization: { id: string } }>(`query { organization(login: "${org}") { id } }`);
+    const data = await graphql<{ organization: { id: string } }>(
+      `
+        query ($org: String!) {
+          organization(login: $org) {
+            id
+          }
+        }
+      `,
+      { org },
+    );
     const orgId = data.organization.id;
 
     const startYearMonth = await getOrgCreatedMonth(org);
@@ -137,7 +153,10 @@ export async function startPrefetch(
     if (cachedMonthsList.length > 0) {
       const recent = cachedMonthsList.slice(0, 5).join(", ");
       const suffix = cachedMonthsList.length > 5 ? ` +${cachedMonthsList.length - 5} more` : "";
-      logger.info("Prefetch", `${cachedMonthsList.length} months cached for ${org}: ${recent}${suffix}`);
+      logger.info(
+        "Prefetch",
+        `${cachedMonthsList.length} months cached for ${org}: ${recent}${suffix}`,
+      );
     }
 
     const totalMonths = monthsToProcess.length;
@@ -150,7 +169,10 @@ export async function startPrefetch(
 
     progress = { monthsDone: cachedMonthsList.length, totalMonths, org, completedAt: 0 };
 
-    const totalQueries = monthWork.reduce((s, w) => s + Math.ceil(w.missing.length / BATCH_SIZE), 0);
+    const totalQueries = monthWork.reduce(
+      (s, w) => s + Math.ceil(w.missing.length / BATCH_SIZE),
+      0,
+    );
     logger.info(
       "Prefetch",
       `Starting for ${org}: ${monthWork.length} months to fetch, ${cachedMonthsList.length} cached, ~${totalQueries} queries`,
@@ -166,10 +188,14 @@ export async function startPrefetch(
         await waitForLeaderboard();
 
         const batch = missing.slice(i, i + BATCH_SIZE);
-        const query = buildMonthQuery(batch, month, orgId);
+        const { query, variables } = buildMonthQuery(batch, month);
 
         try {
-          const data = await graphql<Record<string, any>>(query, {}, `prefetch/${org}/${month}`);
+          const data = await graphql<Record<string, any>>(
+            query,
+            { ...variables, orgId },
+            `prefetch/${org}/${month}`,
+          );
 
           const entries: MonthlyContribution[] = [];
           const profiles: { login: string; name: string | null; avatarUrl: string }[] = [];
@@ -221,7 +247,10 @@ export async function startPrefetch(
     }
 
     progress.completedAt = Date.now();
-    logger.info("Prefetch", `Completed for ${org}: ${queriesDone} queries in ${formatEta((Date.now() - startTime) / 1000)}`);
+    logger.info(
+      "Prefetch",
+      `Completed for ${org}: ${queriesDone} queries in ${formatEta((Date.now() - startTime) / 1000)}`,
+    );
   } finally {
     prefetchRunning = false;
   }
