@@ -100,7 +100,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeActors, setActiveActors] = useState<Set<string>>(new Set());
 
-  const VISIBLE_ENTITY_LIMIT = 5;
+  const VISIBLE_ENTITY_LIMIT = 3;
 
   const stats = useMemo(() => {
     const counts = new Map<string, number>();
