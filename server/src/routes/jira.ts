@@ -247,35 +247,29 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   const allComments = issues.flatMap((issue: any) => {
     const comments = issue.fields?.comment?.comments || [];
     const isAssignedToMe = issue.fields?.assignee?.accountId === userAccountId;
-    return comments
-      .filter((comment: any) => {
-        if (comment.author?.accountId === userAccountId) return false;
-        const bodyText = adfToMarkdown(comment.body).toLowerCase();
-        // Include if mentioned or if comment is on assigned issue
-        return bodyText.includes(username) || bodyText.includes(email) || isAssignedToMe;
-      })
-      .map((comment: any) => {
-        const bodyText = adfToMarkdown(comment.body).toLowerCase();
-        const isMentioned = bodyText.includes(username) || bodyText.includes(email);
-        const notificationType = isMentioned ? "mentioned" : "assigned";
+    return comments.reduce((acc: any[], comment: any) => {
+      if (comment.author?.accountId === userAccountId) return acc;
+      const bodyMarkdown = adfToMarkdown(comment.body);
+      const bodyLower = bodyMarkdown.toLowerCase();
+      const isMentioned = bodyLower.includes(username) || bodyLower.includes(email);
+      if (!isMentioned && !isAssignedToMe) return acc;
 
-        return {
-          id: comment.id,
-          author: {
-            displayName: comment.author?.displayName,
-            avatarUrls: comment.author?.avatarUrls,
-          },
-          body: {
-            text: adfToMarkdown(comment.body),
-          },
-          created: comment.created,
-          updated: comment.updated,
-          self: comment.self,
-          issueKey: issue.key,
-          issueSummary: issue.fields?.summary,
-          type: notificationType,
-        };
+      acc.push({
+        id: comment.id,
+        author: {
+          displayName: comment.author?.displayName,
+          avatarUrls: comment.author?.avatarUrls,
+        },
+        body: { text: bodyMarkdown },
+        created: comment.created,
+        updated: comment.updated,
+        self: comment.self,
+        issueKey: issue.key,
+        issueSummary: issue.fields?.summary,
+        type: isMentioned ? "mentioned" : "assigned",
       });
+      return acc;
+    }, []);
   });
 
   allComments.sort(
