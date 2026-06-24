@@ -163,7 +163,7 @@ router.get("/issues", async (_req: Request, res: Response) => {
   const config = getConfig();
   const jira = createJiraClient();
 
-  const jql = `assignee = "${config.jiraEmail}" ORDER BY updated DESC`;
+  const jql = `assignee = currentUser() ORDER BY updated DESC`;
   const spField = await getStoryPointsFieldId();
   const fields = [
     "summary",
