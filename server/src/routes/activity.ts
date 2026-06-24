@@ -132,9 +132,11 @@ router.get("/", async (_req: Request, res: Response) => {
     res.json(stale.data);
     if (!refreshInProgress) {
       refreshInProgress = true;
-      refreshActivityCache().finally(() => {
-        refreshInProgress = false;
-      });
+      refreshActivityCache()
+        .catch((err) => logError("Activity/background-refresh", err))
+        .finally(() => {
+          refreshInProgress = false;
+        });
     }
     return;
   }
@@ -157,9 +159,11 @@ router.get("/count", async (_req: Request, res: Response) => {
     res.json(activityCounts(stale.data.activities));
     if (!stale.fresh && !refreshInProgress) {
       refreshInProgress = true;
-      refreshActivityCache().finally(() => {
-        refreshInProgress = false;
-      });
+      refreshActivityCache()
+        .catch((err) => logError("Activity/background-refresh", err))
+        .finally(() => {
+          refreshInProgress = false;
+        });
     }
     return;
   }
