@@ -444,6 +444,42 @@ async function fetchGitHubActivity(
     return null;
   });
 
+  const REVIEW_ACTIVITY_QUERY = `
+    query($query: String!, $first: Int!) {
+      search(query: $query, type: ISSUE, first: $first) {
+        nodes {
+          ... on PullRequest {
+            number
+            title
+            url
+            repository { nameWithOwner }
+            reviews(last: 50) {
+              nodes {
+                state
+                body
+                author { login avatarUrl }
+                submittedAt
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const reviewedPrsPromise = graphql<{ search: { nodes: any[] } }>(
+    REVIEW_ACTIVITY_QUERY,
+    {
+      query: `reviewed-by:${config.githubUsername} type:pr updated:>=${sinceDate}`,
+      first: 100,
+    },
+    "activity/reviewed-prs",
+  ).catch((err) => {
+    logError("Activity/GitHub reviewed PRs", err);
+    return null;
+  });
+
   try {
     const events: any[] = [];
     let page = 1;
@@ -465,8 +501,6 @@ async function fetchGitHubActivity(
 
     // Collect unique PR references that need title lookup (events API returns abbreviated PR objects without title)
     const prRefs = new Map<string, { owner: string; repo: string; number: number }>();
-    // Collect review IDs that need comment body lookup (Events API omits review comment bodies)
-    const reviewRefs: { repo: string; prNumber: number; reviewId: number; eventId: string }[] = [];
     for (const event of recentEvents) {
       const repo = event.repo?.name || "";
       const [owner, repoName] = repo.split("/");
@@ -476,18 +510,6 @@ async function fetchGitHubActivity(
         if (!prRefs.has(key)) {
           prRefs.set(key, { owner, repo: repoName, number: pr.number });
         }
-      }
-      if (
-        event.type === "PullRequestReviewEvent" &&
-        event.payload?.review?.state === "commented" &&
-        !event.payload?.review?.body
-      ) {
-        reviewRefs.push({
-          repo,
-          prNumber: pr?.number,
-          reviewId: event.payload.review.id,
-          eventId: event.id,
-        });
       }
     }
 
@@ -514,34 +536,6 @@ async function fetchGitHubActivity(
       } catch (err) {
         logError("Activity/GitHub PR titles", err, { prCount: prRefs.size });
       }
-    }
-
-    // Batch fetch review comment bodies via REST (capped concurrency)
-    const reviewBodies = new Map<string, string>();
-    const REVIEW_BATCH_SIZE = 5;
-    if (reviewRefs.length > 0) {
-      for (let i = 0; i < reviewRefs.length; i += REVIEW_BATCH_SIZE) {
-        const batch = reviewRefs.slice(i, i + REVIEW_BATCH_SIZE);
-        await Promise.all(
-          batch.map(async (ref) => {
-            try {
-              const { data: comments } = await github.get(
-                `/repos/${ref.repo}/pulls/${ref.prNumber}/reviews/${ref.reviewId}/comments`,
-                { params: { per_page: 1 } },
-              );
-              if (comments?.[0]?.body) {
-                reviewBodies.set(ref.eventId, comments[0].body);
-              }
-            } catch {
-              // Non-critical, skip silently
-            }
-          }),
-        );
-      }
-      logger.info(
-        "Activity",
-        `Fetched ${reviewBodies.size}/${reviewRefs.length} review comment bodies`,
-      );
     }
 
     // Helper to resolve PR title
@@ -577,39 +571,6 @@ async function fetchGitHubActivity(
             timestamp: event.created_at,
             entityKey: `${repo}#${pr.number}`,
             metadata: { actor: userActor },
-          });
-          break;
-        }
-        case "PullRequestReviewEvent": {
-          const review = event.payload?.review;
-          const pr = event.payload?.pull_request;
-          if (!pr) break;
-
-          const reviewState = review?.state;
-          let reviewAction = "";
-          if (reviewState === "approved") reviewAction = "Approved PR";
-          else if (reviewState === "changes_requested") reviewAction = "Changes Requested";
-          else if (reviewState === "commented") reviewAction = "Commented on PR";
-          if (!reviewAction) break;
-
-          const entityKey = `${repo}#${pr.number}`;
-          const reviewBody = review?.body || reviewBodies.get(event.id) || "";
-          const reviewTrimmed = reviewBody.slice(0, COMMENT_PREVIEW_LENGTH);
-          const reviewPreview =
-            reviewTrimmed + (reviewBody.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
-          activities.push({
-            id: `github-review-${event.id}`,
-            type: "github",
-            action: reviewAction,
-            title: `${entityKey}: ${getPRTitle(repo, pr)}`,
-            url: review?.html_url || pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
-            timestamp: event.created_at,
-            entityKey,
-            metadata: {
-              state: reviewState,
-              actor: userActor,
-              ...(reviewPreview && { commentBody: reviewPreview }),
-            },
           });
           break;
         }
@@ -732,10 +693,11 @@ async function fetchGitHubActivity(
     logger.error("Activity", "Failed to fetch GitHub events", { error: String(err) });
   }
 
-  const [repoDiscovery, prSupplement, mergedPrs] = await Promise.all([
+  const [repoDiscovery, prSupplement, mergedPrs, reviewedPrs] = await Promise.all([
     repoDiscoveryPromise,
     prSupplementPromise,
     mergedPrsPromise,
+    reviewedPrsPromise,
   ]);
 
   if (repoDiscovery) {
@@ -859,6 +821,52 @@ async function fetchGitHubActivity(
     logger.info(
       "Activity",
       `GraphQL merged PRs: ${mergedPrs.search.nodes?.length || 0} checked, ${mergedCount} by user`,
+    );
+  }
+
+  if (reviewedPrs) {
+    let reviewCount = 0;
+    const seenReviews = new Set<string>();
+    for (const pr of reviewedPrs.search.nodes || []) {
+      const repoName = pr.repository?.nameWithOwner || "";
+      const entityKey = `${repoName}#${pr.number}`;
+
+      for (const review of pr.reviews?.nodes || []) {
+        if (review.author?.login !== config.githubUsername) continue;
+        if (!review.submittedAt) continue;
+        if (new Date(review.submittedAt).getTime() < thirtyDaysAgo) continue;
+
+        let action = "";
+        if (review.state === "APPROVED") action = "Approved PR";
+        else if (review.state === "CHANGES_REQUESTED") action = "Changes Requested";
+        if (!action) continue;
+
+        const reviewKey = `${entityKey}-${review.submittedAt}`;
+        if (seenReviews.has(reviewKey)) continue;
+        seenReviews.add(reviewKey);
+
+        const reviewBody = review.body || "";
+        const reviewPreview = reviewBody ? truncatePreview(reviewBody) : "";
+        activities.push({
+          id: `github-review-gql-${pr.number}-${review.submittedAt}`,
+          type: "github",
+          action,
+          title: `${entityKey}: ${pr.title}`,
+          url: review.url || pr.url,
+          timestamp: review.submittedAt,
+          entityKey,
+          metadata: {
+            state: review.state.toLowerCase(),
+            actor: userActor,
+            ...(reviewPreview && { commentBody: reviewPreview }),
+          },
+        });
+        reviewCount++;
+      }
+    }
+    logger.info(
+      "Activity",
+      `GraphQL reviews: ${reviewedPrs.search.nodes?.length || 0} PRs checked, ${reviewCount} reviews by user`,
     );
   }
 
