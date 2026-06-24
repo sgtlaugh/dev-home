@@ -108,3 +108,7 @@ yarn dist:mac     # build + package as macOS DMG (arm64)
 | **Partial config** | GitHub-only or JIRA-only setups work fine. Unconfigured features show empty states. |
 
 </details>
+
+## Acknowledgements
+
+Originally inspired by [siddiqus/dev-home](https://github.com/siddiqus/dev-home). The project has since diverged significantly in features and architecture.
