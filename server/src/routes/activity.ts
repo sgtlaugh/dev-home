@@ -441,9 +441,16 @@ async function fetchGitHubActivity(
   });
 
   try {
-    const { data: events } = await github.get(`/users/${config.githubUsername}/events`, {
-      params: { per_page: 300 },
-    });
+    const events: any[] = [];
+    let page = 1;
+    while (true) {
+      const { data } = await github.get(`/users/${config.githubUsername}/events`, {
+        params: { per_page: 100, page },
+      });
+      events.push(...data);
+      if (data.length < 100) break;
+      page++;
+    }
 
     logger.info("Activity", `GitHub events: ${events.length} raw`);
 
