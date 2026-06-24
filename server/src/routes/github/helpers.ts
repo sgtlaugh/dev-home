@@ -189,7 +189,8 @@ export async function fetchCommentsInBatches(
             context_title: notification.subject?.title || "",
             reason: notification.reason || "",
           };
-        } catch {
+        } catch (err) {
+          logger.warn("Mentions", `Failed to fetch comment for ${notification.id}: ${err}`);
           return null;
         }
       }),
