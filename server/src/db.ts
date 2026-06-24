@@ -167,6 +167,7 @@ export function getDb(): Database.Database {
 
   db = new Database(getDbPath());
   db.pragma("journal_mode = WAL");
+  db.pragma("busy_timeout = 5000");
 
   runMigrations(db);
 
