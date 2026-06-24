@@ -45,10 +45,10 @@ export function collapseActivitiesByEntity(activities: ActivityItem[]): Collapse
   }
 
   for (const collapsed of map.values()) {
-    collapsed.reviewState = getReviewState(collapsed.actions);
     collapsed.actions.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
+    collapsed.reviewState = getReviewState(collapsed.actions);
   }
 
   return Array.from(map.values()).sort(
