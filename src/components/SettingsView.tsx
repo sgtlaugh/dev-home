@@ -76,12 +76,16 @@ function TokenField({
 }) {
   const [editing, setEditing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(copyTimer.current), []);
 
   const handleCopy = useCallback(async () => {
     if (!value) return;
     await navigator.clipboard.writeText(value);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied(false), 1500);
   }, [value]);
 
   if (value && !editing) {
