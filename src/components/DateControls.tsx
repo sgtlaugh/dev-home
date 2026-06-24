@@ -60,7 +60,7 @@ export function DateControls({
       onDateChange(start, end);
       onModeInfo?.({ mode: "custom", year, month });
     },
-    [onDateChange],
+    [onDateChange, onModeInfo, year, month],
   );
 
   // Emit date range on mode/month/year change (and on mount)
@@ -76,7 +76,7 @@ export function DateControls({
       onDateChange(range.start, range.end);
       onModeInfo?.({ mode, year, month });
     }
-  }, [mode, year, month]);
+  }, [mode, year, month, customStart, customEnd, onDateChange, onModeInfo]);
 
   return (
     <Card className={`controls-card ${className}`}>
