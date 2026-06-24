@@ -101,7 +101,12 @@ export function calculateVelocityMetrics(
     completionTimes.length > 0
       ? completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length
       : 0;
-  const median = completionTimes.length > 0 ? sortedTimes[Math.floor(sortedTimes.length / 2)] : 0;
+  const median =
+    completionTimes.length > 0
+      ? sortedTimes.length % 2 === 1
+        ? sortedTimes[Math.floor(sortedTimes.length / 2)]
+        : (sortedTimes[sortedTimes.length / 2 - 1] + sortedTimes[sortedTimes.length / 2]) / 2
+      : 0;
   const fastest = sortedTimes.length > 0 ? sortedTimes[0] : 0;
   const slowest = sortedTimes.length > 0 ? sortedTimes[sortedTimes.length - 1] : 0;
 

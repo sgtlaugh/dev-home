@@ -196,6 +196,17 @@ describe("calculateVelocityMetrics", () => {
     expect(result.averageCompletionTime.fastestDays).toBe(7);
     expect(result.averageCompletionTime.slowestDays).toBe(14);
     expect(result.averageCompletionTime.meanDays).toBe(10.5);
+    expect(result.averageCompletionTime.medianDays).toBe(10.5);
+  });
+
+  it("calculates median correctly for odd-length arrays", () => {
+    const issues = [
+      makeIssue("PROJ-1", "2026-01-05T00:00:00Z", "2026-01-07T00:00:00Z"),
+      makeIssue("PROJ-2", "2026-01-05T00:00:00Z", "2026-01-12T00:00:00Z"),
+      makeIssue("PROJ-3", "2026-01-05T00:00:00Z", "2026-01-19T00:00:00Z"),
+    ];
+    const result = calculateVelocityMetrics(issues, "2026-01-05", "2026-01-25");
+    expect(result.averageCompletionTime.medianDays).toBe(7);
   });
 
   it("groups issues into correct weeks", () => {
