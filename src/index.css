@@ -803,9 +803,9 @@ a:hover {
   color: #116329;
 }
 
-.badge-status-yellow {
-  background-color: rgba(154, 103, 0, 0.1);
-  color: #9a6700;
+.badge-status-coral {
+  background-color: rgba(232, 104, 74, 0.1);
+  color: #e8684a;
 }
 
 .badge-status-red {

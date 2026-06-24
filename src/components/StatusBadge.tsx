@@ -25,7 +25,7 @@ function getBadgeClass(colorName: string, statusName: string): string {
     case "indigo":
       return "badge-status-blue";
     case "yellow":
-      return "badge-status-yellow";
+      return "badge-status-coral";
     case "green":
     case "done":
       return "badge-status-green";

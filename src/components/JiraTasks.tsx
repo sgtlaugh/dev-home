@@ -26,7 +26,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 const STATUS_BAR_COLORS: Record<string, string> = {
   green: "#1a7f37",
-  yellow: "#9a6700",
+  yellow: "#e8684a",
   blue: "#0969da",
 };
 
