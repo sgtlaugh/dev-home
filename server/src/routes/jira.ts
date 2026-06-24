@@ -367,15 +367,19 @@ router.get("/velocity", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "startDate and endDate required (YYYY-MM-DD)" });
   }
 
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+    return res.status(400).json({ error: "Invalid date format, expected YYYY-MM-DD" });
+  }
+
   const cacheKey = `jira:velocity:${startDate}:${endDate}`;
   const cached = apiCache.get(cacheKey);
   if (cached) return res.json(cached);
 
-  const config = getConfig();
   const jira = createJiraClient();
 
   const spField = await getStoryPointsFieldId();
-  const jql = `assignee = "${config.jiraEmail}" AND statusCategory = Done AND resolutiondate >= "${startDate}" AND resolutiondate <= "${endDate}" ORDER BY resolutiondate DESC`;
+  const jql = `assignee = currentUser() AND statusCategory = Done AND resolutiondate >= "${startDate}" AND resolutiondate <= "${endDate}" ORDER BY resolutiondate DESC`;
   const fields = [
     "key",
     "summary",
