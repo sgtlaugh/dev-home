@@ -14,7 +14,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/electron-36-0969da?logo=electron&logoColor=white" alt="Electron" />
-  <img src="https://img.shields.io/badge/react-18-1a7f37?logo=react&logoColor=white" alt="React" />
+  <img src="https://github.com/sgtlaugh/dev-home/actions/workflows/ci.yml/badge.svg" alt="CI" />
 </p>
 
 ---
