@@ -13,6 +13,7 @@ let storyPointsDetected = false;
 export function resetJiraCache(): void {
   storyPointsFieldId = null;
   storyPointsDetected = false;
+  avatarCache.clear();
 }
 
 async function getStoryPointsFieldId(): Promise<string | null> {
@@ -286,6 +287,7 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   res.json(result);
 });
 
+const AVATAR_CACHE_MAX = 500;
 const avatarCache = new Map<string, { data: Buffer; contentType: string }>();
 
 router.get("/avatar", async (req: Request, res: Response) => {
@@ -297,6 +299,8 @@ router.get("/avatar", async (req: Request, res: Response) => {
 
   const cached = avatarCache.get(url);
   if (cached) {
+    avatarCache.delete(url);
+    avatarCache.set(url, cached);
     res.set("Content-Type", cached.contentType);
     res.set("Cache-Control", "public, max-age=86400");
     return res.send(cached.data);
@@ -324,6 +328,9 @@ router.get("/avatar", async (req: Request, res: Response) => {
     const response = await axios.get(fetchUrl, { responseType: "arraybuffer", timeout: 5000 });
     const contentType = response.headers["content-type"] || "image/png";
     const data = Buffer.from(response.data);
+    if (avatarCache.size >= AVATAR_CACHE_MAX) {
+      avatarCache.delete(avatarCache.keys().next().value!);
+    }
     avatarCache.set(url, { data, contentType });
     res.set("Content-Type", contentType);
     res.set("Cache-Control", "public, max-age=86400");
