@@ -222,7 +222,10 @@ export async function startPrefetch(org: string, members: string[]): Promise<voi
           if (status === 403) {
             retries403++;
             if (retries403 >= 3) {
-              logger.error("Prefetch", `403 persisted after ${retries403} retries, skipping month ${month}`);
+              logger.error(
+                "Prefetch",
+                `403 persisted after ${retries403} retries, skipping month ${month}`,
+              );
               break;
             }
             logger.warn("Prefetch", `Got 403, pausing 30s (retry ${retries403}/3)`);

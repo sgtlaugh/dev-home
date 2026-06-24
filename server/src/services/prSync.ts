@@ -15,7 +15,6 @@ const PARALLEL_BATCH = 4;
 
 let syncRunning = false;
 
-
 export async function syncPRs(): Promise<void> {
   if (syncRunning) {
     logger.info("PRSync", "Already running, skipping");
