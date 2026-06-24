@@ -72,7 +72,7 @@ export default function App() {
     () => localStorage.getItem("settings:startupTab") || "summary",
   );
   const quote = useMemo(() => getRandomQuote(), []);
-  const [currentMonthPRsCount, setCurrentMonthPRsCount] = useState(0);
+  const [, setCurrentMonthPRsCount] = useState(0);
   const {
     configured,
     githubConfigured,

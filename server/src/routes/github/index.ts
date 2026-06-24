@@ -3,11 +3,7 @@ import { getConfig } from "../../config";
 import { graphql, getLastRateLimit } from "../../clients/githubGraphqlClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
-import {
-  monthsAgo,
-  mapGraphQLPr,
-  extractOwnPRComments,
-} from "./helpers";
+import { monthsAgo, mapGraphQLPr, extractOwnPRComments } from "./helpers";
 import { COMBINED_DASHBOARD_QUERY } from "./queries";
 import prsRouter from "./prs";
 import reviewsRouter from "./reviews";
@@ -35,11 +31,15 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
     result = await graphql<{
       myPRs: { nodes: any[] };
       reviews: { nodes: any[] };
-    }>(COMBINED_DASHBOARD_QUERY, {
-      myPRsQuery,
-      reviewsQuery,
-      first: 50,
-    }, "dashboard/prs+reviews");
+    }>(
+      COMBINED_DASHBOARD_QUERY,
+      {
+        myPRsQuery,
+        reviewsQuery,
+        first: 50,
+      },
+      "dashboard/prs+reviews",
+    );
   } catch (error) {
     logger.error("GET /dashboard", `GraphQL error: ${error}`);
     return res.status(500).json({ error: "Failed to fetch dashboard data" });
@@ -54,20 +54,14 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
   const prs = myPRsNodes
     .map(mapGraphQLPr)
     .filter((pr: any) => pr.state === "open")
-    .sort(
-      (a: any, b: any) =>
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-    );
+    .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   const prComments = extractOwnPRComments(myPRsNodes, config.githubUsername);
 
   const reviewsNodes = result.reviews.nodes || [];
   const reviews = reviewsNodes
     .map(mapGraphQLPr)
     .filter((pr: any) => pr.state === "open")
-    .sort(
-      (a: any, b: any) =>
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-    );
+    .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
   const responseData = { prs, pr_comments: prComments, reviews };
   apiCache.set(cacheKey, responseData);

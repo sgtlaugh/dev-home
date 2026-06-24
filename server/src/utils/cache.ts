@@ -1,3 +1,4 @@
+import fs from "fs";
 import Database from "better-sqlite3";
 import path from "path";
 import { logger } from "./logger";
@@ -9,8 +10,8 @@ class ApiCache {
 
   constructor() {
     const dbDir = path.join(process.cwd(), "server");
-    if (!require("fs").existsSync(dbDir)) {
-      require("fs").mkdirSync(dbDir, { recursive: true });
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
     }
     const dbPath = path.join(dbDir, "cache.db");
     this.db = new Database(dbPath);

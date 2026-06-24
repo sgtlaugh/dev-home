@@ -21,8 +21,9 @@ async function getStoryPointsFieldId(): Promise<string | null> {
   try {
     const jira = createJiraClient();
     const { data } = await jira.get("/field");
-    const field = data.find((f: any) =>
-      /story.?point/i.test(f.name) || f.key === "story_points" || f.id === "story_points"
+    const field = data.find(
+      (f: any) =>
+        /story.?point/i.test(f.name) || f.key === "story_points" || f.id === "story_points",
     );
     storyPointsFieldId = field?.id || field?.key || null;
     storyPointsDetected = true;
@@ -163,7 +164,17 @@ router.get("/issues", async (_req: Request, res: Response) => {
 
   const jql = `assignee = "${config.jiraEmail}" ORDER BY updated DESC`;
   const spField = await getStoryPointsFieldId();
-  const fields = ["summary", "status", "priority", "assignee", "project", "updated", "description", "issuetype", ...(spField ? [spField] : [])];
+  const fields = [
+    "summary",
+    "status",
+    "priority",
+    "assignee",
+    "project",
+    "updated",
+    "description",
+    "issuetype",
+    ...(spField ? [spField] : []),
+  ];
 
   const allIssues: any[] = [];
   let nextPageToken: string | undefined;
@@ -203,7 +214,7 @@ router.get("/issues", async (_req: Request, res: Response) => {
     self: issue.self,
     description: adfToMarkdown(issue.fields?.description),
     issueType: issue.fields?.issuetype?.name || "Task",
-    storyPoints: spField ? (Number(issue.fields?.[spField]) || 0) : 0,
+    storyPoints: spField ? Number(issue.fields?.[spField]) || 0 : 0,
   }));
 
   const result = { issues };
@@ -263,10 +274,12 @@ router.get("/mentions", async (_req: Request, res: Response) => {
           issueSummary: issue.fields?.summary,
           type: notificationType,
         };
-      })
+      });
   });
 
-  allComments.sort((a: any, b: any) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+  allComments.sort(
+    (a: any, b: any) => new Date(b.updated).getTime() - new Date(a.updated).getTime(),
+  );
 
   const result = { comments: allComments };
   apiCache.set(cacheKey, result);
@@ -297,7 +310,11 @@ router.get("/avatar", async (req: Request, res: Response) => {
     if (url.includes("gravatar.com/avatar")) {
       const match = url.match(/[?&]d=([^&]+)/);
       if (match) {
-        const head = await axios.head(url, { maxRedirects: 0, timeout: 3000, validateStatus: () => true });
+        const head = await axios.head(url, {
+          maxRedirects: 0,
+          timeout: 3000,
+          validateStatus: () => true,
+        });
         if (head.status === 302) {
           fetchUrl = decodeURIComponent(match[1]);
         }
@@ -336,7 +353,14 @@ router.get("/velocity", async (req: Request, res: Response) => {
 
   const spField = await getStoryPointsFieldId();
   const jql = `assignee = "${config.jiraEmail}" AND statusCategory = Done AND resolutiondate >= "${startDate}" AND resolutiondate <= "${endDate}" ORDER BY resolutiondate DESC`;
-  const fields = ["key", "summary", "created", "resolutiondate", "issuetype", ...(spField ? [spField] : [])];
+  const fields = [
+    "key",
+    "summary",
+    "created",
+    "resolutiondate",
+    "issuetype",
+    ...(spField ? [spField] : []),
+  ];
 
   const { data } = await jira.post("/search/jql", {
     jql,
@@ -351,7 +375,7 @@ router.get("/velocity", async (req: Request, res: Response) => {
     key: issue.key,
     summary: issue.fields?.summary || "",
     type: issue.fields?.issuetype?.name || "Task",
-    storyPoints: spField ? (Number(issue.fields?.[spField]) || 0) : 0,
+    storyPoints: spField ? Number(issue.fields?.[spField]) || 0 : 0,
     resolutiondate: issue.fields?.resolutiondate || "",
     completionDays: Math.round(getCompletionTime(issue) * 10) / 10,
   }));
@@ -394,8 +418,7 @@ function formatWeekRange(startDateStr: string): string {
   const [year, month, day] = startDateStr.split("-").map(Number);
   const start = new Date(year, month - 1, day);
   const end = new Date(year, month - 1, day + 6);
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
   return `${fmt(start)} - ${fmt(end)}`;
 }
 
@@ -405,40 +428,6 @@ function getCompletionTime(issue: any): number {
   const resolved = new Date(issue.fields?.resolutiondate || new Date());
   const days = (resolved.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
   return Math.max(0, days);
-}
-
-// Helper: Calculate trend
-function calculateTrend(completionsByWeek: Array<{ week: string; count: number }>): {
-  trend: "improving" | "stable" | "declining";
-  percentage: number;
-} {
-  if (completionsByWeek.length < 2) {
-    return { trend: "stable", percentage: 0 };
-  }
-
-  const recent = completionsByWeek
-    .slice(-2)
-    .reduce((sum, w) => sum + w.count, 0) / 2;
-  const previous =
-    completionsByWeek.length >= 4
-      ? completionsByWeek
-          .slice(-4, -2)
-          .reduce((sum, w) => sum + w.count, 0) / 2
-      : recent;
-
-  if (previous === 0) {
-    return { trend: "stable", percentage: 0 };
-  }
-
-  const change = ((recent - previous) / previous) * 100;
-
-  if (change > 10) {
-    return { trend: "improving", percentage: change };
-  }
-  if (change < -10) {
-    return { trend: "declining", percentage: change };
-  }
-  return { trend: "stable", percentage: change };
 }
 
 // Helper: Format time as "Xd" (rounded up) or "Xh" if < 1 day
@@ -461,13 +450,16 @@ function calculateVelocityMetrics(
   spFieldId?: string | null,
 ): Record<string, any> {
   const completionTimes: number[] = [];
-  const completionsByWeekMap = new Map<string, { count: number; storyPoints: number; issues: string[] }>();
+  const completionsByWeekMap = new Map<
+    string,
+    { count: number; storyPoints: number; issues: string[] }
+  >();
   let totalStoryPoints = 0;
 
   for (const issue of issues) {
     const time = getCompletionTime(issue);
     completionTimes.push(time);
-    const sp = spFieldId ? (Number(issue.fields?.[spFieldId]) || 0) : 0;
+    const sp = spFieldId ? Number(issue.fields?.[spFieldId]) || 0 : 0;
     totalStoryPoints += sp;
 
     const weekKey = getWeekKey(new Date(issue.fields?.resolutiondate));
@@ -495,26 +487,28 @@ function calculateVelocityMetrics(
     });
 
   const sortedTimes = [...completionTimes].sort((a, b) => a - b);
-  const mean = completionTimes.length > 0 ? completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length : 0;
-  const median =
+  const mean =
     completionTimes.length > 0
-      ? sortedTimes[Math.floor(sortedTimes.length / 2)]
+      ? completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length
       : 0;
+  const median = completionTimes.length > 0 ? sortedTimes[Math.floor(sortedTimes.length / 2)] : 0;
   const fastest = sortedTimes.length > 0 ? sortedTimes[0] : 0;
   const slowest = sortedTimes.length > 0 ? sortedTimes[sortedTimes.length - 1] : 0;
 
   const totalWeeks = completionsByWeek.length || 1;
   const tasksPerWeek = issues.length / totalWeeks;
 
-  const currentWeekCount = completionsByWeek.length > 0 ? completionsByWeek[completionsByWeek.length - 1].count : 0;
-  const previousWeekCount = completionsByWeek.length > 1 ? completionsByWeek[completionsByWeek.length - 2].count : 0;
+  const currentWeekCount =
+    completionsByWeek.length > 0 ? completionsByWeek[completionsByWeek.length - 1].count : 0;
+  const previousWeekCount =
+    completionsByWeek.length > 1 ? completionsByWeek[completionsByWeek.length - 2].count : 0;
 
   let trend: "improving" | "stable" | "declining" = "stable";
   let trendPercentage = 0;
   if (completionsByWeek.length >= 2) {
     const midpoint = Math.ceil(completionsByWeek.length / 2);
     const useSP = totalStoryPoints > 0;
-    const metric = (w: { count: number; storyPoints: number }) => useSP ? w.storyPoints : w.count;
+    const metric = (w: { count: number; storyPoints: number }) => (useSP ? w.storyPoints : w.count);
     const recentHalf = completionsByWeek.slice(0, midpoint).reduce((sum, w) => sum + metric(w), 0);
     const olderHalf = completionsByWeek.slice(midpoint).reduce((sum, w) => sum + metric(w), 0);
 

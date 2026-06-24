@@ -41,14 +41,6 @@ router.get("/", (_req: Request, res: Response) => {
 router.post("/", (req: Request, res: Response) => {
   const { jiraBaseUrl, jiraEmail, jiraApiToken, githubToken, githubUsername } = req.body || {};
 
-  const fields: Record<string, unknown> = {
-    jiraBaseUrl,
-    jiraEmail,
-    jiraApiToken,
-    githubToken,
-    githubUsername,
-  };
-
   setRuntimeConfig({
     jiraBaseUrl: ((jiraBaseUrl as string) || "").replace(/\/+$/, ""),
     jiraEmail: (jiraEmail as string) || "",

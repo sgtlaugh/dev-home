@@ -4,7 +4,7 @@ import { graphql } from "../../clients/githubGraphqlClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import { ACTIVITY_LOOKBACK_DAYS, COMMENT_PREVIEW_LENGTH } from "../../utils/constants";
-import { monthsAgo, mapGraphQLPr, isBot } from "./helpers";
+import { monthsAgo, isBot } from "./helpers";
 import { SEARCH_TEAM_ACTIVITY_QUERY } from "./queries";
 import { getOpenInvolvedPRs, getWatermark } from "../../services/prStore";
 
@@ -34,23 +34,34 @@ router.get("/team-activity", async (req: Request, res: Response) => {
     const username = config.githubUsername;
 
     const [myPRsResult, involvedPRsResult] = await Promise.all([
-      graphql<{ search: { nodes: any[] } }>(SEARCH_TEAM_ACTIVITY_QUERY, {
-        query: `author:${username} type:pr updated:>=${monthsAgo(
-          Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
-        )}`,
-        first: 100,
-      }, "team-activity/my-prs"),
-      graphql<{ search: { nodes: any[] } }>(SEARCH_TEAM_ACTIVITY_QUERY, {
-        query: `involves:${username} -author:${username} type:pr updated:>=${monthsAgo(
-          Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
-        )}`,
-        first: 100,
-      }, "team-activity/involved-prs"),
+      graphql<{ search: { nodes: any[] } }>(
+        SEARCH_TEAM_ACTIVITY_QUERY,
+        {
+          query: `author:${username} type:pr updated:>=${monthsAgo(
+            Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
+          )}`,
+          first: 100,
+        },
+        "team-activity/my-prs",
+      ),
+      graphql<{ search: { nodes: any[] } }>(
+        SEARCH_TEAM_ACTIVITY_QUERY,
+        {
+          query: `involves:${username} -author:${username} type:pr updated:>=${monthsAgo(
+            Math.ceil(ACTIVITY_LOOKBACK_DAYS / 30),
+          )}`,
+          first: 100,
+        },
+        "team-activity/involved-prs",
+      ),
     ]);
 
     const myPRNodes = myPRsResult.search.nodes || [];
     const involvedPRNodes = involvedPRsResult.search.nodes || [];
-    logger.info("TeamActivity", `myPRs: ${myPRNodes.length}, involvedPRs: ${involvedPRNodes.length}`);
+    logger.info(
+      "TeamActivity",
+      `myPRs: ${myPRNodes.length}, involvedPRs: ${involvedPRNodes.length}`,
+    );
 
     const seen = new Set<string>();
     const allPRNodes: any[] = [];
@@ -69,7 +80,12 @@ router.get("/team-activity", async (req: Request, res: Response) => {
       const prState = pr.merged ? "merged" : pr.state === "CLOSED" ? "closed" : "open";
 
       // Track if a peer merged this PR
-      if (pr.merged && pr.mergedBy?.login && pr.mergedBy.login !== username && !isBot(pr.mergedBy.login)) {
+      if (
+        pr.merged &&
+        pr.mergedBy?.login &&
+        pr.mergedBy.login !== username &&
+        !isBot(pr.mergedBy.login)
+      ) {
         activities.push({
           id: `peer-merge-${pr.number}-${pr.mergedBy.login}-${pr.mergedAt}`,
           type: "github",
@@ -176,9 +192,7 @@ router.get("/team-activity", async (req: Request, res: Response) => {
       }
     }
 
-    activities.sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    );
+    activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     logger.info(
       "TeamActivity",
       `found ${activities.length} peer activities from ${allPRNodes.length} PRs`,

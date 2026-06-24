@@ -2,7 +2,7 @@ import { graphql } from "../../clients/githubGraphqlClient";
 import { createGitHubClient } from "../../clients/githubApiClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
-import { ACTIVITY_LOOKBACK_DAYS, LONG_CACHE_TTL } from "../../utils/constants";
+import { LONG_CACHE_TTL } from "../../utils/constants";
 import { SEARCH_PRS_QUERY } from "./queries";
 
 /**
@@ -292,12 +292,18 @@ export async function fetchPRsForSubRange(
           search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
         }>(SEARCH_PRS_QUERY, { query: q, first: 100, after: cursor }, "contributions/page");
       } catch (error) {
-        logger.error("fetchPRsForSubRange", `Failed to fetch PRs for ${currentStart}..${currentEnd}: ${error}`);
+        logger.error(
+          "fetchPRsForSubRange",
+          `Failed to fetch PRs for ${currentStart}..${currentEnd}: ${error}`,
+        );
         break;
       }
 
       if (!result?.search) {
-        logger.warn("fetchPRsForSubRange", `No search data in response for ${currentStart}..${currentEnd}`);
+        logger.warn(
+          "fetchPRsForSubRange",
+          `No search data in response for ${currentStart}..${currentEnd}`,
+        );
         break;
       }
 

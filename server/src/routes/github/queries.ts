@@ -206,4 +206,3 @@ export function buildContributionsQuery(chunks: ContributionChunk[]): string {
 export function buildForkHistoryQuery(fragments: string[]): string {
   return `query { ${fragments.join("\n")} }`;
 }
-

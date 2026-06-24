@@ -2,12 +2,7 @@ import { Router, Request, Response } from "express";
 import { createGitHubClient } from "../../clients/githubApiClient";
 import { logger } from "../../utils/logger";
 import { ACTIVITY_LOOKBACK_DAYS } from "../../utils/constants";
-import {
-  monthsAgo,
-  fetchAllNotifications,
-  fetchCommentsInBatches,
-  isBot,
-} from "./helpers";
+import { monthsAgo, fetchAllNotifications, fetchCommentsInBatches, isBot } from "./helpers";
 
 const router = Router();
 

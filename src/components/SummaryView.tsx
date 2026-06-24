@@ -17,7 +17,7 @@ import {
 } from "@tabler/icons-react";
 import { SystemStats } from "../services/system";
 import { JiraIssue, JiraComment, GitHubPR, Note } from "../types";
-import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
+import { getNoteDisplayTitle } from "../utils/text";
 import { ChecksStatusIcon } from "./ChecksStatusIcon";
 import { Timestamp } from "./Timestamp";
 import { StatusBadge } from "./StatusBadge";
@@ -326,7 +326,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   jiraComments,
   openPRs,
   reviewRequests,
-  loading,
+  loading: _loading,
   jiraIssuesLoading,
   jiraCommentsLoading,
   openPRsLoading,

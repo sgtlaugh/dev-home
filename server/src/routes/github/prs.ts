@@ -3,11 +3,7 @@ import { getConfig } from "../../config";
 import { graphql } from "../../clients/githubGraphqlClient";
 import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
-import {
-  monthsAgo,
-  mapGraphQLPr,
-  extractOwnPRComments,
-} from "./helpers";
+import { monthsAgo, mapGraphQLPr, extractOwnPRComments } from "./helpers";
 import { SEARCH_PRS_QUERY } from "./queries";
 import { getAuthoredPRsByDateRange, getWatermark } from "../../services/prStore";
 
@@ -23,10 +19,14 @@ router.get("/prs", async (_req: Request, res: Response) => {
 
   let result;
   try {
-    result = await graphql<{ search: { nodes: any[] } }>(SEARCH_PRS_QUERY, {
-      query: q,
-      first: 50,
-    }, "prs/open");
+    result = await graphql<{ search: { nodes: any[] } }>(
+      SEARCH_PRS_QUERY,
+      {
+        query: q,
+        first: 50,
+      },
+      "prs/open",
+    );
   } catch (error) {
     logger.error("GET /prs", `GraphQL error: ${error}`);
     return res.status(500).json({ error: "Failed to fetch PRs" });

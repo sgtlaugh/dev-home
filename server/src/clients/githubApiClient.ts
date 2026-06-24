@@ -40,7 +40,10 @@ export function createGitHubClient(baseUrl: string = GITHUB_API) {
 
       if (status && RETRYABLE.has(status) && attempt <= MAX_RETRIES) {
         const delay = 1000 * Math.pow(2, attempt - 1);
-        logger.warn("GitHub", `${status} ${url}, retrying in ${delay}ms (${attempt}/${MAX_RETRIES})`);
+        logger.warn(
+          "GitHub",
+          `${status} ${url}, retrying in ${delay}ms (${attempt}/${MAX_RETRIES})`,
+        );
         error.config.__retryCount = attempt;
         await new Promise((r) => setTimeout(r, delay));
         return client.request(error.config);

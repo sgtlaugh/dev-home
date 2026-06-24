@@ -118,12 +118,28 @@ export function upsertPRs(prs: GitHubPR[], involvement: Involvement): void {
   db.transaction((items: GitHubPR[]) => {
     for (const pr of items) {
       stmt.run(
-        pr.id, involvement, pr.number, pr.title, pr.html_url,
-        pr.state, pr.draft ? 1 : 0, pr.merged ? 1 : 0,
-        pr.merged_at, pr.closed_at, pr.created_at, pr.updated_at,
-        pr.user.login, pr.user.avatar_url,
-        pr.head.ref, pr.base.ref, pr.repository_url, pr.repo_full_name,
-        pr.checks_status, pr.review_status, pr.additions, pr.deletions,
+        pr.id,
+        involvement,
+        pr.number,
+        pr.title,
+        pr.html_url,
+        pr.state,
+        pr.draft ? 1 : 0,
+        pr.merged ? 1 : 0,
+        pr.merged_at,
+        pr.closed_at,
+        pr.created_at,
+        pr.updated_at,
+        pr.user.login,
+        pr.user.avatar_url,
+        pr.head.ref,
+        pr.base.ref,
+        pr.repository_url,
+        pr.repo_full_name,
+        pr.checks_status,
+        pr.review_status,
+        pr.additions,
+        pr.deletions,
       );
     }
   })(prs);
@@ -133,45 +149,53 @@ export function upsertPRs(prs: GitHubPR[], involvement: Involvement): void {
 
 export function getOpenAuthoredPRs(): GitHubPR[] {
   const db = getDb();
-  const rows = db.prepare(
-    "SELECT * FROM prs WHERE state = 'open' AND involvement = 'author' ORDER BY updated_at DESC",
-  ).all() as PRRow[];
+  const rows = db
+    .prepare(
+      "SELECT * FROM prs WHERE state = 'open' AND involvement = 'author' ORDER BY updated_at DESC",
+    )
+    .all() as PRRow[];
   return rows.map(rowToPR);
 }
 
 export function getOpenInvolvedPRs(): GitHubPR[] {
   const db = getDb();
-  const rows = db.prepare(
-    "SELECT * FROM prs WHERE state = 'open' AND involvement = 'involved' ORDER BY updated_at DESC",
-  ).all() as PRRow[];
+  const rows = db
+    .prepare(
+      "SELECT * FROM prs WHERE state = 'open' AND involvement = 'involved' ORDER BY updated_at DESC",
+    )
+    .all() as PRRow[];
   return rows.map(rowToPR);
 }
 
 export function getAuthoredPRsByDateRange(startDate: string, endDate: string): GitHubPR[] {
   const db = getDb();
-  const rows = db.prepare(
-    `SELECT * FROM prs
+  const rows = db
+    .prepare(
+      `SELECT * FROM prs
      WHERE involvement = 'author' AND created_at >= ? AND created_at <= ?
      ORDER BY created_at DESC`,
-  ).all(`${startDate}T00:00:00Z`, `${endDate}T23:59:59Z`) as PRRow[];
+    )
+    .all(`${startDate}T00:00:00Z`, `${endDate}T23:59:59Z`) as PRRow[];
   return rows.map(rowToPR);
 }
 
 export function getInvolvedPRsByDateRange(startDate: string, endDate: string): GitHubPR[] {
   const db = getDb();
-  const rows = db.prepare(
-    `SELECT * FROM prs
+  const rows = db
+    .prepare(
+      `SELECT * FROM prs
      WHERE involvement = 'involved' AND created_at >= ? AND created_at <= ?
      ORDER BY created_at DESC`,
-  ).all(`${startDate}T00:00:00Z`, `${endDate}T23:59:59Z`) as PRRow[];
+    )
+    .all(`${startDate}T00:00:00Z`, `${endDate}T23:59:59Z`) as PRRow[];
   return rows.map(rowToPR);
 }
 
 export function getWatermark(dataType: string): string | null {
   const db = getDb();
-  const row = db.prepare(
-    "SELECT watermark FROM sync_state WHERE data_type = ?",
-  ).get(dataType) as { watermark: string } | undefined;
+  const row = db.prepare("SELECT watermark FROM sync_state WHERE data_type = ?").get(dataType) as
+    | { watermark: string }
+    | undefined;
   return row?.watermark ?? null;
 }
 

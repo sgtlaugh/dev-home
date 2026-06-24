@@ -6,7 +6,12 @@ import { graphql } from "../clients/githubGraphqlClient";
 import { apiCache } from "../utils/cache";
 import { logError } from "../utils/errors";
 import { logger } from "../utils/logger";
-import { ACTIVITY_LOOKBACK_DAYS, ACTIVITY_LIVE_DAYS, COMMENT_PREVIEW_LENGTH, SHORT_CACHE_TTL } from "../utils/constants";
+import {
+  ACTIVITY_LOOKBACK_DAYS,
+  ACTIVITY_LIVE_DAYS,
+  COMMENT_PREVIEW_LENGTH,
+  SHORT_CACHE_TTL,
+} from "../utils/constants";
 import { getCachedActivities, saveActivities, purgeOldActivities } from "../services/activityCache";
 import { adfToPlainText } from "../utils/adf";
 
@@ -55,7 +60,10 @@ async function refreshActivityCache(): Promise<{ activities: ActivityItem[] }> {
   ]);
 
   const liveActivities = [...jiraActivities, ...githubActivities];
-  logger.info("Activity", `Live fetch (${ACTIVITY_LIVE_DAYS}d): ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub`);
+  logger.info(
+    "Activity",
+    `Live fetch (${ACTIVITY_LIVE_DAYS}d): ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub`,
+  );
 
   // Save live activities to SQLite
   saveActivities(liveActivities);
@@ -65,7 +73,10 @@ async function refreshActivityCache(): Promise<{ activities: ActivityItem[] }> {
   const liveCutoff = new Date(now - ACTIVITY_LIVE_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const lookbackCutoff = new Date(now - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const cachedActivities = getCachedActivities(lookbackCutoff, liveCutoff);
-  logger.info("Activity", `SQLite cache: ${cachedActivities.length} activities (days ${ACTIVITY_LIVE_DAYS}-${ACTIVITY_LOOKBACK_DAYS})`);
+  logger.info(
+    "Activity",
+    `SQLite cache: ${cachedActivities.length} activities (days ${ACTIVITY_LIVE_DAYS}-${ACTIVITY_LOOKBACK_DAYS})`,
+  );
 
   // Merge: live wins on id conflict
   const byId = new Map<string, ActivityItem>();
@@ -91,13 +102,20 @@ export async function prefetchActivity(): Promise<void> {
   ]);
 
   const allActivities = [...jiraActivities, ...githubActivities];
-  logger.info("Activity/Prefetch", `Fetched ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub = ${allActivities.length} total`);
+  logger.info(
+    "Activity/Prefetch",
+    `Fetched ${jiraActivities.length} JIRA, ${githubActivities.length} GitHub = ${allActivities.length} total`,
+  );
 
   saveActivities(allActivities);
 
   const cutoff = new Date(Date.now() - ACTIVITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const purged = purgeOldActivities(cutoff);
-  if (purged > 0) logger.info("Activity/Prefetch", `Purged ${purged} activities older than ${ACTIVITY_LOOKBACK_DAYS} days`);
+  if (purged > 0)
+    logger.info(
+      "Activity/Prefetch",
+      `Purged ${purged} activities older than ${ACTIVITY_LOOKBACK_DAYS} days`,
+    );
 
   const sorted = allActivities.sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
@@ -114,7 +132,9 @@ router.get("/", async (_req: Request, res: Response) => {
     res.json(stale.data);
     if (!refreshInProgress) {
       refreshInProgress = true;
-      refreshActivityCache().finally(() => { refreshInProgress = false; });
+      refreshActivityCache().finally(() => {
+        refreshInProgress = false;
+      });
     }
     return;
   }
@@ -125,8 +145,8 @@ router.get("/", async (_req: Request, res: Response) => {
 
 function activityCounts(activities: ActivityItem[]) {
   return {
-    github: activities.filter(a => a.type === "github").length,
-    jira: activities.filter(a => a.type === "jira").length,
+    github: activities.filter((a) => a.type === "github").length,
+    jira: activities.filter((a) => a.type === "jira").length,
     total: activities.length,
   };
 }
@@ -137,7 +157,9 @@ router.get("/count", async (_req: Request, res: Response) => {
     res.json(activityCounts(stale.data.activities));
     if (!stale.fresh && !refreshInProgress) {
       refreshInProgress = true;
-      refreshActivityCache().finally(() => { refreshInProgress = false; });
+      refreshActivityCache().finally(() => {
+        refreshInProgress = false;
+      });
     }
     return;
   }
@@ -151,7 +173,11 @@ function truncatePreview(text: string): string {
   return trimmed + (text.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
 }
 
-async function fetchJiraCreated(jira: any, config: any, lookbackDays: number): Promise<ActivityItem[]> {
+async function fetchJiraCreated(
+  jira: any,
+  config: any,
+  lookbackDays: number,
+): Promise<ActivityItem[]> {
   const { data } = await jira.post("/search/jql", {
     jql: `creator = currentUser() AND created >= -${lookbackDays}d ORDER BY created DESC`,
     fields: ["summary", "created"],
@@ -169,7 +195,13 @@ async function fetchJiraCreated(jira: any, config: any, lookbackDays: number): P
   }));
 }
 
-async function fetchJiraComments(jira: any, config: any, userAccountId: string, cutoffTime: number, lookbackDays: number): Promise<ActivityItem[]> {
+async function fetchJiraComments(
+  jira: any,
+  config: any,
+  userAccountId: string,
+  cutoffTime: number,
+  lookbackDays: number,
+): Promise<ActivityItem[]> {
   const { data: commentedIssues } = await jira.post("/search/jql", {
     jql: `comment ~ currentUser() AND updated >= -${lookbackDays}d ORDER BY updated DESC`,
     fields: ["summary"],
@@ -182,7 +214,9 @@ async function fetchJiraComments(jira: any, config: any, userAccountId: string, 
   const issueComments = await Promise.all(
     issues.slice(0, 30).map(async (issue: any) => {
       try {
-        const { data } = await jira.get(`/issue/${issue.key}/comment`, { params: { maxResults: 50, orderBy: "-created" } });
+        const { data } = await jira.get(`/issue/${issue.key}/comment`, {
+          params: { maxResults: 50, orderBy: "-created" },
+        });
         return { issue, comments: data.comments || [] };
       } catch {
         return { issue, comments: [] };
@@ -216,7 +250,13 @@ async function fetchJiraComments(jira: any, config: any, userAccountId: string, 
   return activities;
 }
 
-async function fetchJiraTransitions(jira: any, config: any, userAccountId: string, cutoffTime: number, lookbackDays: number): Promise<ActivityItem[]> {
+async function fetchJiraTransitions(
+  jira: any,
+  config: any,
+  userAccountId: string,
+  cutoffTime: number,
+  lookbackDays: number,
+): Promise<ActivityItem[]> {
   const { data: transitionIssues } = await jira.post("/search/jql", {
     jql: `assignee was currentUser() AND status changed AFTER -${lookbackDays}d ORDER BY updated DESC`,
     fields: ["summary"],
@@ -265,11 +305,16 @@ async function fetchJiraTransitions(jira: any, config: any, userAccountId: strin
       }
     }
   }
-  logger.info("Activity/JIRA", `Transitions checked: ${issueKeys.length} issues, ${changelogs.reduce((s, c) => s + c.histories.length, 0)} changelog entries`);
+  logger.info(
+    "Activity/JIRA",
+    `Transitions checked: ${issueKeys.length} issues, ${changelogs.reduce((s, c) => s + c.histories.length, 0)} changelog entries`,
+  );
   return activities;
 }
 
-async function fetchJiraActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS): Promise<ActivityItem[]> {
+async function fetchJiraActivity(
+  lookbackDays: number = ACTIVITY_LOOKBACK_DAYS,
+): Promise<ActivityItem[]> {
   if (!isJiraConfigured()) return [];
   const config = getConfig();
   const jira = createJiraClient();
@@ -286,15 +331,26 @@ async function fetchJiraActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS):
   const cutoffTime = Date.now() - lookbackDays * 24 * 60 * 60 * 1000;
 
   const [created, comments, transitions] = await Promise.all([
-    fetchJiraCreated(jira, config, lookbackDays).catch((err) => { logError("Activity/JIRA created", err); return [] as ActivityItem[]; }),
-    fetchJiraComments(jira, config, userAccountId, cutoffTime, lookbackDays).catch((err) => { logError("Activity/JIRA comments", err); return [] as ActivityItem[]; }),
-    fetchJiraTransitions(jira, config, userAccountId, cutoffTime, lookbackDays).catch((err) => { logError("Activity/JIRA transitions", err); return [] as ActivityItem[]; }),
+    fetchJiraCreated(jira, config, lookbackDays).catch((err) => {
+      logError("Activity/JIRA created", err);
+      return [] as ActivityItem[];
+    }),
+    fetchJiraComments(jira, config, userAccountId, cutoffTime, lookbackDays).catch((err) => {
+      logError("Activity/JIRA comments", err);
+      return [] as ActivityItem[];
+    }),
+    fetchJiraTransitions(jira, config, userAccountId, cutoffTime, lookbackDays).catch((err) => {
+      logError("Activity/JIRA transitions", err);
+      return [] as ActivityItem[];
+    }),
   ]);
 
   return [...created, ...comments, ...transitions];
 }
 
-async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS): Promise<ActivityItem[]> {
+async function fetchGitHubActivity(
+  lookbackDays: number = ACTIVITY_LOOKBACK_DAYS,
+): Promise<ActivityItem[]> {
   if (!isGithubConfigured()) return [];
   const config = getConfig();
   const github = createGitHubClient();
@@ -338,7 +394,9 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
   const repoDiscoveryPromise = graphql<{
     viewer: {
       contributionsCollection: {
-        commitContributionsByRepository: { repository: { nameWithOwner: string; defaultBranchRef: { name: string } | null } }[];
+        commitContributionsByRepository: {
+          repository: { nameWithOwner: string; defaultBranchRef: { name: string } | null };
+        }[];
       };
     };
   }>(
@@ -353,25 +411,46 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
     }`,
     {},
     "activity/repo-discovery",
-  ).catch(err => { logError("Activity/GitHub repo discovery", err); return null; });
+  ).catch((err) => {
+    logError("Activity/GitHub repo discovery", err);
+    return null;
+  });
 
-  const prSupplementPromise = graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
-    query: `author:${config.githubUsername} type:pr created:>=${sinceDate}`,
-    first: 100,
-  }, "activity/pr-supplement").catch(err => { logError("Activity/GitHub GraphQL PRs", err); return null; });
+  const prSupplementPromise = graphql<{ search: { nodes: any[] } }>(
+    PR_ACTIVITY_QUERY,
+    {
+      query: `author:${config.githubUsername} type:pr created:>=${sinceDate}`,
+      first: 100,
+    },
+    "activity/pr-supplement",
+  ).catch((err) => {
+    logError("Activity/GitHub GraphQL PRs", err);
+    return null;
+  });
 
-  const mergedPrsPromise = graphql<{ search: { nodes: any[] } }>(PR_ACTIVITY_QUERY, {
-    query: `involves:${config.githubUsername} type:pr is:merged merged:>=${sinceDate}`,
-    first: 100,
-  }, "activity/merged-prs").catch(err => { logError("Activity/GitHub merged PRs", err); return null; });
+  const mergedPrsPromise = graphql<{ search: { nodes: any[] } }>(
+    PR_ACTIVITY_QUERY,
+    {
+      query: `involves:${config.githubUsername} type:pr is:merged merged:>=${sinceDate}`,
+      first: 100,
+    },
+    "activity/merged-prs",
+  ).catch((err) => {
+    logError("Activity/GitHub merged PRs", err);
+    return null;
+  });
 
   try {
-    const { data: events } = await github.get(`/users/${config.githubUsername}/events`, { params: { per_page: 300 } });
+    const { data: events } = await github.get(`/users/${config.githubUsername}/events`, {
+      params: { per_page: 300 },
+    });
 
     logger.info("Activity", `GitHub events: ${events.length} raw`);
 
     // Filter to last 24h events first
-    const recentEvents = events.filter((e: any) => new Date(e.created_at).getTime() >= thirtyDaysAgo);
+    const recentEvents = events.filter(
+      (e: any) => new Date(e.created_at).getTime() >= thirtyDaysAgo,
+    );
 
     // Collect unique PR references that need title lookup (events API returns abbreviated PR objects without title)
     const prRefs = new Map<string, { owner: string; repo: string; number: number }>();
@@ -387,8 +466,17 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
           prRefs.set(key, { owner, repo: repoName, number: pr.number });
         }
       }
-      if (event.type === "PullRequestReviewEvent" && event.payload?.review?.state === "commented" && !event.payload?.review?.body) {
-        reviewRefs.push({ repo, prNumber: pr?.number, reviewId: event.payload.review.id, eventId: event.id });
+      if (
+        event.type === "PullRequestReviewEvent" &&
+        event.payload?.review?.state === "commented" &&
+        !event.payload?.review?.body
+      ) {
+        reviewRefs.push({
+          repo,
+          prNumber: pr?.number,
+          reviewId: event.payload.review.id,
+          eventId: event.id,
+        });
       }
     }
 
@@ -396,8 +484,9 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
     const prTitles = new Map<string, string>();
     if (prRefs.size > 0) {
       try {
-        const fragments = Array.from(prRefs.entries()).map(([key, ref], i) =>
-          `pr${i}: repository(owner: "${ref.owner}", name: "${ref.repo}") { pullRequest(number: ${ref.number}) { title } }`,
+        const fragments = Array.from(prRefs.entries()).map(
+          ([_key, ref], i) =>
+            `pr${i}: repository(owner: "${ref.owner}", name: "${ref.repo}") { pullRequest(number: ${ref.number}) { title } }`,
         );
         const query = `query { ${fragments.join("\n")} }`;
         const data = await graphql(query, {}, "activity/pr-titles");
@@ -416,7 +505,10 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
     if (reviewRefs.length > 0) {
       const fetches = reviewRefs.map(async (ref) => {
         try {
-          const { data: comments } = await github.get(`/repos/${ref.repo}/pulls/${ref.prNumber}/reviews/${ref.reviewId}/comments`, { params: { per_page: 1 } });
+          const { data: comments } = await github.get(
+            `/repos/${ref.repo}/pulls/${ref.prNumber}/reviews/${ref.reviewId}/comments`,
+            { params: { per_page: 1 } },
+          );
           if (comments?.[0]?.body) {
             reviewBodies.set(ref.eventId, comments[0].body);
           }
@@ -425,7 +517,10 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
         }
       });
       await Promise.all(fetches);
-      logger.info("Activity", `Fetched ${reviewBodies.size}/${reviewRefs.length} review comment bodies`);
+      logger.info(
+        "Activity",
+        `Fetched ${reviewBodies.size}/${reviewRefs.length} review comment bodies`,
+      );
     }
 
     // Helper to resolve PR title
@@ -479,7 +574,8 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
           const entityKey = `${repo}#${pr.number}`;
           const reviewBody = review?.body || reviewBodies.get(event.id) || "";
           const reviewTrimmed = reviewBody.slice(0, COMMENT_PREVIEW_LENGTH);
-          const reviewPreview = reviewTrimmed + (reviewBody.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
+          const reviewPreview =
+            reviewTrimmed + (reviewBody.length > COMMENT_PREVIEW_LENGTH ? "..." : "");
           activities.push({
             id: `github-review-${event.id}`,
             type: "github",
@@ -488,7 +584,11 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
             url: review?.html_url || pr.html_url || `https://github.com/${repo}/pull/${pr.number}`,
             timestamp: event.created_at,
             entityKey,
-            metadata: { state: reviewState, actor: userActor, ...(reviewPreview && { commentBody: reviewPreview }) },
+            metadata: {
+              state: reviewState,
+              actor: userActor,
+              ...(reviewPreview && { commentBody: reviewPreview }),
+            },
           });
           break;
         }
@@ -567,8 +667,64 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
       for (const branch of branches) {
         commitFetches.push(
           fetchAllCommits(github, repoFullName, {
-            sha: branch, author: config.githubUsername, since,
-          }).then(commits => {
+            sha: branch,
+            author: config.githubUsername,
+            since,
+          })
+            .then((commits) => {
+              for (const commit of commits) {
+                if (seenShas.has(commit.sha)) continue;
+                seenShas.add(commit.sha);
+                const firstLine = (commit.commit?.message || "").split("\n")[0].slice(0, 120);
+                activities.push({
+                  id: `github-commit-${commit.sha}`,
+                  type: "github",
+                  action: "Committed",
+                  title: `${repoFullName}: ${firstLine}`,
+                  url: commit.html_url,
+                  timestamp: commit.commit?.author?.date || commit.commit?.committer?.date,
+                  entityKey: `${repoFullName}:${commit.sha}`,
+                  metadata: { actor: userActor },
+                });
+              }
+            })
+            .catch((err: any) => {
+              if (err?.response?.status === 404) {
+                logger.warn("Activity", `Repo not found: ${repoFullName}@${branch}`);
+              } else {
+                logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
+              }
+            }),
+        );
+      }
+    }
+    await Promise.all(commitFetches);
+  } catch (err) {
+    logger.error("Activity", "Failed to fetch GitHub events", { error: String(err) });
+  }
+
+  const [repoDiscovery, prSupplement, mergedPrs] = await Promise.all([
+    repoDiscoveryPromise,
+    prSupplementPromise,
+    mergedPrsPromise,
+  ]);
+
+  if (repoDiscovery) {
+    const repos =
+      repoDiscovery.viewer.contributionsCollection.commitContributionsByRepository || [];
+    let supplementCount = 0;
+
+    const supplementFetches = repos
+      .filter((entry) => !pushBranches.has(entry.repository.nameWithOwner))
+      .map((entry) => {
+        const repoFullName = entry.repository.nameWithOwner;
+        const defaultBranch = entry.repository.defaultBranchRef?.name || "main";
+        return fetchAllCommits(github, repoFullName, {
+          sha: defaultBranch,
+          author: config.githubUsername,
+          since,
+        })
+          .then((commits) => {
             for (const commit of commits) {
               if (seenShas.has(commit.sha)) continue;
               seenShas.add(commit.sha);
@@ -583,67 +739,27 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
                 entityKey: `${repoFullName}:${commit.sha}`,
                 metadata: { actor: userActor },
               });
+              supplementCount++;
             }
-          }).catch((err: any) => {
+          })
+          .catch((err: any) => {
             if (err?.response?.status === 404) {
-              logger.warn("Activity", `Repo not found: ${repoFullName}@${branch}`);
+              logger.warn("Activity", `Repo not found: ${repoFullName}@${defaultBranch}`);
             } else {
-              logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
+              logError("Activity/GitHub commit supplement", err, { repo: repoFullName });
             }
-          }),
-        );
-      }
-    }
-    await Promise.all(commitFetches);
-  } catch (err) {
-    logger.error("Activity", "Failed to fetch GitHub events", { error: String(err) });
-  }
-
-  const [repoDiscovery, prSupplement, mergedPrs] = await Promise.all([
-    repoDiscoveryPromise, prSupplementPromise, mergedPrsPromise,
-  ]);
-
-  if (repoDiscovery) {
-    const repos = repoDiscovery.viewer.contributionsCollection.commitContributionsByRepository || [];
-    let supplementCount = 0;
-
-    const supplementFetches = repos
-      .filter(entry => !pushBranches.has(entry.repository.nameWithOwner))
-      .map(entry => {
-        const repoFullName = entry.repository.nameWithOwner;
-        const defaultBranch = entry.repository.defaultBranchRef?.name || "main";
-        return fetchAllCommits(github, repoFullName, {
-          sha: defaultBranch, author: config.githubUsername, since,
-        }).then(commits => {
-          for (const commit of commits) {
-            if (seenShas.has(commit.sha)) continue;
-            seenShas.add(commit.sha);
-            const firstLine = (commit.commit?.message || "").split("\n")[0].slice(0, 120);
-            activities.push({
-              id: `github-commit-${commit.sha}`,
-              type: "github",
-              action: "Committed",
-              title: `${repoFullName}: ${firstLine}`,
-              url: commit.html_url,
-              timestamp: commit.commit?.author?.date || commit.commit?.committer?.date,
-              entityKey: `${repoFullName}:${commit.sha}`,
-              metadata: { actor: userActor },
-            });
-            supplementCount++;
-          }
-        }).catch((err: any) => {
-          if (err?.response?.status === 404) {
-            logger.warn("Activity", `Repo not found: ${repoFullName}@${defaultBranch}`);
-          } else {
-            logError("Activity/GitHub commit supplement", err, { repo: repoFullName });
-          }
-        });
+          });
       });
     await Promise.all(supplementFetches);
-    logger.info("Activity", `GraphQL repo discovery: ${repos.length} repos, ${supplementCount} extra commits`);
+    logger.info(
+      "Activity",
+      `GraphQL repo discovery: ${repos.length} repos, ${supplementCount} extra commits`,
+    );
   }
 
-  const seenEntityKeys = new Set(activities.filter((a) => a.action.includes("PR")).map((a) => a.entityKey));
+  const seenEntityKeys = new Set(
+    activities.filter((a) => a.action.includes("PR")).map((a) => a.entityKey),
+  );
 
   if (prSupplement) {
     for (const pr of prSupplement.search.nodes || []) {
@@ -664,7 +780,12 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
         seenEntityKeys.add(entityKey);
       }
 
-      if (pr.merged && pr.mergedAt && pr.mergedBy?.login === config.githubUsername && !seenEntityKeys.has(`${entityKey}-merged`)) {
+      if (
+        pr.merged &&
+        pr.mergedAt &&
+        pr.mergedBy?.login === config.githubUsername &&
+        !seenEntityKeys.has(`${entityKey}-merged`)
+      ) {
         activities.push({
           id: `github-pr-gql-merged-${pr.number}`,
           type: "github",
@@ -677,7 +798,10 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
         });
       }
     }
-    logger.info("Activity", `GraphQL PR supplement: ${prSupplement.search.nodes?.length || 0} PRs checked`);
+    logger.info(
+      "Activity",
+      `GraphQL PR supplement: ${prSupplement.search.nodes?.length || 0} PRs checked`,
+    );
   }
 
   if (mergedPrs) {
@@ -703,7 +827,10 @@ async function fetchGitHubActivity(lookbackDays: number = ACTIVITY_LOOKBACK_DAYS
         mergedCount++;
       }
     }
-    logger.info("Activity", `GraphQL merged PRs: ${mergedPrs.search.nodes?.length || 0} checked, ${mergedCount} by user`);
+    logger.info(
+      "Activity",
+      `GraphQL merged PRs: ${mergedPrs.search.nodes?.length || 0} checked, ${mergedCount} by user`,
+    );
   }
 
   logger.info("Activity", `GitHub: ${activities.length} activities`);

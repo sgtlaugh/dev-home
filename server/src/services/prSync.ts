@@ -96,10 +96,7 @@ async function fullSync(involvement: Involvement): Promise<void> {
   const mapped = allPRs.map(mapGraphQLPr);
   upsertPRs(mapped, involvement);
 
-  const maxUpdatedAt = mapped.reduce(
-    (max, pr) => (pr.updated_at > max ? pr.updated_at : max),
-    "",
-  );
+  const maxUpdatedAt = mapped.reduce((max, pr) => (pr.updated_at > max ? pr.updated_at : max), "");
   if (maxUpdatedAt) {
     setWatermark(`prs_${involvement}`, maxUpdatedAt);
   }

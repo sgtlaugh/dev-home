@@ -4,8 +4,8 @@ const LEVELS: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 
 
 const COLORS: Record<LogLevel, string> = {
   debug: "\x1b[36m", // cyan
-  info: "\x1b[32m",  // green
-  warn: "\x1b[33m",  // yellow
+  info: "\x1b[32m", // green
+  warn: "\x1b[33m", // yellow
   error: "\x1b[31m", // red
 };
 const RESET = "\x1b[0m";
@@ -16,7 +16,12 @@ function timestamp(): string {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
 }
 
-function format(level: LogLevel, tag: string, message: string, context?: Record<string, any>): string {
+function format(
+  level: LogLevel,
+  tag: string,
+  message: string,
+  context?: Record<string, any>,
+): string {
   const color = COLORS[level];
   const lvl = level.toUpperCase().padEnd(5);
   const paddedTag = tag.padEnd(10);
@@ -40,8 +45,12 @@ function log(level: LogLevel, tag: string, message: string, context?: Record<str
 }
 
 export const logger = {
-  debug: (tag: string, message: string, context?: Record<string, any>) => log("debug", tag, message, context),
-  info: (tag: string, message: string, context?: Record<string, any>) => log("info", tag, message, context),
-  warn: (tag: string, message: string, context?: Record<string, any>) => log("warn", tag, message, context),
-  error: (tag: string, message: string, context?: Record<string, any>) => log("error", tag, message, context),
+  debug: (tag: string, message: string, context?: Record<string, any>) =>
+    log("debug", tag, message, context),
+  info: (tag: string, message: string, context?: Record<string, any>) =>
+    log("info", tag, message, context),
+  warn: (tag: string, message: string, context?: Record<string, any>) =>
+    log("warn", tag, message, context),
+  error: (tag: string, message: string, context?: Record<string, any>) =>
+    log("error", tag, message, context),
 };

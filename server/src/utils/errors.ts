@@ -17,7 +17,10 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   const internalMessage = err.response?.data ? JSON.stringify(err.response.data) : err.message;
   const stack = err.stack ? err.stack.split("\n").slice(0, 3).join(" → ") : "";
 
-  logger.error(`${req.method} ${req.path}`, `Error ${status}: ${internalMessage}${stack ? ` ${stack}` : ""}`);
+  logger.error(
+    `${req.method} ${req.path}`,
+    `Error ${status}: ${internalMessage}${stack ? ` ${stack}` : ""}`,
+  );
 
   // For 5xx errors, return a generic message to avoid leaking internal details
   const clientMessage =

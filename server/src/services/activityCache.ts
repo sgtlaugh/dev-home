@@ -38,7 +38,9 @@ function rowToItem(row: ActivityRow): ActivityItem {
 export function getCachedActivities(since: string, until: string): ActivityItem[] {
   const db = getDb();
   const rows = db
-    .prepare("SELECT * FROM activity_cache WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp DESC")
+    .prepare(
+      "SELECT * FROM activity_cache WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp DESC",
+    )
     .all(since, until) as ActivityRow[];
   return rows.map(rowToItem);
 }
@@ -70,4 +72,3 @@ export function purgeOldActivities(before: string): number {
   const result = db.prepare("DELETE FROM activity_cache WHERE timestamp < ?").run(before);
   return result.changes;
 }
-

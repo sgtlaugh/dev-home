@@ -63,7 +63,10 @@ export async function graphql<T = any>(
       const status = (err as AxiosError).response?.status;
       if (status && RETRYABLE_STATUS_CODES.has(status) && attempt < MAX_RETRIES) {
         const delay = RETRY_BASE_DELAY_MS * (attempt + 1);
-        logger.warn("GraphQL", `${tag}: got ${status}, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`);
+        logger.warn(
+          "GraphQL",
+          `${tag}: got ${status}, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`,
+        );
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
@@ -82,10 +85,7 @@ export async function graphql<T = any>(
     if (rl) {
       lastRateLimit = { limit: rl.limit, remaining: rl.remaining, resetAt: rl.resetAt };
       const resetTime = new Date(rl.resetAt).toLocaleTimeString();
-      logger.info(
-        "GraphQL",
-        `${tag}: ${rl.remaining}/${rl.limit} remaining (resets ${resetTime})`,
-      );
+      logger.info("GraphQL", `${tag}: ${rl.remaining}/${rl.limit} remaining (resets ${resetTime})`);
     }
 
     return response.data.data;

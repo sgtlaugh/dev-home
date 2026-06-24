@@ -144,7 +144,6 @@ export function ContributionHeatmap({
 
   if (cells.length === 0) return null;
 
-  const totalWeeks = Math.ceil(cells.length / 7);
   const dayLabels = ["Sun", "", "Tue", "", "Thu", "", "Sat"];
 
   return (

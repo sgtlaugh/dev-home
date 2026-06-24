@@ -9,7 +9,6 @@ import {
   isFullMonth,
   getCachedContributions,
   saveContributions,
-  MonthlyContribution,
   getCachedProfiles,
   saveProfiles,
 } from "../../services/contributionCache";
@@ -19,7 +18,7 @@ import {
   registerLeaderboardCheck,
   getPrefetchStatus,
 } from "../../services/contributionPrefetch";
-import { MAX_REPOS_PER_CONTRIBUTION, SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
+import { SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
 const MAX_BATCH_SIZE = 35;

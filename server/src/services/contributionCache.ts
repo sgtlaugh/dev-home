@@ -16,7 +16,10 @@ export function getCurrentYearMonth(): string {
 
 export function isFullMonth(startDate: string, endDate: string, month: string): boolean {
   const [y, m] = month.split("-").map(Number);
-  return startDate <= `${month}-01` && endDate >= `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`;
+  return (
+    startDate <= `${month}-01` &&
+    endDate >= `${month}-${new Date(y, m, 0).getDate().toString().padStart(2, "0")}`
+  );
 }
 
 export function getMonthsBetween(startDate: string, endDate: string): string[] {
@@ -78,10 +81,7 @@ export function getCachedContributions(
   return result;
 }
 
-export function saveContributions(
-  org: string,
-  entries: MonthlyContribution[],
-): void {
+export function saveContributions(org: string, entries: MonthlyContribution[]): void {
   if (entries.length === 0) return;
   const db = getDb();
   const stmt = db.prepare(
@@ -151,9 +151,9 @@ export function bustRecentCommitCounts(months: string[]): void {
   if (months.length === 0) return;
   const db = getDb();
   const placeholders = months.map(() => "?").join(",");
-  db.prepare(
-    `DELETE FROM user_contribution_cache WHERE year_month IN (${placeholders})`,
-  ).run(...months);
+  db.prepare(`DELETE FROM user_contribution_cache WHERE year_month IN (${placeholders})`).run(
+    ...months,
+  );
 }
 
 export interface MonthlyStats {
@@ -161,7 +161,11 @@ export interface MonthlyStats {
   reviews: number;
 }
 
-export function saveMonthlyStats(yearMonth: string, commitCount: number, reviewCount: number): void {
+export function saveMonthlyStats(
+  yearMonth: string,
+  commitCount: number,
+  reviewCount: number,
+): void {
   const db = getDb();
   db.prepare(
     `INSERT INTO user_contribution_cache (year_month, commit_count, review_count, fetched_at)
@@ -175,11 +179,14 @@ export function getCachedMonthlyStats(months: string[]): Map<string, MonthlyStat
   const db = getDb();
   const placeholders = months.map(() => "?").join(",");
   const rows = db
-    .prepare(`SELECT year_month, commit_count, review_count FROM user_contribution_cache WHERE year_month IN (${placeholders}) AND commit_count IS NOT NULL`)
+    .prepare(
+      `SELECT year_month, commit_count, review_count FROM user_contribution_cache WHERE year_month IN (${placeholders}) AND commit_count IS NOT NULL`,
+    )
     .all(...months) as { year_month: string; commit_count: number; review_count: number }[];
   if (rows.length > 0) {
     logger.info("Commits", `Persistent cache hit: ${rows.length} months from SQLite`);
   }
-  return new Map(rows.map((r) => [r.year_month, { commits: r.commit_count, reviews: r.review_count }]));
+  return new Map(
+    rows.map((r) => [r.year_month, { commits: r.commit_count, reviews: r.review_count }]),
+  );
 }
-
