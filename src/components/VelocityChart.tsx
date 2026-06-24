@@ -67,9 +67,12 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
   );
   const hasPeak = primaryData.length > 2 && primaryData[peakIdx].value > 0;
 
+  // Pre-reverse series data (descending → ascending for chart display)
+  const reversedBySeries = series.map((s) => [...s.data].reverse());
+
   // Moving average (3-week window) for each series
-  const trendPointsBySeries = series.map((s) => {
-    const reversed = [...s.data].reverse();
+  const trendPointsBySeries = series.map((s, si) => {
+    const reversed = reversedBySeries[si];
     const movingAvg = reversed.map((_, i) => {
       let sum = 0;
       let count = 0;
@@ -153,8 +156,7 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({
                 />
               )}
               {series.map((s, si) => {
-                const reversedData = [...s.data].reverse();
-                const val = reversedData[i]?.value || 0;
+                const val = reversedBySeries[si][i]?.value || 0;
                 const barH = (val / yMax) * chartH;
                 const isZero = val === 0;
                 const displayH = isZero ? 2 : barH;
