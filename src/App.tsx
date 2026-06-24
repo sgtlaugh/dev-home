@@ -67,6 +67,68 @@ function useRateLimitColor(
   return { pct, color, statusLabel, minsUntilReset };
 }
 
+function GitHubSidebarButton({
+  rateLimit,
+  githubExpanded,
+  sectionActive,
+  onToggle,
+}: {
+  rateLimit: { remaining: number; limit: number; resetAt: string } | null;
+  githubExpanded: boolean;
+  sectionActive: boolean;
+  onToggle: () => void;
+}) {
+  const rl = useRateLimitColor(rateLimit);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [rlHovered, setRlHovered] = useState(false);
+  const [popoverPos, setPopoverPos] = useState<React.CSSProperties>({});
+  const handleEnter = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPopoverPos({ position: "fixed", top: rect.top, left: rect.right + 8 });
+    }
+    setRlHovered(true);
+  };
+  return (
+    <button
+      ref={btnRef}
+      className={`sidebar-top-item${githubExpanded ? " expanded" : ""}${sectionActive ? " section-active" : ""}`}
+      onClick={onToggle}
+      onMouseEnter={handleEnter}
+      onMouseLeave={() => setRlHovered(false)}
+    >
+      <IconBrandGithub size={22} style={rl.color ? { color: rl.color } : undefined} />
+      <span className="sidebar-top-label">GitHub</span>
+      <span className="sidebar-chevron">
+        <IconChevronDown size={10} />
+      </span>
+      {rlHovered && rateLimit && (
+        <div className="rate-limit-popover popover-fixed" style={popoverPos}>
+          <div className="rlp-header">
+            <IconBrandGithub size={14} />
+            <span>GitHub API</span>
+            <span className="rlp-status" style={{ color: rl.color }}>
+              {rl.statusLabel}
+            </span>
+          </div>
+          <div className="rlp-bar-track">
+            <div
+              className="rlp-bar-fill"
+              style={{ width: `${rl.pct * 100}%`, backgroundColor: rl.color }}
+            />
+          </div>
+          <div className="rlp-details">
+            <span>
+              {`${rateLimit.remaining.toLocaleString()} / ${rateLimit.limit.toLocaleString()}`}
+            </span>
+            <span>{`Resets in ${rl.minsUntilReset}m`}</span>
+          </div>
+        </div>
+      )}
+    </button>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState(
     () => localStorage.getItem("settings:startupTab") || "summary",
@@ -317,57 +379,12 @@ export default function App() {
             <div className="sidebar-divider" />
 
             {/* GitHub section */}
-            {(() => {
-              const rl = useRateLimitColor(rateLimit);
-              const btnRef = useRef<HTMLButtonElement>(null);
-              const [rlHovered, setRlHovered] = useState(false);
-              const [popoverPos, setPopoverPos] = useState<React.CSSProperties>({});
-              const handleEnter = () => {
-                if (btnRef.current) {
-                  const rect = btnRef.current.getBoundingClientRect();
-                  setPopoverPos({ position: "fixed", top: rect.top, left: rect.right + 8 });
-                }
-                setRlHovered(true);
-              };
-              return (
-                <button
-                  ref={btnRef}
-                  className={`sidebar-top-item${githubExpanded ? " expanded" : ""}${githubTabs.includes(effectiveTab) ? " section-active" : ""}`}
-                  onClick={() => setGithubExpanded(!githubExpanded)}
-                  onMouseEnter={handleEnter}
-                  onMouseLeave={() => setRlHovered(false)}
-                >
-                  <IconBrandGithub size={22} style={rl.color ? { color: rl.color } : undefined} />
-                  <span className="sidebar-top-label">GitHub</span>
-                  <span className="sidebar-chevron">
-                    <IconChevronDown size={10} />
-                  </span>
-                  {rlHovered && rateLimit && (
-                    <div className="rate-limit-popover popover-fixed" style={popoverPos}>
-                      <div className="rlp-header">
-                        <IconBrandGithub size={14} />
-                        <span>GitHub API</span>
-                        <span className="rlp-status" style={{ color: rl.color }}>
-                          {rl.statusLabel}
-                        </span>
-                      </div>
-                      <div className="rlp-bar-track">
-                        <div
-                          className="rlp-bar-fill"
-                          style={{ width: `${rl.pct * 100}%`, backgroundColor: rl.color }}
-                        />
-                      </div>
-                      <div className="rlp-details">
-                        <span>
-                          {`${rateLimit.remaining.toLocaleString()} / ${rateLimit.limit.toLocaleString()}`}
-                        </span>
-                        <span>{`Resets in ${rl.minsUntilReset}m`}</span>
-                      </div>
-                    </div>
-                  )}
-                </button>
-              );
-            })()}
+            <GitHubSidebarButton
+              rateLimit={rateLimit}
+              githubExpanded={githubExpanded}
+              sectionActive={githubTabs.includes(effectiveTab)}
+              onToggle={() => setGithubExpanded(!githubExpanded)}
+            />
 
             {githubExpanded && (
               <div className="sidebar-sub-items">
