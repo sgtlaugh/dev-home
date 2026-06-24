@@ -31,7 +31,15 @@ function rowToItem(row: ActivityRow): ActivityItem {
     url: row.url,
     timestamp: row.timestamp,
     entityKey: row.entity_key,
-    metadata: row.metadata_json ? (() => { try { return JSON.parse(row.metadata_json); } catch { return undefined; } })() : undefined,
+    metadata: row.metadata_json
+      ? (() => {
+          try {
+            return JSON.parse(row.metadata_json);
+          } catch {
+            return undefined;
+          }
+        })()
+      : undefined,
   };
 }
 

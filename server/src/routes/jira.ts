@@ -1,5 +1,4 @@
 import { Router, Request, Response } from "express";
-import { getConfig } from "../config";
 import { createJiraClient } from "../clients/jiraApiClient";
 import { apiCache } from "../utils/cache";
 import axios from "axios";
@@ -160,7 +159,6 @@ router.get("/issues", async (_req: Request, res: Response) => {
   const cached = apiCache.get(cacheKey);
   if (cached) return res.json(cached);
 
-  const config = getConfig();
   const jira = createJiraClient();
 
   const jql = `assignee = currentUser() ORDER BY updated DESC`;
@@ -445,7 +443,8 @@ function formatWeekRange(startDateStr: string): string {
   const [year, month, day] = startDateStr.split("-").map(Number);
   const start = new Date(Date.UTC(year, month - 1, day));
   const end = new Date(Date.UTC(year, month - 1, day + 6));
-  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "2-digit", timeZone: "UTC" });
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "2-digit", timeZone: "UTC" });
   return `${fmt(start)} - ${fmt(end)}`;
 }
 
