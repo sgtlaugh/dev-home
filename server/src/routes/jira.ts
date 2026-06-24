@@ -443,9 +443,9 @@ function generateWeekKeysInRange(startDateStr: string, endDateStr: string): stri
 
 function formatWeekRange(startDateStr: string): string {
   const [year, month, day] = startDateStr.split("-").map(Number);
-  const start = new Date(year, month - 1, day);
-  const end = new Date(year, month - 1, day + 6);
-  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
+  const start = new Date(Date.UTC(year, month - 1, day));
+  const end = new Date(Date.UTC(year, month - 1, day + 6));
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "2-digit", timeZone: "UTC" });
   return `${fmt(start)} - ${fmt(end)}`;
 }
 
