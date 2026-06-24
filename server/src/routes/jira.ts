@@ -1,6 +1,14 @@
 import { Router, Request, Response } from "express";
 import { createJiraClient } from "../clients/jiraApiClient";
+import { adfToMarkdown } from "../utils/adf";
 import { apiCache } from "../utils/cache";
+import {
+  formatCompletionTime,
+  formatWeekRange,
+  generateWeekKeysInRange,
+  getCompletionTime,
+  getWeekKey,
+} from "../utils/jiraHelpers";
 import axios from "axios";
 import { logger } from "../utils/logger";
 
@@ -32,121 +40,6 @@ async function getStoryPointsFieldId(): Promise<string | null> {
   } catch (err) {
     logger.warn("JIRA", `Failed to detect story points field: ${err}`);
     return null;
-  }
-}
-
-/**
- * Convert an ADF node to markdown-ish text for display purposes.
- */
-function adfToMarkdown(node: any): string {
-  if (!node) return "";
-  if (typeof node === "string") return node;
-
-  switch (node.type) {
-    case "doc":
-      return (node.content || []).map(adfToMarkdown).join("\n\n");
-
-    case "paragraph":
-      return (node.content || []).map(adfToMarkdown).join("");
-
-    case "heading": {
-      const level = node.attrs?.level || 1;
-      const prefix = "#".repeat(level);
-      const text = (node.content || []).map(adfToMarkdown).join("");
-      return `${prefix} ${text}`;
-    }
-
-    case "bulletList":
-      return (node.content || []).map(adfToMarkdown).join("\n");
-
-    case "orderedList":
-      return (node.content || [])
-        .map((child: any, i: number) => {
-          const text = adfToMarkdown(child);
-          // Replace leading "- " with numbered prefix
-          return text.replace(/^- /, `${i + 1}. `);
-        })
-        .join("\n");
-
-    case "listItem": {
-      const inner = (node.content || []).map(adfToMarkdown).join("\n");
-      return `- ${inner}`;
-    }
-
-    case "blockquote": {
-      const text = (node.content || []).map(adfToMarkdown).join("\n");
-      return text
-        .split("\n")
-        .map((line: string) => `> ${line}`)
-        .join("\n");
-    }
-
-    case "codeBlock": {
-      const lang = node.attrs?.language || "";
-      const text = (node.content || []).map(adfToMarkdown).join("");
-      return `\`\`\`${lang}\n${text}\n\`\`\``;
-    }
-
-    case "rule":
-      return "---";
-
-    case "text": {
-      let text = node.text || "";
-      if (node.marks) {
-        for (const mark of node.marks) {
-          switch (mark.type) {
-            case "strong":
-              text = `**${text}**`;
-              break;
-            case "em":
-              text = `*${text}*`;
-              break;
-            case "code":
-              text = `\`${text}\``;
-              break;
-            case "strike":
-              text = `~~${text}~~`;
-              break;
-            case "link":
-              text = `[${text}](${mark.attrs?.href || ""})`;
-              break;
-          }
-        }
-      }
-      return text;
-    }
-
-    case "hardBreak":
-      return "\n";
-
-    case "mention": {
-      const mentionText = node.attrs?.text || node.attrs?.id || "";
-      return mentionText.startsWith("@") ? mentionText : `@${mentionText}`;
-    }
-
-    case "inlineCard":
-      return node.attrs?.url || "";
-
-    case "table":
-      return (node.content || []).map(adfToMarkdown).join("\n");
-
-    case "tableRow":
-      return "| " + (node.content || []).map((cell: any) => adfToMarkdown(cell)).join(" | ") + " |";
-
-    case "tableHeader":
-    case "tableCell":
-      return (node.content || []).map(adfToMarkdown).join("");
-
-    case "mediaSingle":
-    case "media":
-      return "";
-
-    default:
-      // Fallback: recurse into content
-      if (node.content) {
-        return (node.content || []).map(adfToMarkdown).join("");
-      }
-      return node.text || "";
   }
 }
 
@@ -409,64 +302,6 @@ router.get("/velocity", async (req: Request, res: Response) => {
   apiCache.set(cacheKey, result);
   res.json(result);
 });
-
-// Helper: Get week key for grouping (Monday-Sunday, returned as "YYYY-MM-DD")
-function getWeekKey(date: Date): string {
-  const d = new Date(date);
-  const day = d.getUTCDay();
-  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
-  d.setUTCDate(diff);
-  return d.toISOString().split("T")[0];
-}
-
-function generateWeekKeysInRange(startDateStr: string, endDateStr: string): string[] {
-  const weeks: string[] = [];
-  const [startY, startM, startD] = startDateStr.split("-").map(Number);
-  const [endY, endM, endD] = endDateStr.split("-").map(Number);
-
-  let current = new Date(Date.UTC(startY, startM - 1, startD));
-  const end = new Date(Date.UTC(endY, endM - 1, endD));
-
-  const day = current.getUTCDay();
-  const diff = current.getUTCDate() - day + (day === 0 ? -6 : 1);
-  current.setUTCDate(diff);
-
-  while (current <= end) {
-    weeks.push(current.toISOString().split("T")[0]);
-    current.setUTCDate(current.getUTCDate() + 7);
-  }
-
-  return weeks;
-}
-
-function formatWeekRange(startDateStr: string): string {
-  const [year, month, day] = startDateStr.split("-").map(Number);
-  const start = new Date(Date.UTC(year, month - 1, day));
-  const end = new Date(Date.UTC(year, month - 1, day + 6));
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("en-US", { month: "short", day: "2-digit", timeZone: "UTC" });
-  return `${fmt(start)} - ${fmt(end)}`;
-}
-
-// Helper: Calculate completion time in days
-function getCompletionTime(issue: any): number {
-  const created = new Date(issue.fields?.created || new Date());
-  const resolved = new Date(issue.fields?.resolutiondate || new Date());
-  const days = (resolved.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
-  return Math.max(0, days);
-}
-
-// Helper: Format time as "Xd" (rounded up) or "Xh" if < 1 day
-function formatCompletionTime(days: number): { value: string; days: number } {
-  if (days < 1) {
-    // Less than 1 day: show hours, minimum 1h
-    const hours = Math.max(1, Math.ceil(days * 24));
-    return { value: `${hours}h`, days };
-  }
-  // 1+ days: show as days (rounded up)
-  const roundedDays = Math.ceil(days);
-  return { value: `${roundedDays}d`, days };
-}
 
 // Helper: Calculate velocity metrics
 function calculateVelocityMetrics(
