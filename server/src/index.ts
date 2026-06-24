@@ -61,8 +61,12 @@ export function createServer() {
     contributions: ["user_contribution_cache"],
   };
 
-  const countTable = (db: ReturnType<typeof getDb>, table: string) =>
-    (db.prepare(`SELECT COUNT(*) as cnt FROM ${table}`).get() as { cnt: number }).cnt;
+  const VALID_TABLES = new Set(Object.values(CACHE_CATEGORIES).flat());
+
+  const countTable = (db: ReturnType<typeof getDb>, table: string) => {
+    if (!VALID_TABLES.has(table)) throw new Error(`Invalid table: ${table}`);
+    return (db.prepare(`SELECT COUNT(*) as cnt FROM ${table}`).get() as { cnt: number }).cnt;
+  };
 
   app.get("/api/cache/stats", (_req: Request, res: Response) => {
     const db = getDb();
@@ -79,7 +83,10 @@ export function createServer() {
     const tables = CACHE_CATEGORIES[req.params.category];
     if (!tables) return res.status(404).json({ error: "Unknown category" });
     const db = getDb();
-    for (const table of tables) db.exec(`DELETE FROM ${table}`);
+    for (const table of tables) {
+      if (!VALID_TABLES.has(table)) continue;
+      db.exec(`DELETE FROM ${table}`);
+    }
     apiCache.clear();
     res.json({ status: `${req.params.category} cleared` });
   });
@@ -158,7 +165,10 @@ export function scheduleStartupPrefetch(): void {
         logger.info("Prefetch", "No orgs found, skipping");
         return;
       }
-      logger.info("Prefetch", `Found ${orgs.length} orgs: ${orgs.map((o: any) => o.login).join(", ")}`);
+      logger.info(
+        "Prefetch",
+        `Found ${orgs.length} orgs: ${orgs.map((o: any) => o.login).join(", ")}`,
+      );
       for (const org of orgs) {
         const members = await fetchOrgMembers(org.login);
         await startPrefetch(org.login, members);
