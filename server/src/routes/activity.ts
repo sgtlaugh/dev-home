@@ -500,23 +500,28 @@ async function fetchGitHubActivity(
       }
     }
 
-    // Batch fetch review comment bodies via REST
+    // Batch fetch review comment bodies via REST (capped concurrency)
     const reviewBodies = new Map<string, string>();
+    const REVIEW_BATCH_SIZE = 5;
     if (reviewRefs.length > 0) {
-      const fetches = reviewRefs.map(async (ref) => {
-        try {
-          const { data: comments } = await github.get(
-            `/repos/${ref.repo}/pulls/${ref.prNumber}/reviews/${ref.reviewId}/comments`,
-            { params: { per_page: 1 } },
-          );
-          if (comments?.[0]?.body) {
-            reviewBodies.set(ref.eventId, comments[0].body);
-          }
-        } catch {
-          // Non-critical, skip silently
-        }
-      });
-      await Promise.all(fetches);
+      for (let i = 0; i < reviewRefs.length; i += REVIEW_BATCH_SIZE) {
+        const batch = reviewRefs.slice(i, i + REVIEW_BATCH_SIZE);
+        await Promise.all(
+          batch.map(async (ref) => {
+            try {
+              const { data: comments } = await github.get(
+                `/repos/${ref.repo}/pulls/${ref.prNumber}/reviews/${ref.reviewId}/comments`,
+                { params: { per_page: 1 } },
+              );
+              if (comments?.[0]?.body) {
+                reviewBodies.set(ref.eventId, comments[0].body);
+              }
+            } catch {
+              // Non-critical, skip silently
+            }
+          }),
+        );
+      }
       logger.info(
         "Activity",
         `Fetched ${reviewBodies.size}/${reviewRefs.length} review comment bodies`,
@@ -662,10 +667,17 @@ async function fetchGitHubActivity(
       }
     }
 
-    const commitFetches: Promise<void>[] = [];
-    for (const [repoFullName, branches] of pushBranches) {
+    const COMMIT_BATCH_SIZE = 5;
+    const commitTasks: { repo: string; branch: string }[] = [];
+    for (const [repo, branches] of pushBranches) {
       for (const branch of branches) {
-        commitFetches.push(
+        commitTasks.push({ repo, branch });
+      }
+    }
+    for (let i = 0; i < commitTasks.length; i += COMMIT_BATCH_SIZE) {
+      const batch = commitTasks.slice(i, i + COMMIT_BATCH_SIZE);
+      await Promise.all(
+        batch.map(({ repo: repoFullName, branch }) =>
           fetchAllCommits(github, repoFullName, {
             sha: branch,
             author: config.githubUsername,
@@ -695,10 +707,9 @@ async function fetchGitHubActivity(
                 logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
               }
             }),
-        );
-      }
+        ),
+      );
     }
-    await Promise.all(commitFetches);
   } catch (err) {
     logger.error("Activity", "Failed to fetch GitHub events", { error: String(err) });
   }
