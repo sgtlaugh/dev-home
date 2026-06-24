@@ -129,6 +129,16 @@ function GitHubSidebarButton({
   );
 }
 
+const EMPTY_SETTINGS: AppSettings = {
+  jiraBaseUrl: "",
+  jiraEmail: "",
+  jiraApiToken: "",
+  githubToken: "",
+  githubUsername: "",
+  startupTab: "summary",
+  defaultOrg: "",
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState(
     () => localStorage.getItem("settings:startupTab") || "summary",
@@ -260,15 +270,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [refreshing]);
 
-  const EMPTY_SETTINGS: AppSettings = {
-    jiraBaseUrl: "",
-    jiraEmail: "",
-    jiraApiToken: "",
-    githubToken: "",
-    githubUsername: "",
-    startupTab: "summary",
-    defaultOrg: "",
-  };
   const [settingsForm, setSettingsForm] = useState<AppSettings>(EMPTY_SETTINGS);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const savedSettingsRef = useRef<AppSettings>(EMPTY_SETTINGS);
