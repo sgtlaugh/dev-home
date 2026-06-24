@@ -23,6 +23,8 @@
     "dist:mac": "yarn icons && yarn build && electron-builder --mac",
     "ghtag": "sh ./scripts/release-tag.sh",
     "tag:push": "sh ./scripts/push-tag.sh",
+    "test": "vitest run",
+    "test:all": "vitest run && cd server && vitest run",
     "prepare": "husky",
     "postinstall": "electron-rebuild"
   },
