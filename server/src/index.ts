@@ -193,11 +193,13 @@ export function scheduleStartupPrefetch(): void {
 
 // Graceful shutdown — close SQLite connection
 process.on("SIGTERM", () => {
+  apiCache.close();
   closeDb();
   process.exit(0);
 });
 
 process.on("SIGINT", () => {
+  apiCache.close();
   closeDb();
   process.exit(0);
 });

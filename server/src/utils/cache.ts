@@ -81,6 +81,10 @@ class ApiCache {
       logger.info("Cache", `Cleaned ${result.changes} expired entries`);
     }
   }
+
+  close(): void {
+    this.db.close();
+  }
 }
 
 export const apiCache = new ApiCache();
