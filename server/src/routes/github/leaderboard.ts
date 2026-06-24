@@ -303,7 +303,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
   if (cached) return res.json(cached);
 
   const abort = new AbortController();
-  req.on("close", () => abort.abort());
+  req.once("close", () => abort.abort());
 
   activeLeaderboardRequests++;
   try {

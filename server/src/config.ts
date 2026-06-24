@@ -67,11 +67,31 @@ export function isGithubConfigured(): boolean {
   return !!(process.env.GITHUB_TOKEN && process.env.GITHUB_USERNAME);
 }
 
+export function missingGithubFields(): string[] {
+  const token = runtimeConfig?.githubToken || process.env.GITHUB_TOKEN;
+  const username = runtimeConfig?.githubUsername || process.env.GITHUB_USERNAME;
+  const missing: string[] = [];
+  if (!token) missing.push("githubToken");
+  if (!username) missing.push("githubUsername");
+  return missing;
+}
+
 export function isJiraConfigured(): boolean {
   if (runtimeConfig) {
     return !!(runtimeConfig.jiraBaseUrl && runtimeConfig.jiraEmail && runtimeConfig.jiraApiToken);
   }
   return !!(process.env.JIRA_BASE_URL && process.env.JIRA_EMAIL && process.env.JIRA_API_TOKEN);
+}
+
+export function missingJiraFields(): string[] {
+  const url = runtimeConfig?.jiraBaseUrl || process.env.JIRA_BASE_URL;
+  const email = runtimeConfig?.jiraEmail || process.env.JIRA_EMAIL;
+  const token = runtimeConfig?.jiraApiToken || process.env.JIRA_API_TOKEN;
+  const missing: string[] = [];
+  if (!url) missing.push("jiraBaseUrl");
+  if (!email) missing.push("jiraEmail");
+  if (!token) missing.push("jiraApiToken");
+  return missing;
 }
 
 export function isConfigured(): boolean {

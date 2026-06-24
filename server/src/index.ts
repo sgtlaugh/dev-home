@@ -1,7 +1,13 @@
 import cors from "cors";
 import express, { Request, Response } from "express";
 import "express-async-errors";
-import { validateEnv, isGithubConfigured, isJiraConfigured } from "./config";
+import {
+  validateEnv,
+  isGithubConfigured,
+  isJiraConfigured,
+  missingGithubFields,
+  missingJiraFields,
+} from "./config";
 import { createGitHubClient } from "./clients/githubApiClient";
 import { closeDb, getDb } from "./db";
 import activityRoutes, { prefetchActivity } from "./routes/activity";
@@ -99,11 +105,17 @@ export function createServer() {
 
   // Routes guarded by service-specific token checks
   const githubGuard = (_req: Request, res: Response, next: () => void) => {
-    if (!isGithubConfigured()) return res.status(503).json({ error: "GitHub not configured" });
+    if (!isGithubConfigured()) {
+      return res
+        .status(503)
+        .json({ error: "GitHub not configured", missing: missingGithubFields() });
+    }
     next();
   };
   const jiraGuard = (_req: Request, res: Response, next: () => void) => {
-    if (!isJiraConfigured()) return res.status(503).json({ error: "JIRA not configured" });
+    if (!isJiraConfigured()) {
+      return res.status(503).json({ error: "JIRA not configured", missing: missingJiraFields() });
+    }
     next();
   };
 

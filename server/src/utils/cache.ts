@@ -9,11 +9,11 @@ class ApiCache {
   private ttl = SHORT_CACHE_TTL;
 
   constructor() {
-    const dbDir = path.join(process.cwd(), "server");
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+    const dataDir = path.resolve(__dirname, "../../data");
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
     }
-    const dbPath = path.join(dbDir, "cache.db");
+    const dbPath = path.join(dataDir, "cache.db");
     this.db = new Database(dbPath);
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS cache (
