@@ -5,6 +5,8 @@ import {
   formatWeekRange,
   getCompletionTime,
   formatCompletionTime,
+  calculateVelocityMetrics,
+  VELOCITY_DATE_REGEX,
 } from "../jiraHelpers";
 
 describe("getWeekKey", () => {
@@ -141,5 +143,98 @@ describe("formatCompletionTime", () => {
 
   it("formats zero as 1h", () => {
     expect(formatCompletionTime(0)).toEqual({ value: "1h", days: 0 });
+  });
+});
+
+describe("VELOCITY_DATE_REGEX", () => {
+  it("accepts valid YYYY-MM-DD", () => {
+    expect(VELOCITY_DATE_REGEX.test("2026-01-05")).toBe(true);
+    expect(VELOCITY_DATE_REGEX.test("2025-12-31")).toBe(true);
+  });
+
+  it("rejects JQL injection attempts", () => {
+    expect(VELOCITY_DATE_REGEX.test('2026-01-01" OR 1=1 --')).toBe(false);
+    expect(VELOCITY_DATE_REGEX.test("2026-01-01; DROP TABLE")).toBe(false);
+    expect(VELOCITY_DATE_REGEX.test("")).toBe(false);
+    expect(VELOCITY_DATE_REGEX.test("not-a-date")).toBe(false);
+  });
+
+  it("rejects partial dates", () => {
+    expect(VELOCITY_DATE_REGEX.test("2026-01")).toBe(false);
+    expect(VELOCITY_DATE_REGEX.test("2026")).toBe(false);
+    expect(VELOCITY_DATE_REGEX.test("01-05-2026")).toBe(false);
+  });
+});
+
+describe("calculateVelocityMetrics", () => {
+  function makeIssue(key: string, created: string, resolved: string, sp?: number) {
+    return {
+      key,
+      fields: {
+        created,
+        resolutiondate: resolved,
+        ...(sp !== undefined ? { customfield_sp: sp } : {}),
+      },
+    };
+  }
+
+  it("returns zeroed metrics for empty issues", () => {
+    const result = calculateVelocityMetrics([], "2026-01-05", "2026-01-25");
+    expect(result.totalCompleted).toBe(0);
+    expect(result.totalStoryPoints).toBe(0);
+    expect(result.velocity.trend).toBe("stable");
+    expect(result.velocity.tasksPerWeek).toBe(0);
+  });
+
+  it("calculates completion time stats", () => {
+    const issues = [
+      makeIssue("PROJ-1", "2026-01-05T00:00:00Z", "2026-01-12T00:00:00Z"),
+      makeIssue("PROJ-2", "2026-01-05T00:00:00Z", "2026-01-19T00:00:00Z"),
+    ];
+    const result = calculateVelocityMetrics(issues, "2026-01-05", "2026-01-25");
+    expect(result.totalCompleted).toBe(2);
+    expect(result.averageCompletionTime.fastestDays).toBe(7);
+    expect(result.averageCompletionTime.slowestDays).toBe(14);
+    expect(result.averageCompletionTime.meanDays).toBe(10.5);
+  });
+
+  it("groups issues into correct weeks", () => {
+    const issues = [
+      makeIssue("PROJ-1", "2026-01-01T00:00:00Z", "2026-01-07T00:00:00Z"),
+      makeIssue("PROJ-2", "2026-01-01T00:00:00Z", "2026-01-08T00:00:00Z"),
+      makeIssue("PROJ-3", "2026-01-01T00:00:00Z", "2026-01-14T00:00:00Z"),
+    ];
+    const result = calculateVelocityMetrics(issues, "2026-01-05", "2026-01-18");
+    const weeks = result.completionsByWeek;
+    expect(weeks.length).toBeGreaterThan(0);
+    const totalCount = weeks.reduce((s: number, w: any) => s + w.count, 0);
+    expect(totalCount).toBe(3);
+  });
+
+  it("detects improving trend when recent half has more completions", () => {
+    const issues = [
+      makeIssue("OLD-1", "2025-12-01T00:00:00Z", "2026-01-07T00:00:00Z"),
+      makeIssue("NEW-1", "2025-12-01T00:00:00Z", "2026-01-14T00:00:00Z"),
+      makeIssue("NEW-2", "2025-12-01T00:00:00Z", "2026-01-15T00:00:00Z"),
+      makeIssue("NEW-3", "2025-12-01T00:00:00Z", "2026-01-16T00:00:00Z"),
+    ];
+    const result = calculateVelocityMetrics(issues, "2026-01-05", "2026-01-18");
+    expect(result.velocity.trend).toBe("improving");
+    expect(result.velocity.trendPercentage).toBeGreaterThan(10);
+  });
+
+  it("tracks story points when spFieldId provided", () => {
+    const issues = [
+      makeIssue("SP-1", "2026-01-05T00:00:00Z", "2026-01-12T00:00:00Z", 3),
+      makeIssue("SP-2", "2026-01-05T00:00:00Z", "2026-01-12T00:00:00Z", 5),
+    ];
+    const result = calculateVelocityMetrics(issues, "2026-01-05", "2026-01-18", "customfield_sp");
+    expect(result.totalStoryPoints).toBe(8);
+    expect(result.storyPointsPerWeek).toBeGreaterThan(0);
+  });
+
+  it("includes period in output", () => {
+    const result = calculateVelocityMetrics([], "2026-01-05", "2026-07-12");
+    expect(result.period).toEqual({ startDate: "2026-01-05", endDate: "2026-07-12" });
   });
 });
