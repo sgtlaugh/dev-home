@@ -24,3 +24,26 @@ export function getLocalDateMinusDays(days: number): string {
   d.setDate(d.getDate() - days);
   return getLocalDateString(d.toISOString());
 }
+
+export function getDateKey(timestamp: string, now?: number): string {
+  const ref = now ?? Date.now();
+  const actDate = new Date(timestamp);
+  const todayDate = new Date(ref);
+
+  const actDateOnly = new Date(actDate.getFullYear(), actDate.getMonth(), actDate.getDate());
+  const todayDateOnly = new Date(
+    todayDate.getFullYear(),
+    todayDate.getMonth(),
+    todayDate.getDate(),
+  );
+  const yesterdayDateOnly = new Date(todayDateOnly);
+  yesterdayDateOnly.setDate(yesterdayDateOnly.getDate() - 1);
+
+  if (actDateOnly.getTime() === todayDateOnly.getTime()) {
+    return "Today";
+  } else if (actDateOnly.getTime() === yesterdayDateOnly.getTime()) {
+    return "Yesterday";
+  } else {
+    return actDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+}

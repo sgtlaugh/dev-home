@@ -1,5 +1,6 @@
 import { ActivityItem } from "../services/activity";
 import { getActionBadgeClass, getActionPriority } from "./activityCategories";
+import { getDateKey } from "./dateUtils";
 
 export interface CollapsedActivity {
   entityKey: string;
@@ -63,30 +64,8 @@ export function groupActivitiesByDate(
   const groups = new Map<string, { collapsed: CollapsedActivity[]; actionCount: number }>();
   const now = Date.now();
 
-  function getDateKey(timestamp: string): string {
-    const actDate = new Date(timestamp);
-    const todayDate = new Date(now);
-
-    const actDateOnly = new Date(actDate.getFullYear(), actDate.getMonth(), actDate.getDate());
-    const todayDateOnly = new Date(
-      todayDate.getFullYear(),
-      todayDate.getMonth(),
-      todayDate.getDate(),
-    );
-    const yesterdayDateOnly = new Date(todayDateOnly);
-    yesterdayDateOnly.setDate(yesterdayDateOnly.getDate() - 1);
-
-    if (actDateOnly.getTime() === todayDateOnly.getTime()) {
-      return "Today";
-    } else if (actDateOnly.getTime() === yesterdayDateOnly.getTime()) {
-      return "Yesterday";
-    } else {
-      return actDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    }
-  }
-
   for (const activity of collapsed) {
-    const dateKey = getDateKey(activity.lastTimestamp);
+    const dateKey = getDateKey(activity.lastTimestamp, now);
     const filteredActions = activity.actions.filter((a) => getDateKey(a.timestamp) === dateKey);
     if (filteredActions.length === 0) continue;
 

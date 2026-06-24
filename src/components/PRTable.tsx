@@ -7,6 +7,7 @@ import { ChecksStatusIcon } from "./ChecksStatusIcon";
 import { Timestamp } from "./Timestamp";
 import { EmptyState } from "./EmptyState";
 import { Tooltip } from "./Tooltip";
+import { getDateKey } from "../utils/dateUtils";
 
 const REVIEW_STATUS_CONFIG: Record<string, { label: string; badgeClass: string }> = {
   APPROVED: { label: "Approved", badgeClass: "badge-status-green" },
@@ -173,24 +174,9 @@ export const PRTable: React.FC<PRTableProps> = ({ prs, loading, variant }) => {
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
   );
   const grouped = new Map<string, GitHubPR[]>();
-  const now = new Date();
-  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterdayDate = new Date(todayDate);
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const now = Date.now();
   for (const pr of sorted) {
-    const prDate = new Date(pr.updated_at);
-    const prDateOnly = new Date(prDate.getFullYear(), prDate.getMonth(), prDate.getDate());
-    let dateKey: string;
-    if (prDateOnly.getTime() === todayDate.getTime()) {
-      dateKey = "Today";
-    } else if (prDateOnly.getTime() === yesterdayDate.getTime()) {
-      dateKey = "Yesterday";
-    } else {
-      dateKey = prDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-    }
+    const dateKey = getDateKey(pr.updated_at, now);
     if (!grouped.has(dateKey)) grouped.set(dateKey, []);
     grouped.get(dateKey)!.push(pr);
   }
