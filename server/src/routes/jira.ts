@@ -505,10 +505,8 @@ function calculateVelocityMetrics(
   const totalWeeks = completionsByWeek.length || 1;
   const tasksPerWeek = issues.length / totalWeeks;
 
-  const currentWeekCount =
-    completionsByWeek.length > 0 ? completionsByWeek[completionsByWeek.length - 1].count : 0;
-  const previousWeekCount =
-    completionsByWeek.length > 1 ? completionsByWeek[completionsByWeek.length - 2].count : 0;
+  const currentWeekCount = completionsByWeek.length > 0 ? completionsByWeek[0].count : 0;
+  const previousWeekCount = completionsByWeek.length > 1 ? completionsByWeek[1].count : 0;
 
   let trend: "improving" | "stable" | "declining" = "stable";
   let trendPercentage = 0;
