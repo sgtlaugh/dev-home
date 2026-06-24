@@ -15,9 +15,6 @@ const PARALLEL_BATCH = 4;
 
 let syncRunning = false;
 
-export function isSyncRunning(): boolean {
-  return syncRunning;
-}
 
 export async function syncPRs(): Promise<void> {
   if (syncRunning) {

@@ -27,27 +27,6 @@ export async function fetchDashboard(): Promise<{
   return result;
 }
 
-export async function fetchOpenPRs(): Promise<{ prs: GitHubPR[]; prComments: GitHubComment[] }> {
-  const cacheKey = "github:prs";
-  const cached = apiCache.get<{ prs: GitHubPR[]; prComments: GitHubComment[] }>(cacheKey);
-  if (cached) return cached;
-
-  const { data } = await withRetry(() => apiClient.get("/github/prs"));
-  const result = { prs: data.prs, prComments: data.pr_comments || [] };
-  apiCache.set(cacheKey, result);
-  return result;
-}
-
-export async function fetchReviewRequests(): Promise<GitHubReviewRequest[]> {
-  const cacheKey = "github:reviews";
-  const cached = apiCache.get<GitHubReviewRequest[]>(cacheKey);
-  if (cached) return cached;
-
-  const { data } = await withRetry(() => apiClient.get("/github/reviews"));
-  apiCache.set(cacheKey, data.reviews);
-  return data.reviews;
-}
-
 const SYNC_RETRY_DELAY_MS = 3000;
 const SYNC_MAX_RETRIES = 30;
 

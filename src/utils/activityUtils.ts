@@ -101,20 +101,6 @@ export function groupActivitiesByDate(
   return groups;
 }
 
-export function getReviewBadgeClass(reviewState?: string): string {
-  if (reviewState === "merged") return "badge-status-purple-dark";
-  if (reviewState === "approved") return "badge-status-purple-light";
-  if (reviewState === "changes_requested") return "badge-status-yellow";
-  return "";
-}
-
-export function getReviewBadgeLabel(reviewState?: string): string | null {
-  if (reviewState === "merged") return "Merged";
-  if (reviewState === "approved") return "Approved";
-  if (reviewState === "changes_requested") return "Changes Requested";
-  return null;
-}
-
 export function getActionSummaries(actions: ActivityItem[]): {
   text: string;
   badgeAction: ActivityItem;

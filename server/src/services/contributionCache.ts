@@ -142,11 +142,6 @@ export function saveProfiles(profiles: CachedProfile[]): void {
   insertMany(profiles);
 }
 
-export function clearProfiles(): void {
-  const db = getDb();
-  db.exec("DELETE FROM github_profiles");
-}
-
 export function bustRecentCommitCounts(months: string[]): void {
   if (months.length === 0) return;
   const db = getDb();

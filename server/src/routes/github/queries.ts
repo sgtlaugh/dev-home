@@ -183,26 +183,3 @@ export const COMBINED_DASHBOARD_QUERY = `
     }
   }
 `;
-
-export interface ContributionChunk {
-  alias: string;
-  from: string;
-  to: string;
-}
-
-export function buildContributionsQuery(chunks: ContributionChunk[]): string {
-  const fragments = chunks.map(
-    (c) => `${c.alias}: contributionsCollection(from: "${c.from}", to: "${c.to}") {
-      totalCommitContributions
-      commitContributionsByRepository(maxRepositories: 100) {
-        repository { nameWithOwner }
-        contributions { totalCount }
-      }
-    }`,
-  );
-  return `query { viewer { id ${fragments.join("\n")} } }`;
-}
-
-export function buildForkHistoryQuery(fragments: string[]): string {
-  return `query { ${fragments.join("\n")} }`;
-}

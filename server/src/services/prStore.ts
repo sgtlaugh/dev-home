@@ -147,16 +147,6 @@ export function upsertPRs(prs: GitHubPR[], involvement: Involvement): void {
   logger.info("PRStore", `Upserted ${prs.length} ${involvement} PRs`);
 }
 
-export function getOpenAuthoredPRs(): GitHubPR[] {
-  const db = getDb();
-  const rows = db
-    .prepare(
-      "SELECT * FROM prs WHERE state = 'open' AND involvement = 'author' ORDER BY updated_at DESC",
-    )
-    .all() as PRRow[];
-  return rows.map(rowToPR);
-}
-
 export function getOpenInvolvedPRs(): GitHubPR[] {
   const db = getDb();
   const rows = db
@@ -173,18 +163,6 @@ export function getAuthoredPRsByDateRange(startDate: string, endDate: string): G
     .prepare(
       `SELECT * FROM prs
      WHERE involvement = 'author' AND created_at >= ? AND created_at <= ?
-     ORDER BY created_at DESC`,
-    )
-    .all(`${startDate}T00:00:00Z`, `${endDate}T23:59:59Z`) as PRRow[];
-  return rows.map(rowToPR);
-}
-
-export function getInvolvedPRsByDateRange(startDate: string, endDate: string): GitHubPR[] {
-  const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT * FROM prs
-     WHERE involvement = 'involved' AND created_at >= ? AND created_at <= ?
      ORDER BY created_at DESC`,
     )
     .all(`${startDate}T00:00:00Z`, `${endDate}T23:59:59Z`) as PRRow[];
