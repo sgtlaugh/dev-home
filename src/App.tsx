@@ -134,7 +134,6 @@ export default function App() {
     () => localStorage.getItem("settings:startupTab") || "summary",
   );
   const quote = useMemo(() => getRandomQuote(), []);
-  const [, setCurrentMonthPRsCount] = useState(0);
   const {
     configured,
     githubConfigured,
@@ -787,7 +786,6 @@ export default function App() {
                   )}
                   {effectiveTab === "contributions" && (
                     <Contributions
-                      onCountChange={setCurrentMonthPRsCount}
                       active={effectiveTab === "contributions"}
                       onFetchComplete={showFetchTime}
                     />
