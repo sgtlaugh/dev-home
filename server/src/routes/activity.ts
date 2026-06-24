@@ -495,12 +495,17 @@ async function fetchGitHubActivity(
     const prTitles = new Map<string, string>();
     if (prRefs.size > 0) {
       try {
-        const fragments = Array.from(prRefs.entries()).map(
-          ([_key, ref], i) =>
-            `pr${i}: repository(owner: "${ref.owner}", name: "${ref.repo}") { pullRequest(number: ${ref.number}) { title } }`,
-        );
-        const query = `query { ${fragments.join("\n")} }`;
-        const data = await graphql(query, {}, "activity/pr-titles");
+        const variables: Record<string, string | number> = {};
+        const varDefs: string[] = [];
+        const fragments = Array.from(prRefs.entries()).map(([_key, ref], i) => {
+          varDefs.push(`$o${i}: String!`, `$r${i}: String!`, `$n${i}: Int!`);
+          variables[`o${i}`] = ref.owner;
+          variables[`r${i}`] = ref.repo;
+          variables[`n${i}`] = ref.number;
+          return `pr${i}: repository(owner: $o${i}, name: $r${i}) { pullRequest(number: $n${i}) { title } }`;
+        });
+        const query = `query(${varDefs.join(", ")}) { ${fragments.join("\n")} }`;
+        const data = await graphql(query, variables, "activity/pr-titles");
         Array.from(prRefs.keys()).forEach((key, i) => {
           const title = data[`pr${i}`]?.pullRequest?.title;
           if (title) prTitles.set(key, title);
