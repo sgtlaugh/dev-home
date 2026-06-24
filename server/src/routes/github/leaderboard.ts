@@ -204,7 +204,14 @@ async function fetchBatchFromApi(
               return await fallbackToSingles(users, subTag);
             }
             logger.warn("Leaderboard", `${subTag} skipped (403)`);
-            return users.map((login) => ({ login, commits: 0, prs: 0, reviews: 0 }));
+            return users.map((login) => ({
+              login,
+              avatarUrl: `https://github.com/${login}.png`,
+              name: null,
+              commits: 0,
+              prs: 0,
+              reviews: 0,
+            }));
           }
           if (err?.message?.includes("Resource limits") && users.length > 5) {
             logger.warn(

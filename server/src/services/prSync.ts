@@ -115,9 +115,9 @@ async function incrementalSync(involvement: Involvement, watermark: string): Pro
 
   while (hasNextPage) {
     try {
-      const result = await graphql<{
+      const result: {
         search: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string } };
-      }>(SEARCH_PRS_QUERY, { query: q, first: 100, after: cursor }, "pr-sync/incremental");
+      } = await graphql(SEARCH_PRS_QUERY, { query: q, first: 100, after: cursor }, "pr-sync/incremental");
 
       if (!result?.search) break;
       allPRs.push(...(result.search.nodes || []));
