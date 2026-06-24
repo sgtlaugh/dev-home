@@ -13,6 +13,7 @@ function JiraAvatar({ url, name }: { url?: string; name: string }) {
   const [failed, setFailed] = useState(false);
   const initials = name
     .split(" ")
+    .filter(Boolean)
     .map((w) => w[0])
     .join("")
     .slice(0, 2)
