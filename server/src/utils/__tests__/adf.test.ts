@@ -39,8 +39,14 @@ describe("adfToMarkdown", () => {
     const node = {
       type: "bulletList",
       content: [
-        { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Alpha" }] }] },
-        { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Beta" }] }] },
+        {
+          type: "listItem",
+          content: [{ type: "paragraph", content: [{ type: "text", text: "Alpha" }] }],
+        },
+        {
+          type: "listItem",
+          content: [{ type: "paragraph", content: [{ type: "text", text: "Beta" }] }],
+        },
       ],
     };
     expect(adfToMarkdown(node)).toBe("- Alpha\n- Beta");
@@ -50,8 +56,14 @@ describe("adfToMarkdown", () => {
     const node = {
       type: "orderedList",
       content: [
-        { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "First" }] }] },
-        { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Second" }] }] },
+        {
+          type: "listItem",
+          content: [{ type: "paragraph", content: [{ type: "text", text: "First" }] }],
+        },
+        {
+          type: "listItem",
+          content: [{ type: "paragraph", content: [{ type: "text", text: "Second" }] }],
+        },
       ],
     };
     expect(adfToMarkdown(node)).toBe("1. First\n2. Second");
@@ -81,9 +93,7 @@ describe("adfToMarkdown", () => {
     expect(adfToMarkdown({ type: "text", text: "italic", marks: [{ type: "em" }] })).toBe(
       "*italic*",
     );
-    expect(adfToMarkdown({ type: "text", text: "code", marks: [{ type: "code" }] })).toBe(
-      "`code`",
-    );
+    expect(adfToMarkdown({ type: "text", text: "code", marks: [{ type: "code" }] })).toBe("`code`");
     expect(adfToMarkdown({ type: "text", text: "gone", marks: [{ type: "strike" }] })).toBe(
       "~~gone~~",
     );
@@ -116,9 +126,9 @@ describe("adfToMarkdown", () => {
   });
 
   it("converts inlineCard to URL", () => {
-    expect(adfToMarkdown({ type: "inlineCard", attrs: { url: "https://jira.example.com/PROJ-42" } })).toBe(
-      "https://jira.example.com/PROJ-42",
-    );
+    expect(
+      adfToMarkdown({ type: "inlineCard", attrs: { url: "https://jira.example.com/PROJ-42" } }),
+    ).toBe("https://jira.example.com/PROJ-42");
   });
 
   it("converts rule to ---", () => {
@@ -132,15 +142,27 @@ describe("adfToMarkdown", () => {
         {
           type: "tableRow",
           content: [
-            { type: "tableHeader", content: [{ type: "paragraph", content: [{ type: "text", text: "Name" }] }] },
-            { type: "tableHeader", content: [{ type: "paragraph", content: [{ type: "text", text: "Score" }] }] },
+            {
+              type: "tableHeader",
+              content: [{ type: "paragraph", content: [{ type: "text", text: "Name" }] }],
+            },
+            {
+              type: "tableHeader",
+              content: [{ type: "paragraph", content: [{ type: "text", text: "Score" }] }],
+            },
           ],
         },
         {
           type: "tableRow",
           content: [
-            { type: "tableCell", content: [{ type: "paragraph", content: [{ type: "text", text: "Zenitsu" }] }] },
-            { type: "tableCell", content: [{ type: "paragraph", content: [{ type: "text", text: "9001" }] }] },
+            {
+              type: "tableCell",
+              content: [{ type: "paragraph", content: [{ type: "text", text: "Zenitsu" }] }],
+            },
+            {
+              type: "tableCell",
+              content: [{ type: "paragraph", content: [{ type: "text", text: "9001" }] }],
+            },
           ],
         },
       ],

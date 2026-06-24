@@ -90,9 +90,7 @@ export function adfToMarkdown(node: any): string {
       return (node.content || []).map(adfToMarkdown).join("\n");
 
     case "tableRow":
-      return (
-        "| " + (node.content || []).map((cell: any) => adfToMarkdown(cell)).join(" | ") + " |"
-      );
+      return "| " + (node.content || []).map((cell: any) => adfToMarkdown(cell)).join(" | ") + " |";
 
     case "tableHeader":
     case "tableCell":
