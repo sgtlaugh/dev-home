@@ -184,6 +184,7 @@ export async function startPrefetch(org: string, members: string[]): Promise<voi
     for (const { month, missing } of monthWork) {
       logger.info("Prefetch", `${org}/${month}: ${missing.length} members to fetch`);
 
+      let retries403 = 0;
       for (let i = 0; i < missing.length; i += BATCH_SIZE) {
         await waitForLeaderboard();
 
@@ -219,11 +220,17 @@ export async function startPrefetch(org: string, members: string[]): Promise<voi
         } catch (err: any) {
           const status = err?.response?.status;
           if (status === 403) {
-            logger.warn("Prefetch", `Got 403, pausing 30s`);
+            retries403++;
+            if (retries403 >= 3) {
+              logger.error("Prefetch", `403 persisted after ${retries403} retries, skipping month ${month}`);
+              break;
+            }
+            logger.warn("Prefetch", `Got 403, pausing 30s (retry ${retries403}/3)`);
             await new Promise((r) => setTimeout(r, 30000));
             i -= BATCH_SIZE;
             continue;
           }
+          retries403 = 0;
           logger.error("Prefetch", `${month} batch failed: ${err}`);
         }
 
