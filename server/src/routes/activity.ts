@@ -703,6 +703,8 @@ async function fetchGitHubActivity(
               for (const commit of commits) {
                 if (seenShas.has(commit.sha)) continue;
                 seenShas.add(commit.sha);
+                const ts = commit.commit?.author?.date || commit.commit?.committer?.date;
+                if (!ts) continue;
                 const firstLine = (commit.commit?.message || "").split("\n")[0].slice(0, 120);
                 activities.push({
                   id: `github-commit-${commit.sha}`,
@@ -710,7 +712,7 @@ async function fetchGitHubActivity(
                   action: "Committed",
                   title: `${repoFullName}: ${firstLine}`,
                   url: commit.html_url,
-                  timestamp: commit.commit?.author?.date || commit.commit?.committer?.date,
+                  timestamp: ts,
                   entityKey: `${repoFullName}:${commit.sha}`,
                   metadata: { actor: userActor },
                 });
