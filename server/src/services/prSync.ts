@@ -103,7 +103,7 @@ async function fullSync(involvement: Involvement): Promise<void> {
 async function incrementalSync(involvement: Involvement, watermark: string): Promise<void> {
   const config = getConfig();
   const queryPrefix = buildSearchPrefix(config.githubUsername, involvement);
-  const q = `${queryPrefix} updated:>${watermark}`;
+  const q = `${queryPrefix} updated:>=${watermark}`;
 
   const allPRs: any[] = [];
   let cursor: string | null = null;
