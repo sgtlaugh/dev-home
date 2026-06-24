@@ -208,7 +208,7 @@ function formatBytes(bytes: number): string {
 
 function usageColor(usedPct: number): string {
   if (usedPct >= 90) return "#cf222e";
-  if (usedPct >= 70) return "#d4a72c";
+  if (usedPct >= 70) return "#e8684a";
   return "#1a7f37";
 }
 
@@ -470,7 +470,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                   title={`#${r.number} ${r.title}`}
                   subtitle={`${r.repo_full_name} · ${r.user.login}`}
                   time={r.updated_at}
-                  badgeClass="badge-status-yellow"
+                  badgeClass="badge-status-coral"
                   checksStatus={r.checks_status}
                   onClick={() => window.open(r.html_url, "_blank")}
                 />
