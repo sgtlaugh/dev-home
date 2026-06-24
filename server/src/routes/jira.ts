@@ -291,19 +291,23 @@ router.get("/avatar", async (req: Request, res: Response) => {
   const url = idx >= 0 ? raw.slice(idx + prefix.length) : "";
   if (!url) return res.status(400).send("Missing url param");
 
-  try {
-    const host = new URL(url).hostname;
-    if (
-      !host.endsWith(".atlassian.net") &&
-      !host.endsWith(".atlassian.com") &&
-      !host.endsWith(".gravatar.com") &&
-      !host.endsWith(".wp.com") &&
-      host !== "gravatar.com"
-    ) {
-      return res.status(403).send("Avatar domain not allowed");
+  const isAllowedAvatarDomain = (u: string): boolean => {
+    try {
+      const host = new URL(u).hostname;
+      return (
+        host.endsWith(".atlassian.net") ||
+        host.endsWith(".atlassian.com") ||
+        host.endsWith(".gravatar.com") ||
+        host.endsWith(".wp.com") ||
+        host === "gravatar.com"
+      );
+    } catch {
+      return false;
     }
-  } catch {
-    return res.status(400).send("Invalid URL");
+  };
+
+  if (!isAllowedAvatarDomain(url)) {
+    return res.status(403).send("Avatar domain not allowed");
   }
 
   const cached = avatarCache.get(url);
@@ -330,6 +334,9 @@ router.get("/avatar", async (req: Request, res: Response) => {
         });
         if (head.status === 302) {
           fetchUrl = decodeURIComponent(match[1]);
+          if (!isAllowedAvatarDomain(fetchUrl)) {
+            return res.status(403).send("Avatar domain not allowed");
+          }
         }
       }
     }
