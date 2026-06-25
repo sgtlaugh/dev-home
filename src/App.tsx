@@ -45,6 +45,8 @@ import { usePrefetchStatus } from "./hooks/useOrgLeaderboard";
 import { apiCache } from "./utils/cache";
 import { ACTIVITY_LOOKBACK_DAYS } from "./utils/constants";
 import { getRandomQuote } from "./constants/quotes";
+import { fetchActivity } from "./services/activity";
+import { formatStandupNotes, getStandupTitle } from "./utils/standupFormatter";
 import { Tooltip } from "./components/Tooltip";
 import { useSystemStats } from "./hooks/useSystemStats";
 
@@ -251,6 +253,26 @@ export default function App() {
   const prefetch = usePrefetchStatus(configured);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [generatingStandup, setGeneratingStandup] = useState(false);
+
+  const handleGenerateStandup = useCallback(async () => {
+    setGeneratingStandup(true);
+    try {
+      const activities = await fetchActivity();
+      const content = formatStandupNotes(activities);
+      if (!content) {
+        setToast("No standup-worthy activity found");
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
+      await addNote("free_text", content, undefined, getStandupTitle(), "standup");
+    } catch {
+      setToast("Failed to generate standup");
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setGeneratingStandup(false);
+    }
+  }, [addNote]);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
   const [githubExpanded, setGithubExpanded] = useState(true);
   const [jiraExpanded, setJiraExpanded] = useState(true);
@@ -781,6 +803,8 @@ export default function App() {
                         setShowNoteEditor(true);
                       }}
                       onAdd={() => setShowNoteEditor(true)}
+                      onGenerateStandup={handleGenerateStandup}
+                      generatingStandup={generatingStandup}
                       jiraBaseUrl={jiraBaseUrl}
                       active={effectiveTab === "notes"}
                     />

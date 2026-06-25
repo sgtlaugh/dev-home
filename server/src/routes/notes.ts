@@ -11,14 +11,24 @@ const VALID_TYPES = ["free_text", "jira_ticket", "github_pr", "link"];
  */
 router.get("/", (req: Request, res: Response) => {
   const db = getDb();
-  const { resolved } = req.query;
+  const { resolved, category } = req.query;
 
   let sql = "SELECT * FROM notes";
+  const conditions: string[] = [];
   const params: any[] = [];
 
   if (resolved !== undefined) {
-    sql += " WHERE resolved = ?";
+    conditions.push("resolved = ?");
     params.push(resolved === "true" ? 1 : 0);
+  }
+
+  if (category !== undefined) {
+    conditions.push("category = ?");
+    params.push(category);
+  }
+
+  if (conditions.length > 0) {
+    sql += ` WHERE ${conditions.join(" AND ")}`;
   }
 
   sql += " ORDER BY created_at DESC";
@@ -33,7 +43,7 @@ router.get("/", (req: Request, res: Response) => {
  */
 router.post("/", (req: Request, res: Response) => {
   const db = getDb();
-  const { type, content, reference_id, title } = req.body;
+  const { type, content, reference_id, title, category = "note" } = req.body;
 
   if (!type || !VALID_TYPES.includes(type)) {
     res.status(400).json({ error: `type must be one of: ${VALID_TYPES.join(", ")}` });
@@ -46,9 +56,9 @@ router.post("/", (req: Request, res: Response) => {
   }
 
   const stmt = db.prepare(
-    "INSERT INTO notes (type, title, content, reference_id) VALUES (?, ?, ?, ?)",
+    "INSERT INTO notes (type, title, content, reference_id, category) VALUES (?, ?, ?, ?, ?)",
   );
-  const result = stmt.run(type, title || "", content || "", reference_id || null);
+  const result = stmt.run(type, title || "", content || "", reference_id || null, category);
 
   const note = db.prepare("SELECT * FROM notes WHERE id = ?").get(result.lastInsertRowid);
   res.status(201).json({ note });

@@ -8,6 +8,7 @@ import {
   IconCheck,
   IconTrash,
   IconPlus,
+  IconClipboardText,
 } from "@tabler/icons-react";
 import { SearchBox } from "./SearchBox";
 import { Note } from "../types";
@@ -20,6 +21,8 @@ interface NoteFilters {
   resolved: boolean;
 }
 
+type SubTab = "notes" | "standups";
+
 interface PersonalNotesProps {
   notes: Note[];
   loading: boolean;
@@ -27,6 +30,8 @@ interface PersonalNotesProps {
   onDelete: (id: number) => Promise<void>;
   onOpenNote: (note: Note) => void;
   onAdd: () => void;
+  onGenerateStandup?: () => void;
+  generatingStandup?: boolean;
   jiraBaseUrl: string;
   active?: boolean;
 }
@@ -45,11 +50,14 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
   onDelete,
   onOpenNote,
   onAdd,
+  onGenerateStandup,
+  generatingStandup,
   jiraBaseUrl,
   active,
 }) => {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<NoteFilters>({ new: true, resolved: false });
+  const [subTab, setSubTab] = useState<SubTab>("notes");
   const prevActive = useRef(active);
 
   useEffect(() => {
@@ -60,15 +68,21 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
     prevActive.current = active;
   }, [active]);
 
+  const categoryNotes = useMemo(
+    () =>
+      notes.filter((n) => (n.category ?? "note") === (subTab === "standups" ? "standup" : "note")),
+    [notes, subTab],
+  );
+
   const searched = useMemo(() => {
-    if (!search) return notes;
+    if (!search) return categoryNotes;
     const q = search.toLowerCase();
-    return notes.filter((n) => {
+    return categoryNotes.filter((n) => {
       const title = getNoteDisplayTitle(n).toLowerCase();
       const content = (n.content || "").toLowerCase();
       return title.includes(q) || content.includes(q);
     });
-  }, [notes, search]);
+  }, [categoryNotes, search]);
 
   if (loading && notes.length === 0) {
     return (
@@ -78,7 +92,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
     );
   }
 
-  if (notes.length === 0) {
+  if (notes.length === 0 && subTab === "notes") {
     return (
       <EmptyState
         icon={<IconNote size={48} stroke={1} />}
@@ -109,9 +123,39 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
     <div className="notes-container">
       <div className="notes-header">
         <h2 className="notes-title">Daily Planner</h2>
-        <button className="notes-add-btn" onClick={onAdd}>
-          <IconPlus size={18} />
-          <span>Add</span>
+        {subTab === "notes" ? (
+          <button className="notes-add-btn" onClick={onAdd}>
+            <IconPlus size={18} />
+            <span>Add</span>
+          </button>
+        ) : (
+          <button
+            className="notes-add-btn"
+            onClick={onGenerateStandup}
+            disabled={generatingStandup}
+          >
+            {generatingStandup ? (
+              <Spinner animation="border" size="sm" />
+            ) : (
+              <IconClipboardText size={18} />
+            )}
+            <span>{generatingStandup ? "Generating..." : "Generate Note"}</span>
+          </button>
+        )}
+      </div>
+
+      <div className="notes-subtab-row">
+        <button
+          className={`notes-subtab${subTab === "notes" ? " active" : ""}`}
+          onClick={() => setSubTab("notes")}
+        >
+          Notes
+        </button>
+        <button
+          className={`notes-subtab${subTab === "standups" ? " active" : ""}`}
+          onClick={() => setSubTab("standups")}
+        >
+          Standups
         </button>
       </div>
 

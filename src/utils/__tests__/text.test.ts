@@ -10,6 +10,7 @@ function makeNote(overrides: Partial<Note>): Note {
     content: "some content",
     reference_id: null,
     resolved: 0,
+    category: "note",
     created_at: "2026-01-05T10:00:00Z",
     updated_at: "2026-01-05T10:00:00Z",
     ...overrides,

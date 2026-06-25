@@ -28,9 +28,21 @@ export function useNotes(active: boolean) {
   const unresolvedNotes = notes.filter((n) => n.resolved === 0);
 
   const addNote = useCallback(
-    async (type: NoteType, content: string, referenceId?: string, title?: string) => {
+    async (
+      type: NoteType,
+      content: string,
+      referenceId?: string,
+      title?: string,
+      category?: "note" | "standup",
+    ) => {
       try {
-        const newNote = await createNote({ type, title, content, reference_id: referenceId });
+        const newNote = await createNote({
+          type,
+          title,
+          content,
+          reference_id: referenceId,
+          category,
+        });
         setNotes((prev) => [...prev, newNote]);
       } catch (err: any) {
         setError(err?.message || "Failed to add note");

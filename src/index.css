@@ -1545,6 +1545,47 @@ a,
   margin: 12px 0;
 }
 
+/* Notes — sub-tabs */
+.notes-subtab-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.notes-subtab {
+  padding: 4px 14px;
+  border: none;
+  background: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #656d76;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.notes-subtab:hover {
+  color: #1f2328;
+}
+
+.notes-subtab.active {
+  color: #0969da;
+  border-bottom-color: #0969da;
+}
+
+[data-theme="dark"] .notes-subtab {
+  color: #8b949e;
+}
+
+[data-theme="dark"] .notes-subtab:hover {
+  color: #e6edf3;
+}
+
+[data-theme="dark"] .notes-subtab.active {
+  color: #58a6ff;
+  border-bottom-color: #58a6ff;
+}
+
 /* Notes — filter row */
 .notes-filter-row {
   display: flex;

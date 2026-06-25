@@ -133,6 +133,10 @@ const MIGRATIONS: Migration[] = [
       DROP TABLE IF EXISTS user_commit_cache;
     `);
   },
+  // 2 – add category column to notes
+  (d) => {
+    d.exec(`ALTER TABLE notes ADD COLUMN category TEXT NOT NULL DEFAULT 'note'`);
+  },
 ];
 
 function runMigrations(d: Database.Database): void {

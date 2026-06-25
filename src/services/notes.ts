@@ -15,6 +15,7 @@ export async function createNote(note: {
   title?: string;
   content: string;
   reference_id?: string;
+  category?: "note" | "standup";
 }): Promise<Note> {
   const { data } = await apiClient.post("/notes", note);
   return data.note;

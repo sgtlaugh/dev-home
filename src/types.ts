@@ -116,6 +116,7 @@ export interface Note {
   content: string;
   reference_id: string | null;
   resolved: number;
+  category: "note" | "standup";
   created_at: string;
   updated_at: string;
 }
