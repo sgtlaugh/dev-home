@@ -316,6 +316,13 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
   try {
     const orgId = await fetchOrgId(org);
     const members = await fetchOrgMembers(org);
+
+    if (!isPrefetchRunning()) {
+      startPrefetch(org, members).catch((err) =>
+        logger.error("Prefetch", `Failed: ${err}`),
+      );
+    }
+
     const currentMonth = getCurrentYearMonth();
     const allMonths = getMonthsBetween(startDate, effectiveEnd);
     const fullMonths = allMonths.filter(
@@ -462,12 +469,6 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
       `${entries.length} members for ${org} (${startDate} to ${effectiveEnd})`,
     );
     res.json(responseData);
-
-    if (!isPrefetchRunning()) {
-      fetchOrgMembers(org)
-        .then((m) => startPrefetch(org, m))
-        .catch((err) => logger.error("Prefetch", `Failed: ${err}`));
-    }
   } catch (err) {
     logger.error("Leaderboard", `Failed: ${err}`);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
