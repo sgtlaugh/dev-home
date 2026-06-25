@@ -9,31 +9,33 @@ const TERMINAL_STATUSES = new Set([
   "cancelled",
 ]);
 
-const PR_ACTION_PRIORITY: Record<string, number> = {
-  "Merged PR": 1,
-  "Approved PR": 2,
-  "Changes Requested": 3,
-  "Commented on PR": 4,
-};
-
 export function formatStandupNotes(activities: ActivityItem[]): string {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const recent = activities.filter((a) => a.timestamp >= cutoff);
 
-  const mergedKeys = new Set<string>();
-  const terminalTransitions: string[] = [];
-  const mergedLines: string[] = [];
-  const reviewLines: string[] = [];
+  const ownPRs = new Set<string>();
+  for (const a of activities) {
+    if (a.action === "Created PR") ownPRs.add(a.entityKey);
+  }
 
-  const bestPerPR = new Map<string, ActivityItem>();
+  const prActions = new Map<string, Set<string>>();
+  const prTitles = new Map<string, string>();
   for (const a of recent) {
-    const priority = PR_ACTION_PRIORITY[a.action];
-    if (!priority) continue;
-    const existing = bestPerPR.get(a.entityKey);
-    if (!existing || priority < (PR_ACTION_PRIORITY[existing.action] ?? 99)) {
-      bestPerPR.set(a.entityKey, a);
+    if (
+      ["Created PR", "Merged PR", "Approved PR", "Changes Requested", "Commented on PR"].includes(
+        a.action,
+      )
+    ) {
+      if (!prActions.has(a.entityKey)) prActions.set(a.entityKey, new Set());
+      prActions.get(a.entityKey)!.add(a.action);
+      prTitles.set(a.entityKey, a.title);
     }
   }
+
+  const terminalTransitions: string[] = [];
+  const createdLines: string[] = [];
+  const mergedLines: string[] = [];
+  const reviewLines: string[] = [];
 
   for (const a of recent) {
     if (a.action === "Changed status") {
@@ -44,25 +46,33 @@ export function formatStandupNotes(activities: ActivityItem[]): string {
     }
   }
 
-  for (const [key, a] of bestPerPR) {
-    if (a.action === "Merged PR") {
-      mergedKeys.add(key);
-      mergedLines.push(`- Merged: ${a.title}`);
+  for (const [key, actions] of prActions) {
+    const title = prTitles.get(key)!;
+    const isOwn = ownPRs.has(key);
+
+    if (isOwn) {
+      // Own PR: show Created (takes priority), or Merged if not created in window
+      if (actions.has("Created PR")) {
+        const suffix = actions.has("Merged PR") ? " (Merged)" : "";
+        createdLines.push(`- Created: ${title}${suffix}`);
+      } else if (actions.has("Merged PR")) {
+        mergedLines.push(`- Merged: ${title}`);
+      }
+    } else {
+      // Others' PR: Merged > Approved > Changes Requested > Commented
+      if (actions.has("Merged PR")) {
+        mergedLines.push(`- Merged: ${title}`);
+      } else if (actions.has("Approved PR")) {
+        reviewLines.push(`- Approved: ${title}`);
+      } else if (actions.has("Changes Requested")) {
+        reviewLines.push(`- Reviewed: ${title}`);
+      } else if (actions.has("Commented on PR")) {
+        reviewLines.push(`- Reviewed: ${title}`);
+      }
     }
   }
 
-  for (const [key, a] of bestPerPR) {
-    if (mergedKeys.has(key)) continue;
-    const label =
-      a.action === "Approved PR"
-        ? "Approved"
-        : a.action === "Changes Requested"
-          ? "Reviewed"
-          : "Reviewed";
-    reviewLines.push(`- ${label}: ${a.title}`);
-  }
-
-  const lines = [...terminalTransitions, ...mergedLines, ...reviewLines];
+  const lines = [...terminalTransitions, ...createdLines, ...mergedLines, ...reviewLines];
   return lines.join("\n");
 }
 
