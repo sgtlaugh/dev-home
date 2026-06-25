@@ -90,7 +90,7 @@ async function getOrgCreatedMonth(org: string): Promise<string> {
     const created = new Date(data.created_at);
     const month = `${created.getFullYear()}-${(created.getMonth() + 1).toString().padStart(2, "0")}`;
     apiCache.set(cacheKey, month, LONG_CACHE_TTL);
-    logger.info("Prefetch", `${org} created ${month}`);
+    logger.info("OrgPrefetch", `${org} created ${month}`);
     return month;
   } catch {
     return "2008-01";
@@ -100,7 +100,7 @@ async function getOrgCreatedMonth(org: string): Promise<string> {
 async function waitForLeaderboard(): Promise<void> {
   if (!isLeaderboardActiveFn) return;
   while (isLeaderboardActiveFn()) {
-    logger.info("Prefetch", "Paused - leaderboard query active");
+    logger.info("OrgPrefetch", "Paused - leaderboard query active");
     await new Promise((r) => setTimeout(r, 5000));
   }
 }
@@ -111,7 +111,7 @@ export function isPrefetchRunning(): boolean {
 
 export async function startPrefetch(org: string, members: string[]): Promise<void> {
   if (prefetchRunning) {
-    logger.info("Prefetch", "Already running, skipping");
+    logger.info("OrgPrefetch", "Already running, skipping");
     return;
   }
 
@@ -162,7 +162,7 @@ export async function startPrefetch(org: string, members: string[]): Promise<voi
     const totalMonths = monthsToProcess.length;
 
     if (monthWork.length === 0) {
-      logger.info("Prefetch", `All ${totalMonths} months cached for ${org}, nothing to do`);
+      logger.info("OrgPrefetch", `All ${totalMonths} months cached for ${org}, nothing to do`);
       progress = { monthsDone: totalMonths, totalMonths, org, completedAt: Date.now() };
       return;
     }
@@ -182,7 +182,7 @@ export async function startPrefetch(org: string, members: string[]): Promise<voi
     const startTime = Date.now();
 
     for (const { month, missing } of monthWork) {
-      logger.info("Prefetch", `${org}/${month}: ${missing.length} members to fetch`);
+      logger.info("OrgPrefetch", `${org}/${month}: ${missing.length} members to fetch`);
 
       let retries403 = 0;
       for (let i = 0; i < missing.length; i += BATCH_SIZE) {
@@ -229,13 +229,13 @@ export async function startPrefetch(org: string, members: string[]): Promise<voi
               );
               break;
             }
-            logger.warn("Prefetch", `Got 403, pausing 30s (retry ${retries403}/3)`);
+            logger.warn("OrgPrefetch", `Got 403, pausing 30s (retry ${retries403}/3)`);
             await new Promise((r) => setTimeout(r, 30000));
             i -= BATCH_SIZE;
             continue;
           }
           retries403 = 0;
-          logger.error("Prefetch", `${month} batch failed: ${err}`);
+          logger.error("OrgPrefetch", `${month} batch failed: ${err}`);
         }
 
         queriesDone++;

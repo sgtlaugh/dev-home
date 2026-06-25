@@ -12,12 +12,7 @@ import {
   getCachedProfiles,
   saveProfiles,
 } from "../../services/contributionCache";
-import {
-  startPrefetch,
-  isPrefetchRunning,
-  registerLeaderboardCheck,
-  getPrefetchStatus,
-} from "../../services/contributionPrefetch";
+import { registerLeaderboardCheck, getPrefetchStatus } from "../../services/contributionPrefetch";
 import { SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
@@ -316,10 +311,6 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
   try {
     const orgId = await fetchOrgId(org);
     const members = await fetchOrgMembers(org);
-
-    if (!isPrefetchRunning()) {
-      startPrefetch(org, members).catch((err) => logger.error("Prefetch", `Failed: ${err}`));
-    }
 
     const currentMonth = getCurrentYearMonth();
     const allMonths = getMonthsBetween(startDate, effectiveEnd);
