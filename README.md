@@ -29,7 +29,7 @@ Grab the latest release for your platform from [Releases](https://github.com/sgt
 
 ## Configuration
 
-Go to **Settings** in the app and add:
+Go to **Settings** in the app and add the following:
 
 | Service | What you need | Where to get it |
 |---------|--------------|----------------|
@@ -63,6 +63,8 @@ Go to **Settings** in the app and add:
 
 ## Development
 
+Requires [Node.js 22](https://nodejs.org/) and [Yarn](https://yarnpkg.com/).
+
 ### Quick Start
 
 ```bash
@@ -71,9 +73,6 @@ yarn install                           # installs deps + rebuilds native modules
 cd server && yarn install && cd ..     # install server deps
 yarn dev                               # launch the app
 ```
-
-> [!NOTE]
-> Requires [Node.js](https://nodejs.org/) 22 and [Yarn](https://yarnpkg.com/).
 
 ### Tests & Lint
 
