@@ -21,7 +21,7 @@
     "pack": "yarn icons && yarn build && electron-builder --dir",
     "dist": "yarn icons && yarn build && electron-builder",
     "dist:mac": "yarn icons && yarn build && electron-builder --mac",
-    "ghtag": "sh ./scripts/release-tag.sh",
+    "ghtag": "bash ./scripts/release-tag.sh",
     "test": "vitest run",
     "test:all": "vitest run && cd server && vitest run",
     "prepare": "husky",

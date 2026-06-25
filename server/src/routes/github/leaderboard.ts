@@ -318,9 +318,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     const members = await fetchOrgMembers(org);
 
     if (!isPrefetchRunning()) {
-      startPrefetch(org, members).catch((err) =>
-        logger.error("Prefetch", `Failed: ${err}`),
-      );
+      startPrefetch(org, members).catch((err) => logger.error("Prefetch", `Failed: ${err}`));
     }
 
     const currentMonth = getCurrentYearMonth();
