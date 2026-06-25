@@ -6,6 +6,7 @@ import {
   setRuntimeConfig,
   getConfig,
 } from "../config";
+import { scheduleStartupPrefetch } from "../index";
 
 const router = Router();
 
@@ -41,6 +42,8 @@ router.get("/", (_req: Request, res: Response) => {
 router.post("/", (req: Request, res: Response) => {
   const { jiraBaseUrl, jiraEmail, jiraApiToken, githubToken, githubUsername } = req.body || {};
 
+  const wasPreviouslyConfigured = isConfigured();
+
   setRuntimeConfig({
     jiraBaseUrl: ((jiraBaseUrl as string) || "").replace(/\/+$/, ""),
     jiraEmail: (jiraEmail as string) || "",
@@ -48,6 +51,10 @@ router.post("/", (req: Request, res: Response) => {
     githubToken: (githubToken as string) || "",
     githubUsername: (githubUsername as string) || "",
   });
+
+  if (!wasPreviouslyConfigured && isConfigured()) {
+    scheduleStartupPrefetch();
+  }
 
   res.json({ success: true });
 });
