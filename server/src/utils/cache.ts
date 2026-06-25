@@ -5,17 +5,20 @@ import { logger } from "./logger";
 import { SHORT_CACHE_TTL } from "./constants";
 
 class ApiCache {
-  private db: Database.Database;
+  private _db: Database.Database | null = null;
   private ttl = SHORT_CACHE_TTL;
 
-  constructor() {
-    const dataDir = path.resolve(__dirname, "../../data");
+  private get db(): Database.Database {
+    if (this._db) return this._db;
+
+    const dataDir = process.env.DEV_HOME_DB_PATH
+      ? path.dirname(process.env.DEV_HOME_DB_PATH)
+      : path.resolve(__dirname, "../../data");
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
-    const dbPath = path.join(dataDir, "cache.db");
-    this.db = new Database(dbPath);
-    this.db.exec(`
+    this._db = new Database(path.join(dataDir, "cache.db"));
+    this._db.exec(`
       CREATE TABLE IF NOT EXISTS cache (
         key TEXT PRIMARY KEY,
         data TEXT,
@@ -23,6 +26,7 @@ class ApiCache {
       )
     `);
     this.cleanExpired();
+    return this._db;
   }
 
   get<T>(key: string): T | null {
@@ -83,7 +87,7 @@ class ApiCache {
   }
 
   close(): void {
-    this.db.close();
+    this._db?.close();
   }
 }
 
