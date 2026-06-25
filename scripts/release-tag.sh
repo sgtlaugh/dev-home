@@ -20,6 +20,6 @@ git tag -a "${TAG}" -m "Release ${TAG}"
 git push origin "${TAG}"
 
 # Create a GitHub release from the tag
-gh release create "${TAG}" --title "${TAG}" --generate-notes -h github-personal
+gh release create "${TAG}" --title "${TAG}" --generate-notes
 
 echo "Released ${TAG} successfully."
