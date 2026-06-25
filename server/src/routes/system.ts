@@ -6,10 +6,12 @@ const router = Router();
 
 function getDiskStats(): { free: number; total: number } {
   try {
-    const output = execSync("df -B1 /", { encoding: "utf-8" });
+    const cmd = process.platform === "darwin" ? "df -k /" : "df -B1 /";
+    const output = execSync(cmd, { encoding: "utf-8" });
     const lines = output.trim().split("\n");
     const parts = lines[1].split(/\s+/);
-    return { total: parseInt(parts[1]), free: parseInt(parts[3]) };
+    const scale = process.platform === "darwin" ? 1024 : 1;
+    return { total: parseInt(parts[1]) * scale, free: parseInt(parts[3]) * scale };
   } catch {
     return { free: 0, total: 0 };
   }
