@@ -45,7 +45,7 @@ function getActivityIcon(item: ActivityItem) {
 
   if (item.action.includes("Created")) return <IconCirclePlus size={16} />;
   if (item.action.includes("Comment")) return <IconMessageCircle size={16} />;
-  if (item.action.includes("status")) return <IconArrowMoveRight size={16} />;
+  if (item.action.includes("Status")) return <IconArrowMoveRight size={16} />;
   return <IconTicket size={16} />;
 }
 

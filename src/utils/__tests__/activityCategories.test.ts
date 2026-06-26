@@ -37,7 +37,7 @@ describe("getActionConfig", () => {
   });
 
   it("matches status changes", () => {
-    expect(getActionConfig("Changed status to Done").action).toBe("Changed status");
+    expect(getActionConfig("Changed Status to Done").action).toBe("Changed Status");
   });
 });
 
@@ -76,15 +76,15 @@ describe("categorizeAction", () => {
     expect(categorizeAction("Commented on PR")).toBe("Comments");
     expect(categorizeAction("Committed code")).toBe("Commits");
     expect(categorizeAction("Changes Requested")).toBe("Changes Requested");
-    expect(categorizeAction("Changed status to In Progress")).toBe("Changed status");
+    expect(categorizeAction("Changed Status to In Progress")).toBe("Changed Status");
   });
 
   it("returns 'Other' for unknown actions", () => {
     expect(categorizeAction("Unknown")).toBe("Other");
   });
 
-  it("Created ticket maps to Created ticket label", () => {
-    expect(categorizeAction("Created ticket")).toBe("Created ticket");
+  it("Created Ticket maps to Created Ticket label", () => {
+    expect(categorizeAction("Created Ticket")).toBe("Created Ticket");
   });
 });
 

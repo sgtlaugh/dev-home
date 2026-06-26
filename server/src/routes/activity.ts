@@ -191,7 +191,7 @@ async function fetchJiraCreated(
   return (data.issues || []).map((issue: any) => ({
     id: `jira-created-${issue.key}`,
     type: "jira" as const,
-    action: "Created ticket",
+    action: "Created Ticket",
     title: `${issue.key}: ${issue.fields.summary}`,
     url: `${config.jiraBaseUrl}/browse/${issue.key}`,
     timestamp: issue.fields.created,
@@ -240,7 +240,7 @@ async function fetchJiraComments(
       activities.push({
         id: `jira-comment-${comment.id}`,
         type: "jira",
-        action: "Commented on ticket",
+        action: "Commented on Ticket",
         title: `${issue.key}: ${issue.fields.summary}`,
         url: `${config.jiraBaseUrl}/browse/${issue.key}?focusedCommentId=${comment.id}`,
         timestamp: comment.created,
@@ -295,7 +295,7 @@ async function fetchJiraTransitions(
         activities.push({
           id: `jira-transition-${key}-${history.id}`,
           type: "jira",
-          action: "Changed status",
+          action: "Changed Status",
           title: `${key}: ${summaryMap.get(key) || ""}`,
           url: `${config.jiraBaseUrl}/browse/${key}`,
           timestamp: history.created,
