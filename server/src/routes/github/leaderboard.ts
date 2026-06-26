@@ -454,7 +454,8 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     });
 
     const responseData = { members: entries };
-    if (!fetchHasErrors) {
+    const hasAnyContributions = entries.some((e) => e.commits > 0 || e.prs > 0 || e.reviews > 0);
+    if (!fetchHasErrors && hasAnyContributions) {
       apiCache.set(
         cacheKey,
         responseData,
