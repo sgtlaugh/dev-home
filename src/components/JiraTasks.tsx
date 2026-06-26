@@ -310,41 +310,36 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
                 borderTop: "1px solid var(--border-color, #d0d7de)",
                 borderBottom: "none",
               } as const;
-              const pillBase = {
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "4px",
+              const badgeBase = {
+                display: "inline-block",
                 fontSize: "0.7rem",
-                padding: "3px 10px",
-                borderRadius: "999px",
+                padding: "2px 8px",
+                borderRadius: "6px",
                 fontWeight: 600,
                 fontVariantNumeric: "tabular-nums" as const,
                 whiteSpace: "nowrap" as const,
-                letterSpacing: "0.01em",
               } as const;
-              const issuePill = {
-                ...pillBase,
+              const issueBadge = {
+                ...badgeBase,
                 backgroundColor: "rgba(9, 105, 218, 0.1)",
                 color: "#0969da",
-                border: "1px solid rgba(9, 105, 218, 0.2)",
               } as const;
-              const spPill = {
-                ...pillBase,
+              const spBadge = {
+                ...badgeBase,
                 backgroundColor: "rgba(26, 127, 55, 0.1)",
                 color: "#1a7f37",
-                border: "1px solid rgba(26, 127, 55, 0.2)",
               } as const;
               return totalSP > 0 ? (
                 <tfoot>
                   <tr>
                     <td style={footerCell} />
                     <td colSpan={4} style={footerCell}>
-                      <span style={issuePill}>
+                      <span style={issueBadge}>
                         {filteredIssues.length} issue{filteredIssues.length !== 1 ? "s" : ""}
                       </span>
                     </td>
                     <td style={{ ...footerCell, paddingLeft: 0 }}>
-                      <span style={spPill}>{totalSP} SP</span>
+                      <span style={spBadge}>{totalSP} SP</span>
                     </td>
                     <td colSpan={2} style={footerCell} />
                   </tr>
