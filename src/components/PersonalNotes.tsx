@@ -13,7 +13,6 @@ import {
 import { SearchBox } from "./SearchBox";
 import { Note } from "../types";
 import { getReferenceUrl, getNoteDisplayTitle } from "../utils/text";
-import { EmptyState } from "./EmptyState";
 import { Tooltip } from "./Tooltip";
 
 interface NoteFilters {
@@ -89,22 +88,6 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
       <div className="d-flex justify-content-center py-5">
         <Spinner animation="border" variant="secondary" />
       </div>
-    );
-  }
-
-  if (notes.length === 0 && subTab === "notes") {
-    return (
-      <EmptyState
-        icon={<IconNote size={48} stroke={1} />}
-        title="No notes yet"
-        description="Capture ideas, track tickets, or bookmark links."
-        action={
-          <button className="notes-empty-add" onClick={onAdd}>
-            <IconPlus size={16} />
-            <span>Add</span>
-          </button>
-        }
-      />
     );
   }
 

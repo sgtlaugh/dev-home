@@ -1732,28 +1732,6 @@ a.note-row-title:hover {
   color: #cf222e;
 }
 
-/* Notes — empty state add */
-.notes-empty-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border-radius: 8px;
-  border: none;
-  background: #0969da;
-  color: #ffffff;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 150ms ease, transform 100ms ease;
-  margin-top: 8px;
-}
-
-.notes-empty-add:hover {
-  background: #0860ca;
-  transform: translateY(-1px);
-}
-
 
 /* ============================================
    Tiptap Editor
