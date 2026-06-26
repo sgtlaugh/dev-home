@@ -56,12 +56,12 @@ const ACTIONS: ActionConfig[] = [
   },
   {
     action: "Changed status",
-    badgeClass: "badge-status-purple",
+    badgeClass: "badge-status-coral",
     priority: 5,
     match: (a) => a.includes("Changed status") || a.includes("status"),
     filterLabel: "Changed status",
-    filterColor: "#8250df",
-    filterDarkColor: "#6639ba",
+    filterColor: "#e8684a",
+    filterDarkColor: "#c4553b",
   },
   {
     action: "Commented",
