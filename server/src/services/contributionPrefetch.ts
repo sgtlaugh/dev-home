@@ -21,7 +21,7 @@ const BATCH_SIZE = 35;
 const BATCH_DELAY_MS = 2000;
 
 let prefetchRunning = false;
-let isLeaderboardActiveFn: (() => boolean) | null = null;
+let isLiveRequestActiveFn: (() => boolean) | null = null;
 
 let progress = { monthsDone: 0, totalMonths: 0, org: "", completedAt: 0 };
 
@@ -37,8 +37,8 @@ export function getPrefetchStatus(): PrefetchStatus {
   return { running: prefetchRunning, ...progress };
 }
 
-export function registerLeaderboardCheck(fn: () => boolean): void {
-  isLeaderboardActiveFn = fn;
+export function registerLiveRequestCheck(fn: () => boolean): void {
+  isLiveRequestActiveFn = fn;
 }
 
 function buildMonthQuery(
@@ -97,10 +97,10 @@ async function getOrgCreatedMonth(org: string): Promise<string> {
   }
 }
 
-async function waitForLeaderboard(): Promise<void> {
-  if (!isLeaderboardActiveFn) return;
-  while (isLeaderboardActiveFn()) {
-    logger.info("OrgPrefetch", "Paused - leaderboard query active");
+export async function waitForLiveRequests(): Promise<void> {
+  if (!isLiveRequestActiveFn) return;
+  while (isLiveRequestActiveFn()) {
+    logger.info("Prefetch", "Paused - live GitHub request active");
     await new Promise((r) => setTimeout(r, 5000));
   }
 }
@@ -119,7 +119,7 @@ export async function startPrefetch(org: string, members: string[]): Promise<voi
   const currentMonth = getCurrentYearMonth();
 
   try {
-    await waitForLeaderboard();
+    await waitForLiveRequests();
 
     const data = await graphql<{ organization: { id: string } }>(
       `
@@ -186,7 +186,7 @@ export async function startPrefetch(org: string, members: string[]): Promise<voi
 
       let retries403 = 0;
       for (let i = 0; i < missing.length; i += BATCH_SIZE) {
-        await waitForLeaderboard();
+        await waitForLiveRequests();
 
         const batch = missing.slice(i, i + BATCH_SIZE);
         const { query, variables } = buildMonthQuery(batch, month);

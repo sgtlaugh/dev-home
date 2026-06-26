@@ -6,6 +6,7 @@ import { apiCache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
 import { LONG_CACHE_TTL, CACHE_FRESHNESS_MONTHS } from "../../utils/constants";
 import { fetchUserRepos, fetchUserJoinDate, gateStartDate } from "./helpers";
+import { incrementGithubRequests, decrementGithubRequests } from "./leaderboard";
 import {
   getMonthsBetween,
   getCurrentYearMonth,
@@ -96,6 +97,7 @@ router.get("/commits-search", async (req: Request, res: Response) => {
 
   const github = createGitHubClient();
 
+  incrementGithubRequests();
   try {
     let contribCount = cachedCommitTotal;
     let reviewCount = cachedReviewTotal;
@@ -275,6 +277,8 @@ router.get("/commits-search", async (req: Request, res: Response) => {
     const message = err instanceof Error ? err.message : String(err);
     logger.error("CommitsSearch", message);
     res.status(500).json({ error: "Failed to fetch commits data" });
+  } finally {
+    decrementGithubRequests();
   }
 });
 

@@ -17,7 +17,11 @@ import jiraRoutes, { resetJiraCache } from "./routes/jira";
 import notesRoutes from "./routes/notes";
 import systemRoutes from "./routes/system";
 import { fetchOrgMembers } from "./routes/github/leaderboard";
-import { startPrefetch, prefetchContributions } from "./services/contributionPrefetch";
+import {
+  startPrefetch,
+  prefetchContributions,
+  waitForLiveRequests,
+} from "./services/contributionPrefetch";
 import { errorHandler } from "./utils/errors";
 import { apiCache } from "./utils/cache";
 import { logger } from "./utils/logger";
@@ -148,23 +152,26 @@ export function startServer() {
   return server;
 }
 
-export function scheduleStartupPrefetch(): void {
+export function scheduleStartupPrefetch(delayMs = 5000): void {
   setTimeout(async () => {
     if (!isGithubConfigured()) {
       logger.info("Prefetch", "Not configured yet, skipping startup prefetch");
       return;
     }
     try {
+      await waitForLiveRequests();
       await prefetchActivity();
     } catch (err: any) {
       logger.warn("Prefetch", `Activity prefetch failed: ${err.message}`);
     }
     try {
+      await waitForLiveRequests();
       await prefetchContributions();
     } catch (err: any) {
       logger.warn("Prefetch", `Contributions prefetch failed: ${err.message}`);
     }
     try {
+      await waitForLiveRequests();
       const { syncPRs } = await import("./services/prSync");
       await syncPRs();
     } catch (err: any) {
@@ -188,7 +195,7 @@ export function scheduleStartupPrefetch(): void {
     } catch (err: any) {
       logger.warn("Prefetch", `Startup prefetch failed: ${err.message}`);
     }
-  }, 5000);
+  }, delayMs);
 }
 
 // Graceful shutdown — close SQLite connection

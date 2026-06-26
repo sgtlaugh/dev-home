@@ -12,7 +12,7 @@ import {
   getCachedProfiles,
   saveProfiles,
 } from "../../services/contributionCache";
-import { registerLeaderboardCheck, getPrefetchStatus } from "../../services/contributionPrefetch";
+import { registerLiveRequestCheck, getPrefetchStatus } from "../../services/contributionPrefetch";
 import { SHORT_CACHE_TTL, LONG_CACHE_TTL } from "../../utils/constants";
 
 const router = Router();
@@ -22,13 +22,21 @@ const MAX_RETRIES = 3;
 const FALLBACK_403_PAUSE_MS = 5000;
 const FALLBACK_403_PARALLEL = 5;
 
-let activeLeaderboardRequests = 0;
+let activeGithubRequests = 0;
 
-export function isLeaderboardActive(): boolean {
-  return activeLeaderboardRequests > 0;
+export function isGithubLiveActive(): boolean {
+  return activeGithubRequests > 0;
 }
 
-registerLeaderboardCheck(isLeaderboardActive);
+export function incrementGithubRequests(): void {
+  activeGithubRequests++;
+}
+
+export function decrementGithubRequests(): void {
+  activeGithubRequests--;
+}
+
+registerLiveRequestCheck(isGithubLiveActive);
 
 interface LeaderboardEntry {
   login: string;
@@ -307,7 +315,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
   const abort = new AbortController();
   req.once("close", () => abort.abort());
 
-  activeLeaderboardRequests++;
+  incrementGithubRequests();
   try {
     const orgId = await fetchOrgId(org);
     const members = await fetchOrgMembers(org);
@@ -462,7 +470,7 @@ router.get("/org-leaderboard", async (req: Request, res: Response) => {
     logger.error("Leaderboard", `Failed: ${err}`);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
   } finally {
-    activeLeaderboardRequests--;
+    decrementGithubRequests();
   }
 });
 

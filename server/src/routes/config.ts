@@ -53,7 +53,7 @@ router.post("/", (req: Request, res: Response) => {
   });
 
   if (!wasPreviouslyConfigured && isConfigured()) {
-    scheduleStartupPrefetch();
+    scheduleStartupPrefetch(0);
   }
 
   res.json({ success: true });
