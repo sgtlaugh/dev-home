@@ -10,6 +10,14 @@ describe("isAllowedAvatarDomain", () => {
     expect(isAllowedAvatarDomain("https://cdn.atlassian.com/img/avatar.png")).toBe(true);
   });
 
+  it("allows atl-paas.net subdomains (JIRA Cloud avatar CDN)", () => {
+    expect(
+      isAllowedAvatarDomain(
+        "https://avatar-management--avatars.us-west-2.prod.public.atl-paas.net/abc123",
+      ),
+    ).toBe(true);
+  });
+
   it("allows gravatar.com subdomains", () => {
     expect(isAllowedAvatarDomain("https://secure.gravatar.com/avatar/abc123")).toBe(true);
   });

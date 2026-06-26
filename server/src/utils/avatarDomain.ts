@@ -4,6 +4,7 @@ export function isAllowedAvatarDomain(url: string): boolean {
     return (
       host.endsWith(".atlassian.net") ||
       host.endsWith(".atlassian.com") ||
+      host.endsWith(".atl-paas.net") ||
       host.endsWith(".gravatar.com") ||
       host.endsWith(".wp.com") ||
       host === "gravatar.com"
