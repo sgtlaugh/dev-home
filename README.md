@@ -27,6 +27,9 @@
 
 Grab the latest release for your platform from [Releases](https://github.com/sgtlaugh/dev-home/releases).
 
+> [!NOTE]
+> Contributions and Leaderboard may take some time to populate on first run while background caching warms up due to GitHub API rate limits.
+
 ## Configuration
 
 Go to **Settings** in the app and add the following:
@@ -103,6 +106,7 @@ yarn dist:mac     # build + package as macOS DMG (arm64)
 | | |
 |---|---|
 | **Rate limits** | GitHub allows `5000` API requests/hour. The app caches aggressively, but Leaderboard prefetch for orgs (`~300` members) can take a few hours on first run. |
+| **First load** | Contributions and Leaderboard may take a few minutes to populate on first run while background caching warms up. Subsequent loads are faster. |
 | **Caching** | Responses are cached in SQLite with TTL. Refresh or clear cache from Settings to force fresh data. |
 | **Partial config** | GitHub-only or JIRA-only setups work fine. Unconfigured features show empty states. |
 
@@ -110,4 +114,4 @@ yarn dist:mac     # build + package as macOS DMG (arm64)
 
 ## Acknowledgements
 
-Originally inspired by [siddiqus/dev-home](https://github.com/siddiqus/dev-home). The project has since diverged significantly in features and architecture.
+Originally inspired and forked from [siddiqus/dev-home](https://github.com/siddiqus/dev-home). The project has since diverged significantly in features and architecture.
