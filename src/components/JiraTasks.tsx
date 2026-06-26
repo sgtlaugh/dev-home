@@ -303,6 +303,39 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
               );
             })}
           </tbody>
+          {hasStoryPoints &&
+            (() => {
+              const totalSP = filteredIssues.reduce((sum, i) => sum + (i.storyPoints || 0), 0);
+              const footerBase = {
+                borderTop: "1.5px solid var(--border-color, #d0d7de)",
+                padding: "0.5rem 0.5rem",
+              } as const;
+              const footerMuted = {
+                ...footerBase,
+                fontSize: "0.75rem",
+                color: "var(--text-secondary, #656d76)",
+                letterSpacing: "0.02em",
+              };
+              const footerLabel = {
+                ...footerMuted,
+                fontWeight: 600,
+                whiteSpace: "nowrap" as const,
+                fontVariantNumeric: "tabular-nums" as const,
+              };
+              return totalSP > 0 ? (
+                <tfoot>
+                  <tr style={{ backgroundColor: "var(--table-footer-bg, rgba(0,0,0,0.02))" }}>
+                    <td style={footerMuted} />
+                    <td style={footerLabel}>
+                      {filteredIssues.length} issue{filteredIssues.length !== 1 ? "s" : ""}
+                    </td>
+                    <td colSpan={3} style={footerMuted} />
+                    <td style={footerLabel}>{totalSP} SP</td>
+                    <td colSpan={2} style={footerMuted} />
+                  </tr>
+                </tfoot>
+              ) : null;
+            })()}
         </table>
       </div>
     </div>
