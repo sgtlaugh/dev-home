@@ -306,32 +306,47 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
           {hasStoryPoints &&
             (() => {
               const totalSP = filteredIssues.reduce((sum, i) => sum + (i.storyPoints || 0), 0);
-              const footerBase = {
-                borderTop: "1.5px solid var(--border-color, #d0d7de)",
-                padding: "0.5rem 0.5rem",
+              const footerCell = {
+                borderTop: "1px solid var(--border-color, #d0d7de)",
+                borderBottom: "none",
               } as const;
-              const footerMuted = {
-                ...footerBase,
-                fontSize: "0.75rem",
-                color: "var(--text-secondary, #656d76)",
-                letterSpacing: "0.02em",
-              };
-              const footerLabel = {
-                ...footerMuted,
+              const pillBase = {
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "0.7rem",
+                padding: "3px 10px",
+                borderRadius: "999px",
                 fontWeight: 600,
-                whiteSpace: "nowrap" as const,
                 fontVariantNumeric: "tabular-nums" as const,
-              };
+                whiteSpace: "nowrap" as const,
+                letterSpacing: "0.01em",
+              } as const;
+              const issuePill = {
+                ...pillBase,
+                backgroundColor: "rgba(9, 105, 218, 0.1)",
+                color: "#0969da",
+                border: "1px solid rgba(9, 105, 218, 0.2)",
+              } as const;
+              const spPill = {
+                ...pillBase,
+                backgroundColor: "rgba(26, 127, 55, 0.1)",
+                color: "#1a7f37",
+                border: "1px solid rgba(26, 127, 55, 0.2)",
+              } as const;
               return totalSP > 0 ? (
                 <tfoot>
-                  <tr style={{ backgroundColor: "var(--table-footer-bg, rgba(0,0,0,0.02))" }}>
-                    <td style={footerMuted} />
-                    <td style={footerLabel}>
-                      {filteredIssues.length} issue{filteredIssues.length !== 1 ? "s" : ""}
+                  <tr>
+                    <td style={footerCell} />
+                    <td colSpan={4} style={footerCell}>
+                      <span style={issuePill}>
+                        {filteredIssues.length} issue{filteredIssues.length !== 1 ? "s" : ""}
+                      </span>
                     </td>
-                    <td colSpan={3} style={footerMuted} />
-                    <td style={footerLabel}>{totalSP} SP</td>
-                    <td colSpan={2} style={footerMuted} />
+                    <td style={{ ...footerCell, paddingLeft: 0 }}>
+                      <span style={spPill}>{totalSP} SP</span>
+                    </td>
+                    <td colSpan={2} style={footerCell} />
                   </tr>
                 </tfoot>
               ) : null;
