@@ -680,9 +680,7 @@ async function fetchGitHubActivity(
               }
             })
             .catch((err: any) => {
-              if (err?.response?.status === 404) {
-                logger.warn("Activity", `Repo not found: ${repoFullName}@${branch}`);
-              } else {
+              if (err?.response?.status !== 404) {
                 logError("Activity/GitHub commits", err, { repo: repoFullName, branch });
               }
             }),
@@ -735,7 +733,7 @@ async function fetchGitHubActivity(
           })
           .catch((err: any) => {
             if (err?.response?.status === 404) {
-              logger.warn("Activity", `Repo not found: ${repoFullName}@${defaultBranch}`);
+              logger.debug("Activity", `Repo not found: ${repoFullName}@${defaultBranch}`);
             } else {
               logError("Activity/GitHub commit supplement", err, { repo: repoFullName });
             }

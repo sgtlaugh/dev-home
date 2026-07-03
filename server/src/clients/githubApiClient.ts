@@ -50,7 +50,7 @@ export function createGitHubClient(baseUrl: string = GITHUB_API) {
       }
 
       if (status === 404) {
-        logger.warn("GitHub", `${status} ${url}`);
+        logger.debug("GitHub", `${status} ${url}`);
       } else {
         logger.error("GitHub", `${status || "ERROR"} ${url}`);
       }
