@@ -122,9 +122,9 @@ router.get("/mentions", async (_req: Request, res: Response) => {
 
   const [{ data: searchData }, { data: userData }] = await Promise.all([
     jira.post("/search/jql", {
-      jql: `(comment ~ currentUser() OR assignee = currentUser()) AND updated >= -90d ORDER BY updated DESC`,
+      jql: `(watcher = currentUser() OR assignee = currentUser()) AND updated >= -90d ORDER BY updated DESC`,
       fields: ["summary", "comment", "assignee"],
-      maxResults: 50,
+      maxResults: 250,
     }),
     jira.get("/myself"),
   ]);
