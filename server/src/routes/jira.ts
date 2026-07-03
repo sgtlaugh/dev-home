@@ -167,7 +167,10 @@ router.get("/mentions", async (_req: Request, res: Response) => {
   );
 
   const result = { comments: allComments };
-  apiCache.set(cacheKey, result);
+  // don't cache empty results — may be rate-limited, not genuinely empty
+  if (allComments.length > 0) {
+    apiCache.set(cacheKey, result);
+  }
   res.json(result);
 });
 
