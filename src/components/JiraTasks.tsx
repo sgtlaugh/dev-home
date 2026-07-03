@@ -279,7 +279,7 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
                       />
                     </div>
                   </td>
-                  {hasStoryPoints && <td>{issue.storyPoints || "—"}</td>}
+                  {hasStoryPoints && <td>{issue.storyPoints || "-"}</td>}
                   <td style={{ whiteSpace: "nowrap" }}>
                     <Tooltip text={full}>
                       <span className="activity-time">{short}</span>

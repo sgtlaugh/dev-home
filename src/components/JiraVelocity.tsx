@@ -390,7 +390,7 @@ export const JiraVelocity: React.FC<{
                               {issue.type}
                             </Badge>
                           </td>
-                          <td>{issue.storyPoints || "—"}</td>
+                          <td>{issue.storyPoints || "-"}</td>
                           <td style={{ whiteSpace: "nowrap" }}>
                             {issue.completionDays < 1
                               ? "<1d"
