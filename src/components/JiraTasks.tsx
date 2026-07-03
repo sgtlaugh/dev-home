@@ -54,143 +54,129 @@ interface JiraTasksProps {
   baseUrl?: string;
 }
 
-export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading, baseUrl }) => {
-  const allIssues = useMemo(
-    () =>
-      [...rawIssues].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()),
-    [rawIssues],
-  );
-  const jiraBase = baseUrl?.replace(/\/+$/, "") || "";
-  const [activeStatus, setActiveStatus] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<{ start: string; end: string } | null>(null);
+const CLOSED_CATEGORY = "green";
 
-  const handleDateChange = useCallback((start: string, end: string) => {
-    setDateRange({ start, end });
-  }, []);
+function isOpen(issue: JiraIssue): boolean {
+  return issue.status.statusCategory.colorName !== CLOSED_CATEGORY;
+}
 
-  const issues = useMemo(() => {
-    if (!dateRange) return allIssues;
-    const from = new Date(dateRange.start);
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(dateRange.end);
-    to.setHours(23, 59, 59, 999);
-    return allIssues.filter((i) => {
-      const d = new Date(i.updated);
-      return d >= from && d <= to;
-    });
-  }, [allIssues, dateRange]);
+function buildStatusBreakdown(issues: JiraIssue[]) {
+  const counts = new Map<string, { count: number; color: string }>();
+  for (const issue of issues) {
+    const name = issue.status.name;
+    const colorName = issue.status.statusCategory.colorName;
+    const entry = counts.get(name) || {
+      count: 0,
+      color: STATUS_NAME_BAR_COLORS[name] || STATUS_BAR_COLORS[colorName] || "#656d76",
+    };
+    entry.count++;
+    counts.set(name, entry);
+  }
+  const total = issues.length;
+  return Array.from(counts.entries())
+    .sort((a, b) => {
+      const ai = STATUS_ORDER.indexOf(a[0]);
+      const bi = STATUS_ORDER.indexOf(b[0]);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    })
+    .map(([name, { count, color }]) => ({
+      name,
+      count,
+      pct: total > 0 ? (count / total) * 100 : 0,
+      color,
+    }));
+}
 
-  const statusBreakdown = useMemo(() => {
-    const counts = new Map<string, { count: number; color: string }>();
-    for (const issue of issues) {
-      const name = issue.status.name;
-      const colorName = issue.status.statusCategory.colorName;
-      const entry = counts.get(name) || {
-        count: 0,
-        color: STATUS_NAME_BAR_COLORS[name] || STATUS_BAR_COLORS[colorName] || "#656d76",
-      };
-      entry.count++;
-      counts.set(name, entry);
-    }
-    const total = issues.length;
-    return Array.from(counts.entries())
-      .sort((a, b) => {
-        const ai = STATUS_ORDER.indexOf(a[0]);
-        const bi = STATUS_ORDER.indexOf(b[0]);
-        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-      })
-      .map(([name, { count, color }]) => ({
-        name,
-        count,
-        pct: total > 0 ? (count / total) * 100 : 0,
-        color,
-      }));
-  }, [issues]);
+interface IssueTableProps {
+  issues: JiraIssue[];
+  jiraBase: string;
+  hasStoryPoints: boolean;
+  activeStatus: string | null;
+  onStatusClick: (name: string) => void;
+  showFooter?: boolean;
+}
 
-  if (loading && rawIssues.length === 0) {
-    return (
-      <div className="d-flex justify-content-center align-items-center py-5">
-        <Spinner animation="border" variant="secondary" />
+function StatusBar({
+  breakdown,
+  activeStatus,
+  onStatusClick,
+}: {
+  breakdown: ReturnType<typeof buildStatusBreakdown>;
+  activeStatus: string | null;
+  onStatusClick: (name: string) => void;
+}) {
+  if (breakdown.length === 0) return null;
+  return (
+    <div style={{ marginBottom: "0.75rem" }}>
+      <div
+        style={{
+          height: 8,
+          borderRadius: 4,
+          overflow: "hidden",
+          display: "flex",
+        }}
+      >
+        {breakdown.map((s) => (
+          <Tooltip key={s.name} text={`${s.name}: ${s.count} (${Math.round(s.pct)}%)`}>
+            <div
+              style={{
+                width: `${s.pct}%`,
+                backgroundColor: s.color,
+                transition: "width 0.4s ease",
+              }}
+            />
+          </Tooltip>
+        ))}
       </div>
-    );
-  }
+      <div
+        style={{
+          display: "flex",
+          gap: "0.4rem",
+          marginTop: "0.4rem",
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
+        {breakdown.map((s) => (
+          <span
+            key={s.name}
+            onClick={() => onStatusClick(s.name)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              fontSize: "0.7rem",
+              padding: "2px 8px",
+              borderRadius: "999px",
+              cursor: "pointer",
+              backgroundColor: activeStatus === s.name ? s.color : `${s.color}15`,
+              color: activeStatus === s.name ? "#fff" : s.color,
+              border: `1px solid ${s.color}${activeStatus === s.name ? "" : "30"}`,
+              transition: "all 0.2s ease",
+            }}
+          >
+            {s.name} ({s.count})
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  if (rawIssues.length === 0) {
-    return (
-      <EmptyState
-        icon={<IconChecklist size={40} stroke={1.5} />}
-        title="No assigned issues"
-        description="You have no JIRA issues currently assigned to you. Enjoy the calm."
-      />
-    );
-  }
-
-  const filteredIssues = activeStatus
-    ? issues.filter((i) => i.status.name === activeStatus)
-    : issues;
-  const hasStoryPoints = issues.some((i) => (i.storyPoints || 0) > 0);
+function IssueTable({
+  issues,
+  jiraBase,
+  hasStoryPoints,
+  activeStatus,
+  onStatusClick,
+  showFooter = true,
+}: IssueTableProps) {
+  const breakdown = useMemo(() => buildStatusBreakdown(issues), [issues]);
+  const filtered = activeStatus ? issues.filter((i) => i.status.name === activeStatus) : issues;
 
   return (
-    <div>
-      <DateControls onDateChange={handleDateChange} />
-
-      {/* Status breakdown bar */}
-      {statusBreakdown.length > 0 && (
-        <div style={{ marginBottom: "0.75rem" }}>
-          <div
-            style={{
-              height: 8,
-              borderRadius: 4,
-              overflow: "hidden",
-              display: "flex",
-            }}
-          >
-            {statusBreakdown.map((s) => (
-              <Tooltip key={s.name} text={`${s.name}: ${s.count} (${Math.round(s.pct)}%)`}>
-                <div
-                  style={{
-                    width: `${s.pct}%`,
-                    backgroundColor: s.color,
-                    transition: "width 0.4s ease",
-                  }}
-                />
-              </Tooltip>
-            ))}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: "0.4rem",
-              marginTop: "0.4rem",
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            {statusBreakdown.map((s) => (
-              <span
-                key={s.name}
-                onClick={() => setActiveStatus(activeStatus === s.name ? null : s.name)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  fontSize: "0.7rem",
-                  padding: "2px 8px",
-                  borderRadius: "999px",
-                  cursor: "pointer",
-                  backgroundColor: activeStatus === s.name ? s.color : `${s.color}15`,
-                  color: activeStatus === s.name ? "#fff" : s.color,
-                  border: `1px solid ${s.color}${activeStatus === s.name ? "" : "30"}`,
-                  transition: "all 0.2s ease",
-                }}
-              >
-                {s.name} ({s.count})
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
+    <>
+      <StatusBar breakdown={breakdown} activeStatus={activeStatus} onStatusClick={onStatusClick} />
       <div style={{ overflowX: "auto" }}>
         <table className="table" style={{ fontSize: "0.8125rem" }}>
           <thead>
@@ -224,7 +210,7 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
             </tr>
           </thead>
           <tbody>
-            {filteredIssues.map((issue) => {
+            {filtered.map((issue) => {
               const browseUrl = jiraBase ? `${jiraBase}/browse/${issue.key}` : "";
               const updatedDate = new Date(issue.updated);
               const short = formatLocalDate(updatedDate);
@@ -305,9 +291,10 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
               );
             })}
           </tbody>
-          {hasStoryPoints &&
+          {showFooter &&
+            hasStoryPoints &&
             (() => {
-              const totalSP = filteredIssues.reduce((sum, i) => sum + (i.storyPoints || 0), 0);
+              const totalSP = filtered.reduce((sum, i) => sum + (i.storyPoints || 0), 0);
               const footerCell = {
                 borderTop: "1px solid var(--border-color, #d0d7de)",
                 borderBottom: "none",
@@ -337,7 +324,7 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
                     <td style={footerCell} />
                     <td colSpan={4} style={footerCell}>
                       <span style={issueBadge}>
-                        {filteredIssues.length} issue{filteredIssues.length !== 1 ? "s" : ""}
+                        {filtered.length} issue{filtered.length !== 1 ? "s" : ""}
                       </span>
                     </td>
                     <td style={{ ...footerCell, paddingLeft: 0 }}>
@@ -349,6 +336,113 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
               ) : null;
             })()}
         </table>
+      </div>
+    </>
+  );
+}
+
+const sectionHeader: React.CSSProperties = {
+  fontSize: "0.7rem",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  color: "var(--text-muted, #656d76)",
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
+  marginBottom: "0.5rem",
+};
+
+const sectionDivider: React.CSSProperties = {
+  flex: 1,
+  height: 1,
+  backgroundColor: "var(--border-color, #d0d7de)",
+};
+
+export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading, baseUrl }) => {
+  const sorted = useMemo(
+    () =>
+      [...rawIssues].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()),
+    [rawIssues],
+  );
+  const jiraBase = baseUrl?.replace(/\/+$/, "") || "";
+  const [openStatusFilter, setOpenStatusFilter] = useState<string | null>(null);
+  const [closedStatusFilter, setClosedStatusFilter] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<{ start: string; end: string } | null>(null);
+
+  const handleDateChange = useCallback((start: string, end: string) => {
+    setDateRange({ start, end });
+  }, []);
+
+  const openIssues = useMemo(() => sorted.filter(isOpen), [sorted]);
+
+  const closedIssues = useMemo(() => {
+    const closed = sorted.filter((i) => !isOpen(i));
+    if (!dateRange) return closed;
+    const from = new Date(dateRange.start);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(dateRange.end);
+    to.setHours(23, 59, 59, 999);
+    return closed.filter((i) => {
+      const d = new Date(i.updated);
+      return d >= from && d <= to;
+    });
+  }, [sorted, dateRange]);
+
+  const allVisible = useMemo(() => [...openIssues, ...closedIssues], [openIssues, closedIssues]);
+  const hasStoryPoints = allVisible.some((i) => (i.storyPoints || 0) > 0);
+
+  if (loading && rawIssues.length === 0) {
+    return (
+      <div className="d-flex justify-content-center align-items-center py-5">
+        <Spinner animation="border" variant="secondary" />
+      </div>
+    );
+  }
+
+  if (rawIssues.length === 0) {
+    return (
+      <EmptyState
+        icon={<IconChecklist size={40} stroke={1.5} />}
+        title="No assigned issues"
+        description="You have no JIRA issues currently assigned to you. Enjoy the calm."
+      />
+    );
+  }
+
+  return (
+    <div>
+      {/* Open issues - always shown, no date filter */}
+      {openIssues.length > 0 && (
+        <div>
+          <div style={sectionHeader}>
+            <span>Open ({openIssues.length})</span>
+            <div style={sectionDivider} />
+          </div>
+          <IssueTable
+            issues={openIssues}
+            jiraBase={jiraBase}
+            hasStoryPoints={hasStoryPoints}
+            activeStatus={openStatusFilter}
+            onStatusClick={(name) => setOpenStatusFilter(openStatusFilter === name ? null : name)}
+          />
+        </div>
+      )}
+
+      {/* Closed issues - date filtered */}
+      <div style={{ marginTop: openIssues.length > 0 ? "1.5rem" : 0 }}>
+        <div style={sectionHeader}>
+          <span>Closed ({closedIssues.length})</span>
+          <div style={sectionDivider} />
+        </div>
+        <DateControls onDateChange={handleDateChange} />
+        <IssueTable
+          issues={closedIssues}
+          jiraBase={jiraBase}
+          hasStoryPoints={hasStoryPoints}
+          activeStatus={closedStatusFilter}
+          onStatusClick={(name) => setClosedStatusFilter(closedStatusFilter === name ? null : name)}
+        />
       </div>
     </div>
   );
