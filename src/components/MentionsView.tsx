@@ -19,15 +19,16 @@ export const MentionsView: React.FC<MentionsViewProps> = ({
   );
 
   return (
-    <div>
-      <div className="section-header">
-        JIRA Notifications
+    <div className="notes-container">
+      <div className="notes-header">
+        <h2 className="notes-title">JIRA Notifications</h2>
         {jiraComments.length > 0 && (
           <Badge bg="" className="badge-mentions-count" pill>
             {jiraComments.length}
           </Badge>
         )}
       </div>
+      <div className="notes-divider" />
       <JiraComments comments={sortedJiraComments} loading={loading} baseUrl={jiraBaseUrl} />
     </div>
   );
