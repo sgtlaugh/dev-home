@@ -341,23 +341,7 @@ function IssueTable({
   );
 }
 
-const sectionHeader: React.CSSProperties = {
-  fontSize: "0.7rem",
-  fontWeight: 600,
-  textTransform: "uppercase",
-  letterSpacing: "0.05em",
-  color: "var(--text-muted, #656d76)",
-  display: "flex",
-  alignItems: "center",
-  gap: "0.5rem",
-  marginBottom: "0.5rem",
-};
-
-const sectionDivider: React.CSSProperties = {
-  flex: 1,
-  height: 1,
-  backgroundColor: "var(--border-color, #d0d7de)",
-};
+type IssueTab = "open" | "closed";
 
 export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading, baseUrl }) => {
   const sorted = useMemo(
@@ -366,6 +350,7 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
     [rawIssues],
   );
   const jiraBase = baseUrl?.replace(/\/+$/, "") || "";
+  const [tab, setTab] = useState<IssueTab>("open");
   const [openStatusFilter, setOpenStatusFilter] = useState<string | null>(null);
   const [closedStatusFilter, setClosedStatusFilter] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ start: string; end: string } | null>(null);
@@ -412,38 +397,45 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
 
   return (
     <div>
-      {/* Open issues - always shown, no date filter */}
-      {openIssues.length > 0 && (
-        <div>
-          <div style={sectionHeader}>
-            <span>Open ({openIssues.length})</span>
-            <div style={sectionDivider} />
-          </div>
-          <IssueTable
-            issues={openIssues}
-            jiraBase={jiraBase}
-            hasStoryPoints={hasStoryPoints}
-            activeStatus={openStatusFilter}
-            onStatusClick={(name) => setOpenStatusFilter(openStatusFilter === name ? null : name)}
-          />
-        </div>
-      )}
+      <div className="notes-subtab-row" style={{ marginTop: 0, marginBottom: 12 }}>
+        <button
+          className={`notes-subtab${tab === "open" ? " active" : ""}`}
+          onClick={() => setTab("open")}
+        >
+          Open ({openIssues.length})
+        </button>
+        <button
+          className={`notes-subtab${tab === "closed" ? " active" : ""}`}
+          onClick={() => setTab("closed")}
+        >
+          Closed ({closedIssues.length})
+        </button>
+      </div>
 
-      {/* Closed issues - date filtered */}
-      <div style={{ marginTop: openIssues.length > 0 ? "1.5rem" : 0 }}>
-        <div style={sectionHeader}>
-          <span>Closed ({closedIssues.length})</span>
-          <div style={sectionDivider} />
-        </div>
-        <DateControls onDateChange={handleDateChange} />
+      {tab === "open" && (
         <IssueTable
-          issues={closedIssues}
+          issues={openIssues}
           jiraBase={jiraBase}
           hasStoryPoints={hasStoryPoints}
-          activeStatus={closedStatusFilter}
-          onStatusClick={(name) => setClosedStatusFilter(closedStatusFilter === name ? null : name)}
+          activeStatus={openStatusFilter}
+          onStatusClick={(name) => setOpenStatusFilter(openStatusFilter === name ? null : name)}
         />
-      </div>
+      )}
+
+      {tab === "closed" && (
+        <>
+          <DateControls onDateChange={handleDateChange} />
+          <IssueTable
+            issues={closedIssues}
+            jiraBase={jiraBase}
+            hasStoryPoints={hasStoryPoints}
+            activeStatus={closedStatusFilter}
+            onStatusClick={(name) =>
+              setClosedStatusFilter(closedStatusFilter === name ? null : name)
+            }
+          />
+        </>
+      )}
     </div>
   );
 };
