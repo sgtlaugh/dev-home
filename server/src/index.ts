@@ -152,10 +152,15 @@ export function startServer() {
   return server;
 }
 
+let prefetchScheduled = false;
+
 export function scheduleStartupPrefetch(delayMs = 5000): void {
+  if (prefetchScheduled) return;
+  prefetchScheduled = true;
   setTimeout(async () => {
     if (!isGithubConfigured()) {
       logger.info("Prefetch", "Not configured yet, skipping startup prefetch");
+      prefetchScheduled = false;
       return;
     }
     try {
