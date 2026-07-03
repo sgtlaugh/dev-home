@@ -396,8 +396,12 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
   }
 
   return (
-    <div>
-      <div className="notes-subtab-row" style={{ marginTop: 0, marginBottom: 12 }}>
+    <div className="notes-container">
+      <div className="notes-header">
+        <h2 className="notes-title">JIRA Issues</h2>
+      </div>
+
+      <div className="notes-subtab-row">
         <button
           className={`notes-subtab${tab === "open" ? " active" : ""}`}
           onClick={() => setTab("open")}
@@ -411,6 +415,8 @@ export const JiraTasks: React.FC<JiraTasksProps> = ({ issues: rawIssues, loading
           Closed ({closedIssues.length})
         </button>
       </div>
+
+      <div className="notes-divider" />
 
       {tab === "open" && (
         <IssueTable
