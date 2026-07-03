@@ -31,6 +31,7 @@ const STATUS_BAR_COLORS: Record<string, string> = {
 };
 
 const STATUS_NAME_BAR_COLORS: Record<string, string> = {
+  "To Do": "#0969da",
   "In Progress": "#57606a",
   "Code Review": "#4f46e5",
   "Product Review": "#e3795c",
@@ -39,6 +40,7 @@ const STATUS_NAME_BAR_COLORS: Record<string, string> = {
 };
 
 const STATUS_ORDER: string[] = [
+  "To Do",
   "In Progress",
   "Code Review",
   "Product Review",
