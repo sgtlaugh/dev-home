@@ -9,6 +9,7 @@ import {
   IconTrash,
   IconPlus,
   IconClipboardText,
+  IconCopy,
 } from "@tabler/icons-react";
 import { SearchBox } from "./SearchBox";
 import { Note } from "../types";
@@ -224,6 +225,17 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
   );
 };
 
+function markdownToHtml(md: string): string {
+  const lines = md.split("\n").filter(Boolean);
+  const items = lines.map((line) => {
+    const content = line
+      .replace(/^-\s*/, "")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+    return `<li>${content}</li>`;
+  });
+  return `<ul>${items.join("")}</ul>`;
+}
+
 function NoteRow({
   note,
   jiraBaseUrl,
@@ -237,9 +249,25 @@ function NoteRow({
   onDelete: (id: number) => Promise<void>;
   onOpenNote: (note: Note) => void;
 }) {
+  const [copied, setCopied] = useState(false);
   const url = getReferenceUrl(note, jiraBaseUrl);
   const title = getNoteDisplayTitle(note);
   const config = TYPE_CONFIG[note.type] || TYPE_CONFIG.free_text;
+  const isStandup = (note.category ?? "note") === "standup";
+
+  const handleCopyHtml = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!note.content) return;
+    const html = markdownToHtml(note.content);
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([note.content], { type: "text/plain" }),
+      }),
+    ]);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="note-row" onClick={() => onOpenNote(note)}>
@@ -264,6 +292,13 @@ function NoteRow({
         {note.content && <div className="note-row-content">{note.content}</div>}
       </div>
       <div className="note-row-actions">
+        {isStandup && note.content && (
+          <Tooltip text={copied ? "Copied!" : "Copy as HTML"}>
+            <button className="note-action-btn" onClick={handleCopyHtml}>
+              {copied ? <IconCheck size={13} /> : <IconCopy size={13} />}
+            </button>
+          </Tooltip>
+        )}
         {note.resolved === 0 && (
           <Tooltip text="Resolve">
             <button
