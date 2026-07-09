@@ -480,10 +480,60 @@ async function fetchGitHubActivity(
     return null;
   });
 
+  const COMMENT_ACTIVITY_QUERY = `
+    query($query: String!, $first: Int!) {
+      search(query: $query, type: ISSUE, first: $first) {
+        nodes {
+          ... on Issue {
+            number
+            title
+            url
+            repository { nameWithOwner }
+            comments(last: 30) {
+              nodes {
+                body
+                author { login avatarUrl }
+                createdAt
+                url
+              }
+            }
+          }
+          ... on PullRequest {
+            number
+            title
+            url
+            repository { nameWithOwner }
+            comments(last: 30) {
+              nodes {
+                body
+                author { login avatarUrl }
+                createdAt
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const commentedIssuesPromise = graphql<{ search: { nodes: any[] } }>(
+    COMMENT_ACTIVITY_QUERY,
+    {
+      query: `commenter:${config.githubUsername} updated:>=${sinceDate}`,
+      first: 100,
+    },
+    "activity/commented-issues",
+  ).catch((err) => {
+    logError("Activity/GitHub commented issues", err);
+    return null;
+  });
+
   try {
     const events: any[] = [];
+    // ponytail: GitHub caps events at 300 (3 pages of 100). Page 4+ returns 422.
     let page = 1;
-    while (true) {
+    while (page <= 3) {
       const { data } = await github.get(`/users/${config.githubUsername}/events`, {
         params: { per_page: 100, page },
       });
@@ -691,11 +741,12 @@ async function fetchGitHubActivity(
     logger.error("Activity", "Failed to fetch GitHub events", { error: String(err) });
   }
 
-  const [repoDiscovery, prSupplement, mergedPrs, reviewedPrs] = await Promise.all([
+  const [repoDiscovery, prSupplement, mergedPrs, reviewedPrs, commentedIssues] = await Promise.all([
     repoDiscoveryPromise,
     prSupplementPromise,
     mergedPrsPromise,
     reviewedPrsPromise,
+    commentedIssuesPromise,
   ]);
 
   if (repoDiscovery) {
@@ -865,6 +916,48 @@ async function fetchGitHubActivity(
     logger.info(
       "Activity",
       `GraphQL reviews: ${reviewedPrs.search.nodes?.length || 0} PRs checked, ${reviewCount} reviews by user`,
+    );
+  }
+
+  if (commentedIssues) {
+    // Dedup by entity+timestamp since events API and GraphQL use different IDs
+    const seenCommentKeys = new Set(
+      activities
+        .filter((a) => a.action.startsWith("Commented on"))
+        .map((a) => `${a.entityKey}-${a.timestamp}`),
+    );
+    let commentCount = 0;
+    for (const item of commentedIssues.search.nodes || []) {
+      const repoName = item.repository?.nameWithOwner || "";
+      const entityKey = `${repoName}#${item.number}`;
+      const isPR = item.url?.includes("/pull/");
+
+      for (const comment of item.comments?.nodes || []) {
+        if (comment.author?.login !== config.githubUsername) continue;
+        if (!comment.createdAt) continue;
+        if (new Date(comment.createdAt).getTime() < thirtyDaysAgo) continue;
+
+        const commentKey = `${entityKey}-${comment.createdAt}`;
+        if (seenCommentKeys.has(commentKey)) continue;
+        seenCommentKeys.add(commentKey);
+
+        const commentPreview = comment.body ? truncatePreview(comment.body) : "";
+        activities.push({
+          id: `github-comment-gql-${item.number}-${comment.createdAt}`,
+          type: "github",
+          action: `Commented on ${isPR ? "PR" : "issue"}`,
+          title: `${repoName}#${item.number}: ${item.title}`,
+          url: comment.url || item.url,
+          timestamp: comment.createdAt,
+          entityKey,
+          metadata: { actor: userActor, ...(commentPreview && { commentBody: commentPreview }) },
+        });
+        commentCount++;
+      }
+    }
+    logger.info(
+      "Activity",
+      `GraphQL comments: ${commentedIssues.search.nodes?.length || 0} issues checked, ${commentCount} comments by user`,
     );
   }
 
