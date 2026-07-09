@@ -259,7 +259,7 @@ export default function App() {
     setGeneratingStandup(true);
     try {
       const activities = await fetchActivity();
-      const content = formatStandupNotes(activities);
+      const content = formatStandupNotes(activities, jiraBaseUrl);
       if (!content) {
         setToast("No standup-worthy activity found");
         setTimeout(() => setToast(null), 3000);
@@ -272,7 +272,7 @@ export default function App() {
     } finally {
       setGeneratingStandup(false);
     }
-  }, [addNote]);
+  }, [addNote, jiraBaseUrl]);
   const [openNote, setOpenNote] = useState<import("./types").Note | null>(null);
   const [githubExpanded, setGithubExpanded] = useState(true);
   const [jiraExpanded, setJiraExpanded] = useState(true);

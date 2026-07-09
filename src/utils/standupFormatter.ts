@@ -9,7 +9,30 @@ const TERMINAL_STATUSES = new Set([
   "cancelled",
 ]);
 
-export function formatStandupNotes(activities: ActivityItem[]): string {
+const PR_ACTIONS = [
+  "Created PR",
+  "Merged PR",
+  "Approved PR",
+  "Changes Requested",
+  "Commented on PR",
+];
+
+const TICKET_RE = /\b([A-Z][A-Z0-9]+-\d+)\b/;
+
+type Category = "Created" | "Merged" | "Reviewed";
+
+interface PRRef {
+  shortName: string;
+  url: string;
+}
+
+interface TicketGroup {
+  category: Category;
+  ticketId: string;
+  prs: PRRef[];
+}
+
+export function formatStandupNotes(activities: ActivityItem[], jiraBaseUrl?: string): string {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const recent = activities.filter((a) => a.timestamp >= cutoff);
 
@@ -19,61 +42,79 @@ export function formatStandupNotes(activities: ActivityItem[]): string {
   }
 
   const prActions = new Map<string, Set<string>>();
-  const prTitles = new Map<string, string>();
+  const prMeta = new Map<string, { title: string; url: string }>();
   for (const a of recent) {
-    if (
-      ["Created PR", "Merged PR", "Approved PR", "Changes Requested", "Commented on PR"].includes(
-        a.action,
-      )
-    ) {
+    if (PR_ACTIONS.includes(a.action)) {
       if (!prActions.has(a.entityKey)) prActions.set(a.entityKey, new Set());
       prActions.get(a.entityKey)!.add(a.action);
-      prTitles.set(a.entityKey, a.title);
+      prMeta.set(a.entityKey, { title: a.title, url: a.url });
     }
   }
 
-  const terminalTransitions: string[] = [];
-  const createdLines: string[] = [];
-  const mergedLines: string[] = [];
-  const reviewLines: string[] = [];
-
+  const terminalLines: string[] = [];
   for (const a of recent) {
     if (a.action === "Changed status") {
       const toStatus = a.metadata?.toStatus || "";
       if (TERMINAL_STATUSES.has(toStatus.toLowerCase())) {
-        terminalTransitions.push(`- ${a.title} → ${toStatus}`);
+        terminalLines.push(`- ${a.title} → ${toStatus}`);
       }
     }
   }
+
+  const groups = new Map<string, TicketGroup>();
 
   for (const [key, actions] of prActions) {
-    const title = prTitles.get(key)!;
+    const meta = prMeta.get(key)!;
     const isOwn = ownPRs.has(key);
 
+    let category: Category | null = null;
     if (isOwn) {
-      // Own PR: show Created (takes priority), or Merged if not created in window
-      if (actions.has("Created PR")) {
-        const suffix = actions.has("Merged PR") ? " (Merged)" : "";
-        createdLines.push(`- Created: ${title}${suffix}`);
-      } else if (actions.has("Merged PR")) {
-        mergedLines.push(`- Merged: ${title}`);
-      }
+      if (actions.has("Created PR")) category = "Created";
+      else if (actions.has("Merged PR")) category = "Merged";
     } else {
-      // Others' PR: Merged > Approved > Changes Requested > Commented
-      if (actions.has("Merged PR")) {
-        mergedLines.push(`- Merged: ${title}`);
-      } else if (actions.has("Approved PR")) {
-        reviewLines.push(`- Approved: ${title}`);
-      } else if (actions.has("Changes Requested")) {
-        reviewLines.push(`- Reviewed: ${title}`);
-      } else if (actions.has("Commented on PR")) {
-        reviewLines.push(`- Reviewed: ${title}`);
-      }
+      if (actions.has("Merged PR")) category = "Merged";
+      else if (
+        actions.has("Approved PR") ||
+        actions.has("Changes Requested") ||
+        actions.has("Commented on PR")
+      )
+        category = "Reviewed";
+    }
+    if (!category) continue;
+
+    const ticketMatch = meta.title.match(TICKET_RE);
+    const ticketId = ticketMatch ? ticketMatch[1] : "";
+    const shortName = key.replace(/^[^/]+\//, "");
+
+    const groupKey = `${category}:${ticketId}`;
+    if (!groups.has(groupKey)) groups.set(groupKey, { category, ticketId, prs: [] });
+    groups.get(groupKey)!.prs.push({ shortName, url: meta.url });
+  }
+
+  const categoryOrder: Record<Category, number> = { Created: 0, Merged: 1, Reviewed: 2 };
+  const sorted = [...groups.values()].sort((a, b) => {
+    const d = categoryOrder[a.category] - categoryOrder[b.category];
+    return d !== 0 ? d : a.ticketId.localeCompare(b.ticketId);
+  });
+
+  const prLines: string[] = [];
+  for (const g of sorted) {
+    const n = g.prs.length;
+    const prWord = n === 1 ? "PR" : "PRs";
+    const prLinks = g.prs.map((p) => `[${p.shortName}](${p.url})`).join(", ");
+    const ticketLabel =
+      g.ticketId && jiraBaseUrl
+        ? `[${g.ticketId}](${jiraBaseUrl}/browse/${g.ticketId})`
+        : g.ticketId || null;
+
+    if (ticketLabel) {
+      prLines.push(`- ${g.category} ${n} ${prWord} for ${ticketLabel}: ${prLinks}`);
+    } else {
+      prLines.push(`- ${g.category} ${n} ${prWord}: ${prLinks}`);
     }
   }
 
-  const lines = [...terminalTransitions, ...createdLines, ...mergedLines, ...reviewLines];
-  return lines.join("\n");
+  return [...terminalLines, ...prLines].join("\n");
 }
 
 export function getStandupTitle(): string {
