@@ -25,7 +25,7 @@ export function useNotes(active: boolean) {
     loadNotes();
   }, [loadNotes]);
 
-  const unresolvedNotes = notes.filter((n) => n.resolved === 0);
+  const unresolvedNotes = notes.filter((n) => n.resolved === 0 && n.category !== "standup");
 
   const addNote = useCallback(
     async (
